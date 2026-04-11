@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  ::selection {
+    @apply bg-orange-500/30;
+  }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────── */
+  .btn-primary {
+    @apply bg-orange-500 hover:bg-orange-600 text-white font-semibold
+      px-5 py-2.5 rounded-lg transition-all duration-200 active:scale-95
+      focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2
+      dark:focus:ring-offset-gray-900
+      inline-flex items-center gap-2;
+  }
+  .btn-secondary {
+    @apply border border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950
+      font-semibold px-5 py-2.5 rounded-lg transition-all duration-200
+      active:scale-95 focus:outline-none inline-flex items-center gap-2;
+  }
+  .btn-ghost {
+    @apply text-gray-600 dark:text-gray-400 hover:text-orange-500 font-medium px-3 py-2
+      rounded-lg transition-colors duration-200 focus:outline-none;
+  }
+
+  /* ── Cards ────────────────────────────── */
+  .card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl
+      border border-gray-100 dark:border-gray-800
+      shadow-sm hover:shadow-md dark:hover:shadow-gray-900/50
+      transition-all duration-300 overflow-hidden;
+  }
+
+  /* ── Inputs ──────────────────────────── */
+  .input-field {
+    @apply w-full bg-gray-50 dark:bg-gray-800
+      border border-gray-200 dark:border-gray-700
+      text-gray-900 dark:text-gray-100
+      placeholder-gray-400 dark:placeholder-gray-500
+      rounded-xl px-4 py-3
+      focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/40
+      focus:bg-white dark:focus:bg-gray-800
+      transition-all duration-200 text-sm;
+  }
+
+  /* ── Badges ──────────────────────────── */
+  .badge-verified {
+    @apply inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/50
+      text-emerald-600 border border-emerald-200 dark:border-emerald-800
+      rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-nid {
+    @apply inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/50
+      text-blue-600 border border-blue-200 dark:border-blue-800
+      rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* ── Typography ──────────────────────── */
+  .section-label {
+    @apply text-orange-500 text-xs font-bold uppercase tracking-widest mb-1;
+  }
+  .section-heading {
+    @apply text-2xl font-bold text-gray-900 dark:text-white;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  /* ── Nav ─────────────────────────────── */
+  .nav-bg {
+    @apply bg-white dark:bg-gray-950 border-b border-transparent;
+  }
+  .nav-bg-scrolled {
+    @apply shadow-md dark:shadow-gray-900/60;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in  { animation: fadeIn 0.3s ease-out; }
+  .animate-slide-up { animation: slideUp 0.4s ease-out; }
+
+  @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* Dark-mode "glass" surface for navbar dropdown */
+  .dropdown-panel {
+    @apply bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800
+      shadow-xl rounded-2xl;
+  }
+}
