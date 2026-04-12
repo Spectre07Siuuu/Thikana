@@ -60,7 +60,9 @@ async function signup(req, res) {
 
     // 5. Fetch the created user
     const [rows] = await pool.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, 
+        (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status 
+       FROM users u WHERE u.id = ?`,
       [result.insertId]
     )
     const newUser = rows[0]
@@ -102,7 +104,9 @@ async function login(req, res) {
   try {
     // 1. Find user by email
     const [rows] = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, 
+        (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status 
+       FROM users u WHERE email = ?`,
       [email.toLowerCase()]
     )
 
@@ -149,7 +153,9 @@ async function login(req, res) {
 async function me(req, res) {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, 
+        (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status 
+       FROM users u WHERE u.id = ?`,
       [req.user.id]
     )
     if (rows.length === 0) {
