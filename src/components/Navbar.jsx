@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Menu, X, ChevronDown, User, LogOut, Settings,
   ShoppingCart, Bell, ShieldCheck, Sun, Moon,
@@ -11,8 +11,8 @@ import Logo from './Logo'
 /* ─── Nav links: use plain <a> for hash anchors so browser scrolls correctly ── */
 const NAV_LINKS = [
   { label: 'Home',        href: '/',            hash: false },
-  { label: 'Properties',  href: '#properties',  hash: true  },
-  { label: 'Marketplace', href: '#marketplace', hash: true  },
+  { label: 'Properties',  href: '#house_sell',  hash: true  },
+  { label: 'Marketplace', href: '#furniture',   hash: true  },
   { label: 'About',       href: '#about',       hash: true  },
 ]
 
@@ -53,8 +53,12 @@ export default function Navbar() {
 
   const handleLogout = () => { logout(); setProfileOpen(false); navigate('/') }
 
+  const location = useLocation()
+  const currentPath = location.pathname
+  const currentHash = location.hash
+
   /* ─── helper: is the current pathname '/' for Home active state ─── */
-  const isHome = typeof window !== 'undefined' && window.location.pathname === '/'
+  const isHome = currentPath === '/'
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
@@ -72,22 +76,30 @@ export default function Navbar() {
 
           {/* ── Desktop Nav ─── */}
           <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
-            {NAV_LINKS.map(({ label, href, hash }) =>
-              hash ? (
+            {NAV_LINKS.map(({ label, href, hash }) => {
+              const target = hash ? (isHome ? href : `/${href}`) : href
+              const isActive = hash
+                ? isHome && currentHash === href
+                : currentPath === href && currentHash === ''
+
+              return hash ? (
                 /* hash links: plain anchor so browser scrolls on same page */
-                <a key={label} href={href}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200
-                    text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                <a key={label} href={target}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200
+                    ${isActive ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' : 'text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-50 dark:hover:bg-gray-800/60'}`}>
                   {label}
                 </a>
               ) : (
-                <Link key={label} to={href}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200
-                    text-orange-500 bg-orange-50 dark:bg-orange-950/40">
+                <Link key={label} to={target}
+                  onClick={() => {
+                    if (href === '/') window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200
+                    ${isActive ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' : 'text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-50 dark:hover:bg-gray-800/60'}`}>
                   {label}
                 </Link>
               )
-            )}
+            })}
           </nav>
 
           {/* ── Right Actions ─── */}
@@ -138,8 +150,12 @@ export default function Navbar() {
                     transition-all duration-200"
                 >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600
-                    flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {getInitials(user.full_name)}
+                    flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(user.full_name)
+                    )}
                   </div>
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-200
                     max-w-[100px] truncate hidden sm:block">
@@ -156,8 +172,12 @@ export default function Navbar() {
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600
-                          flex items-center justify-center text-white font-bold text-sm">
-                          {getInitials(user.full_name)}
+                          flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-orange-200">
+                          {user.avatar_url ? (
+                            <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            getInitials(user.full_name)
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
@@ -172,8 +192,10 @@ export default function Navbar() {
                           {user.role}
                         </span>
                         {user.nid_verified
-                          ? <span className="badge-nid text-[10px]"><ShieldCheck size={10} /> NID Verified</span>
-                          : <button className="text-[10px] text-orange-500 hover:underline">Verify NID →</button>
+                          ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full"><ShieldCheck size={10} /> NID Verified</span>
+                          : user.nid_status === 'pending'
+                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-orange-50 dark:bg-orange-950/40 text-orange-500 border border-orange-200 dark:border-orange-800 px-2 py-0.5 rounded-full">NID Pending</span>
+                            : <Link to="/verify-nid" onClick={() => setProfileOpen(false)} className="text-[10px] text-blue-500 hover:text-blue-600 font-medium hover:underline">Verify NID →</Link>
                         }
                       </div>
                     </div>
@@ -220,30 +242,41 @@ export default function Navbar() {
         border-t border-gray-100 dark:border-gray-800 transition-all duration-300
         ${mobileOpen ? 'max-h-96' : 'max-h-0'}`}>
         <div className="px-4 py-3 space-y-1">
-          {NAV_LINKS.map(({ label, href, hash }) =>
-            hash ? (
-              <a key={label} href={href} onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl text-gray-700 dark:text-gray-300
-                  hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30
-                  font-medium text-sm transition-colors">
+          {NAV_LINKS.map(({ label, href, hash }) => {
+            const target = hash ? (isHome ? href : `/${href}`) : href
+            const isActive = hash
+                ? isHome && currentHash === href
+                : currentPath === href && currentHash === ''
+
+            return hash ? (
+              <a key={label} href={target} onClick={() => setMobileOpen(false)}
+                className={`block px-4 py-2.5 rounded-xl font-medium text-sm transition-colors
+                  ${isActive ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/30' : 'text-gray-700 dark:text-gray-300 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30'}`}>
                 {label}
               </a>
             ) : (
-              <Link key={label} to={href} onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl text-orange-500 bg-orange-50
-                  dark:bg-orange-950/30 font-medium text-sm">
+              <Link key={label} to={target} onClick={() => {
+                  setMobileOpen(false);
+                  if (href === '/') window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className={`block px-4 py-2.5 rounded-xl font-medium text-sm transition-colors
+                  ${isActive ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/30' : 'text-gray-700 dark:text-gray-300 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30'}`}>
                 {label}
               </Link>
             )
-          )}
+          })}
 
           <div className="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
             {user ? (
               <div>
                 <div className="flex items-center gap-3 px-4 py-2.5">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600
-                    flex items-center justify-center text-white font-bold text-sm">
-                    {getInitials(user.full_name)}
+                    flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-orange-200">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(user.full_name)
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white text-sm">{user.full_name}</p>

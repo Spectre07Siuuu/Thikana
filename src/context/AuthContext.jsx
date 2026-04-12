@@ -39,8 +39,18 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  /** Re-fetch user from server (e.g. after profile edit) */
+  const refreshUser = useCallback(async () => {
+    try {
+      const data = await getMe()
+      setUser(data.user)
+    } catch {
+      // token gone — leave as-is
+    }
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

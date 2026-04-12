@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
   is_verified TINYINT(1)        NOT NULL DEFAULT 0, -- email verified?
   nid_verified TINYINT(1)       NOT NULL DEFAULT 0, -- NID verified?
   avatar_url  VARCHAR(500)               DEFAULT NULL,
+  phone       VARCHAR(20)                DEFAULT NULL,
+  address     VARCHAR(300)               DEFAULT NULL,
+  bio         TEXT                       DEFAULT NULL,
   created_at  TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP
               ON UPDATE CURRENT_TIMESTAMP,

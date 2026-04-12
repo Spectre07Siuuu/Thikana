@@ -80,3 +80,64 @@ export function logout() {
 export function isLoggedIn() {
   return Boolean(localStorage.getItem('thikana_token'))
 }
+
+/* ─── Profile ────────────────────────────────────────────── */
+
+/**
+ * getProfile — GET /api/profile/me  (requires auth)
+ */
+export async function getProfile() {
+  return request('/profile/me')
+}
+
+/**
+ * updateProfile — PUT /api/profile/me  (requires auth)
+ * @param {{ fullName?, phone?, address?, bio? }} payload
+ */
+export async function updateProfile(payload) {
+  return request('/profile/me', { method: 'PUT', body: payload })
+}
+
+/**
+ * uploadAvatar — PUT /api/profile/me/avatar
+ * @param {string} base64Str - Base64 encoded image string
+ */
+export async function uploadAvatar(base64Str) {
+  return request('/profile/me/avatar', { method: 'PUT', body: { avatar_base64: base64Str } })
+}
+
+/* ─── NID Verification ───────────────────────────────────── */
+
+/**
+ * getNidStatus — GET /api/nid/status
+ */
+export async function getNidStatus() {
+  return request('/nid/status')
+}
+
+/**
+ * submitNid — POST /api/nid/submit
+ * @param {{ nid_number, nid_front_base64, nid_selfie_base64 }} payload
+ */
+export async function submitNid(payload) {
+  return request('/nid/submit', { method: 'POST', body: payload })
+}
+
+/* ─── Products ────────────────────────────────────────────── */
+
+export async function getProducts(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return request(`/products${query ? '?' + query : ''}`)
+}
+
+export async function uploadProduct(payload) {
+  return request('/products', { method: 'POST', body: payload })
+}
+
+export async function getProductById(id) {
+  return request(`/products/${id}`)
+}
+
+export async function editProduct(id, payload) {
+  return request(`/products/${id}`, { method: 'PATCH', body: payload })
+}
