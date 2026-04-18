@@ -10,7 +10,7 @@ import {
   FileText, Camera,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct } from '../services/api'
+import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -84,7 +84,9 @@ export default function Profile() {
   const [editOpen, setEditOpen]     = useState(false)
   const [activeTab, setActiveTab]   = useState('products')
 
-  const [products, setProducts]     = useState([])
+  const [products,    setProducts]    = useState([])
+  const [favourites,  setFavourites]  = useState([])
+  const [inquiries,   setInquiries]   = useState([])
 
   /* ── Fetch profile on mount ── */
   useEffect(() => {
@@ -93,12 +95,16 @@ export default function Profile() {
     Promise.all([
       getProfile(), 
       getNidStatus(),
-      getProducts({ seller_id: user.id }).catch(() => ({ products: [] }))
+      getProducts({ seller_id: user.id }).catch(() => ({ products: [] })),
+      getFavourites().catch(() => ({ favourites: [] })),
+      getSellerInquiries().catch(() => ({ inquiries: [] })),
     ])
-      .then(([profData, nidData, prodData]) => {
+      .then(([profData, nidData, prodData, favData, inqData]) => {
         setProfile(profData.user)
         setNidSubmission(nidData.submission)
         setProducts(prodData.products || [])
+        setFavourites(favData.favourites || [])
+        setInquiries(inqData.inquiries || [])
       })
       .catch((err) => {
         console.error(err)
@@ -256,7 +262,7 @@ export default function Profile() {
           </div>
 
           {/* ── Role-specific Content ─────────────── */}
-          {isSeller ? <SellerContent activeTab={activeTab} setActiveTab={setActiveTab} products={products} refreshProducts={fetchSellerProducts} /> : <BuyerContent onLogout={handleLogout} />}
+          {isSeller ? <SellerContent activeTab={activeTab} setActiveTab={setActiveTab} products={products} refreshProducts={fetchSellerProducts} inquiries={inquiries} setInquiries={setInquiries} /> : <BuyerContent onLogout={handleLogout} favourites={favourites} />}
 
         </div>
       </main>
@@ -281,22 +287,65 @@ export default function Profile() {
 /* ══════════════════════════════════════════════════════════
    BUYER CONTENT — Menu list style
 ═══════════════════════════════════════════════════════════ */
-function BuyerContent({ onLogout }) {
+function BuyerContent({ onLogout, favourites }) {
+  const [view, setView] = useState('menu') // 'menu' | 'saved'
+  const navigate = useNavigate()
+
+  if (view === 'saved') {
+    return (
+      <div className="space-y-3 animate-slide-up">
+        <button onClick={() => setView('menu')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors mb-2">
+          <ArrowLeft size={14} /> Back
+        </button>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Saved Listings</h3>
+        {favourites.length === 0 ? (
+          <div className="text-center py-10 text-gray-400">
+            <Heart size={32} className="mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No saved listings yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {favourites.map(f => (
+              <Link key={f.id} to={`/product/${f.id}`} className="card p-3 group">
+                <div className="h-24 rounded-xl bg-gray-100 dark:bg-gray-800 mb-2 overflow-hidden">
+                  {f.main_image
+                    ? <img src={f.main_image} alt={f.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    : <div className="w-full h-full flex items-center justify-center text-gray-400"><Package size={20} /></div>
+                  }
+                </div>
+                <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{f.title}</p>
+                <p className="text-xs font-bold text-orange-500 mt-0.5">৳{Number(f.price).toLocaleString()}</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2 animate-slide-up" style={{ animationDelay: '120ms' }}>
-      {BUYER_MENU.map(({ icon: Icon, label }) => (
-        <button key={label} className="menu-item w-full">
-          <span className="w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800
-            flex items-center justify-center text-gray-400 flex-shrink-0">
-            <Icon size={16} />
-          </span>
-          <span className="flex-1 text-left">{label}</span>
-          <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
-        </button>
-      ))}
+      {BUYER_MENU.map(({ icon: Icon, label }) => {
+        const count = label === 'Saved Listings' ? favourites.length : null
+        return (
+          <button key={label} className="menu-item w-full"
+            onClick={() => {
+              if (label === 'Saved Listings') { setView('saved'); return }
+              if (label === 'Settings') { navigate('/settings'); return }
+            }}>
+            <span className="w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 flex-shrink-0">
+              <Icon size={16} />
+            </span>
+            <span className="flex-1 text-left">{label}</span>
+            {count !== null && count > 0 && (
+              <span className="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded-full">{count}</span>
+            )}
+            <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
+          </button>
+        )
+      })}
       <button onClick={onLogout} className="menu-item-danger w-full mt-2">
-        <span className="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-950/30
-          flex items-center justify-center text-red-400 flex-shrink-0">
+        <span className="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-400 flex-shrink-0">
           <LogOut size={16} />
         </span>
         <span className="flex-1 text-left">Logout</span>
@@ -309,7 +358,7 @@ function BuyerContent({ onLogout }) {
 /* ══════════════════════════════════════════════════════════
    SELLER CONTENT — Tabs + product grid
 ═══════════════════════════════════════════════════════════ */
-function SellerContent({ activeTab, setActiveTab, products, refreshProducts }) {
+function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inquiries, setInquiries }) {
   return (
     <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
       {/* Tab bar */}
@@ -338,7 +387,7 @@ function SellerContent({ activeTab, setActiveTab, products, refreshProducts }) {
         <div className="p-5">
           {activeTab === 'products' && <ProductsTab products={products} refreshProducts={refreshProducts} />}
           {activeTab === 'orders'   && <PlaceholderTab label="Orders" />}
-          {activeTab === 'messages' && <PlaceholderTab label="Messages" />}
+          {activeTab === 'messages' && <InquiriesTab inquiries={inquiries} setInquiries={setInquiries} />}
         </div>
       </div>
     </div>
@@ -414,6 +463,67 @@ function ProductsTab({ products, refreshProducts }) {
         />
       )}
     </>
+  )
+}
+
+function InquiriesTab({ inquiries, setInquiries }) {
+  const unread = inquiries.filter(i => !i.is_read).length
+
+  const handleMarkRead = async (id) => {
+    try {
+      await markInquiryRead(id)
+      setInquiries(prev => prev.map(i => i.id === id ? { ...i, is_read: 1 } : i))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  if (inquiries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+        <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+          <MessageSquare size={24} />
+        </div>
+        <p className="text-sm font-medium">No messages yet</p>
+        <p className="text-xs mt-1">Inquiries from buyers will appear here</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {unread > 0 && (
+        <p className="text-xs font-semibold text-orange-500 mb-2">{unread} unread message{unread > 1 ? 's' : ''}</p>
+      )}
+      {inquiries.map(inq => (
+        <div key={inq.id}
+          className={`p-4 rounded-xl border transition-all ${inq.is_read ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'}`}
+          onClick={() => { if (!inq.is_read) handleMarkRead(inq.id) }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{inq.sender_name}</p>
+                {!inq.is_read && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
+              </div>
+              {inq.product_title && (
+                <Link to={`/product/${inq.product_id}`} className="text-xs text-orange-500 hover:underline block mb-1">
+                  Re: {inq.product_title}
+                </Link>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{inq.message}</p>
+              {inq.sender_phone && (
+                <a href={`tel:${inq.sender_phone}`} className="inline-flex items-center gap-1 text-xs text-emerald-500 mt-2 hover:underline">
+                  📞 {inq.sender_phone}
+                </a>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">
+              {new Date(inq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

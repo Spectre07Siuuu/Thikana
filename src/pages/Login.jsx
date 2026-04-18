@@ -43,6 +43,11 @@ export default function Login() {
       auth.login(data.user)
       navigate('/')
     } catch (err) {
+      // Backend signals account exists but not verified
+      if (err.data?.requiresVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(err.data.email)}`, { replace: true })
+        return
+      }
       setServerError(err.message || 'Invalid credentials. Please try again.')
     } finally {
       setLoading(false)

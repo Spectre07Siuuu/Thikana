@@ -75,9 +75,16 @@ export default function Signup() {
     setLoading(true)
     try {
       const data = await signupApi({ fullName: fields.fullName, email: fields.email, password: fields.password, role: fields.role })
-      auth.login(data.user)
-      setSuccess(true)
-      setTimeout(() => navigate('/'), 1800)
+      if (data.requiresVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(data.email)}`, { replace: true })
+        return
+      }
+      // Fallback: already verified (shouldn't happen with new backend)
+      if (data.token && data.user) {
+        auth.login(data.user)
+        setSuccess(true)
+        setTimeout(() => navigate('/'), 1800)
+      }
     } catch (err) {
       setServerError(err.message || 'Something went wrong. Please try again.')
       window.scrollTo({ top: 0, behavior: 'smooth' })
