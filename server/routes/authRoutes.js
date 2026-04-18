@@ -1,9 +1,27 @@
 const express = require('express')
+const rateLimit = require('express-rate-limit')
 const { body } = require('express-validator')
 const { signup, verifyEmail, resendOtp, login, me, forgotPassword, resetPassword, changePassword } = require('../controllers/authController')
 const { verifyToken } = require('../middleware/authMiddleware')
 
 const router = express.Router()
+
+// Rate limiters for sensitive auth endpoints
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many verification attempts. Please try again later.' },
+})
 
 const signupRules = [
   body('fullName').trim().isLength({ min: 3 }).withMessage('Full name must be at least 3 characters.'),
@@ -17,13 +35,13 @@ const loginRules = [
   body('password').notEmpty().withMessage('Password is required.'),
 ]
 
-router.post('/signup',           signupRules, signup)
-router.post('/verify-email',     verifyEmail)
-router.post('/resend-otp',       resendOtp)
-router.post('/login',            loginRules, login)
+router.post('/signup',           strictLimiter, signupRules, signup)
+router.post('/verify-email',     otpLimiter, verifyEmail)
+router.post('/resend-otp',       otpLimiter, resendOtp)
+router.post('/login',            strictLimiter, loginRules, login)
 router.get('/me',                verifyToken, me)
-router.post('/forgot-password',  forgotPassword)
-router.post('/reset-password',   resetPassword)
-router.post('/change-password',  verifyToken, changePassword)
+router.post('/forgot-password',  strictLimiter, forgotPassword)
+router.post('/reset-password',   strictLimiter, resetPassword)
+router.post('/change-password',  strictLimiter, verifyToken, changePassword)
 
 module.exports = router
