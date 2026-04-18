@@ -203,6 +203,9 @@ export default function Navbar() {
                     <div className="py-1">
                       <DropItem icon={<User size={15}/>}     label="My Profile" onClick={() => { navigate('/profile'); setProfileOpen(false) }} />
                       <DropItem icon={<Settings size={15}/>} label="Settings"   onClick={() => { navigate('/settings'); setProfileOpen(false) }} />
+                      {user?.is_admin && (
+                        <DropItem icon={<ShieldCheck size={15}/>} label="Admin Panel" onClick={() => { navigate('/admin'); setProfileOpen(false) }} />
+                      )}
                     </div>
 
                     <div className="border-t border-gray-100 dark:border-gray-800 pt-1">

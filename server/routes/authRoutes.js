@@ -1,6 +1,6 @@
 const express = require('express')
 const { body } = require('express-validator')
-const { signup, verifyEmail, resendOtp, login, me, forgotPassword, resetPassword } = require('../controllers/authController')
+const { signup, verifyEmail, resendOtp, login, me, forgotPassword, resetPassword, changePassword } = require('../controllers/authController')
 const { verifyToken } = require('../middleware/authMiddleware')
 
 const router = express.Router()
@@ -17,12 +17,13 @@ const loginRules = [
   body('password').notEmpty().withMessage('Password is required.'),
 ]
 
-router.post('/signup',          signupRules, signup)
-router.post('/verify-email',    verifyEmail)
-router.post('/resend-otp',      resendOtp)
-router.post('/login',           loginRules, login)
-router.get('/me',               verifyToken, me)
-router.post('/forgot-password', forgotPassword)
-router.post('/reset-password',  resetPassword)
+router.post('/signup',           signupRules, signup)
+router.post('/verify-email',     verifyEmail)
+router.post('/resend-otp',       resendOtp)
+router.post('/login',            loginRules, login)
+router.get('/me',                verifyToken, me)
+router.post('/forgot-password',  forgotPassword)
+router.post('/reset-password',   resetPassword)
+router.post('/change-password',  verifyToken, changePassword)
 
 module.exports = router
