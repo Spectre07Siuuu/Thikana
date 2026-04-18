@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Moon, Sun, Bell, Shield, LogOut, Trash2, Eye, EyeOff, Lock, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { resetPassword, changePassword } from '../services/api'
+import { changePassword } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
