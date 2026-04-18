@@ -1,20 +1,11 @@
 /**
  * api.js — centralized fetch wrapper for the Thikana backend.
- *
- * Base URL is set via Vite's proxy so we just use /api/* paths.
- * The proxy is configured in vite.config.js to forward to
- * http://localhost:5000 during development.
  */
 
 const BASE_URL = '/api'
 
-/**
- * Generic request helper.
- * Automatically attaches the JWT token if present in localStorage.
- */
 async function request(endpoint, { method = 'GET', body, token } = {}) {
   const storedToken = token || localStorage.getItem('thikana_token')
-
   const headers = { 'Content-Type': 'application/json' }
   if (storedToken) headers['Authorization'] = `Bearer ${storedToken}`
 
@@ -25,100 +16,81 @@ async function request(endpoint, { method = 'GET', body, token } = {}) {
   })
 
   const data = await res.json()
-
   if (!res.ok) {
-    // Throw with the server's message so the UI can display it
     const error = new Error(data.message || 'Something went wrong.')
     error.status = res.status
     error.data   = data
     throw error
   }
-
   return data
 }
 
 /* ─── Auth ───────────────────────────────────────────────── */
 
-/**
- * signup — POST /api/auth/signup
- * @param {{ fullName, email, password, role }} payload
- */
 export async function signup(payload) {
-  const data = await request('/auth/signup', { method: 'POST', body: payload })
-  // Persist token
+  return request('/auth/signup', { method: 'POST', body: payload })
+}
+
+export async function verifyEmail(payload) {
+  const data = await request('/auth/verify-email', { method: 'POST', body: payload })
   if (data.token) localStorage.setItem('thikana_token', data.token)
   return data
 }
 
-/**
- * login — POST /api/auth/login
- * @param {{ email, password }} payload
- */
+export async function resendOtp(email) {
+  return request('/auth/resend-otp', { method: 'POST', body: { email } })
+}
+
 export async function login(payload) {
   const data = await request('/auth/login', { method: 'POST', body: payload })
   if (data.token) localStorage.setItem('thikana_token', data.token)
   return data
 }
 
-/**
- * getMe — GET /api/auth/me  (requires auth)
- */
 export async function getMe() {
   return request('/auth/me')
 }
 
-/**
- * logout — remove token from storage
- */
 export function logout() {
   localStorage.removeItem('thikana_token')
 }
 
-/**
- * isLoggedIn — check if a token exists in localStorage
- */
 export function isLoggedIn() {
   return Boolean(localStorage.getItem('thikana_token'))
 }
 
+export async function forgotPassword(email) {
+  return request('/auth/forgot-password', { method: 'POST', body: { email } })
+}
+
+export async function resetPassword(payload) {
+  return request('/auth/reset-password', { method: 'POST', body: payload })
+}
+
+export async function changePassword(payload) {
+  return request('/auth/change-password', { method: 'POST', body: payload })
+}
+
 /* ─── Profile ────────────────────────────────────────────── */
 
-/**
- * getProfile — GET /api/profile/me  (requires auth)
- */
 export async function getProfile() {
   return request('/profile/me')
 }
 
-/**
- * updateProfile — PUT /api/profile/me  (requires auth)
- * @param {{ fullName?, phone?, address?, bio? }} payload
- */
 export async function updateProfile(payload) {
   return request('/profile/me', { method: 'PUT', body: payload })
 }
 
-/**
- * uploadAvatar — PUT /api/profile/me/avatar
- * @param {string} base64Str - Base64 encoded image string
- */
 export async function uploadAvatar(base64Str) {
   return request('/profile/me/avatar', { method: 'PUT', body: { avatar_base64: base64Str } })
 }
 
 /* ─── NID Verification ───────────────────────────────────── */
 
-/**
- * getNidStatus — GET /api/nid/status
- */
 export async function getNidStatus() {
   return request('/nid/status')
 }
 
-/**
- * submitNid — POST /api/nid/submit
- * @param {{ nid_number, nid_front_base64, nid_selfie_base64 }} payload
- */
 export async function submitNid(payload) {
   return request('/nid/submit', { method: 'POST', body: payload })
 }
@@ -140,4 +112,60 @@ export async function getProductById(id) {
 
 export async function editProduct(id, payload) {
   return request(`/products/${id}`, { method: 'PATCH', body: payload })
+}
+
+/* ─── Favourites ─────────────────────────────────────────── */
+
+export async function getFavourites() {
+  return request('/favourites')
+}
+
+export async function toggleFavourite(productId) {
+  return request(`/favourites/${productId}`, { method: 'POST' })
+}
+
+export async function getFavouriteStatus(productId) {
+  return request(`/favourites/${productId}/status`)
+}
+
+/* ─── Inquiries ──────────────────────────────────────────── */
+
+export async function sendInquiry(payload) {
+  return request('/inquiries', { method: 'POST', body: payload })
+}
+
+export async function getSellerInquiries() {
+  return request('/inquiries/seller')
+}
+
+export async function getUnreadInquiryCount() {
+  return request('/inquiries/unread-count')
+}
+
+export async function markInquiryRead(id) {
+  return request(`/inquiries/${id}/read`, { method: 'PATCH' })
+}
+
+/* ─── Admin ──────────────────────────────────────────────── */
+
+export async function getAdminStats() {
+  return request('/admin/stats')
+}
+
+export async function getAdminProducts(params = {}) {
+  const q = new URLSearchParams(params).toString()
+  return request(`/admin/products${q ? '?' + q : ''}`)
+}
+
+export async function adminReviewProduct(payload) {
+  return request('/admin/products/review', { method: 'POST', body: payload })
+}
+
+export async function getAdminNid(params = {}) {
+  const q = new URLSearchParams(params).toString()
+  return request(`/admin/nid${q ? '?' + q : ''}`)
+}
+
+export async function adminReviewNid(payload) {
+  return request('/admin/nid/review', { method: 'POST', body: payload })
 }

@@ -46,4 +46,18 @@ function requireRole(...roles) {
   }
 }
 
-module.exports = { verifyToken, requireRole }
+/**
+ * requireAdmin — only allow requests from users with is_admin = 1.
+ * Must be used after verifyToken (which sets req.user).
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user?.is_admin) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden. Admin access required.',
+    })
+  }
+  next()
+}
+
+module.exports = { verifyToken, requireRole, requireAdmin }
