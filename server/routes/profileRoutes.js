@@ -14,6 +14,14 @@ const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests. Please try again later.' },
 })
 
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
 /* ─── Validation rules for profile update ───────────────── */
 const updateRules = [
   body('fullName')
@@ -41,7 +49,7 @@ const updateRules = [
 /* ─── Routes (all protected) ────────────────────────────── */
 
 // GET  /api/profile/me
-router.get('/me', apiLimiter, verifyToken, getProfile)
+router.get('/me', readLimiter, verifyToken, getProfile)
 
 // PUT  /api/profile/me
 router.put('/me', apiLimiter, verifyToken, updateRules, updateProfile)

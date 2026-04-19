@@ -13,11 +13,19 @@ const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests. Please try again later.' },
 })
 
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
 router.use(verifyToken)
 
-router.post('/',               apiLimiter, placeOrder)
-router.get('/',                getMyOrders)
-router.get('/seller',          getSellerOrders)
-router.patch('/:id/status',    apiLimiter, updateOrderStatus)
+router.post('/',               apiLimiter,  placeOrder)
+router.get('/',                readLimiter, getMyOrders)
+router.get('/seller',          readLimiter, getSellerOrders)
+router.patch('/:id/status',    apiLimiter,  updateOrderStatus)
 
 module.exports = router
