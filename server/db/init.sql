@@ -205,7 +205,6 @@ CREATE TABLE IF NOT EXISTS reviews (
   rating        INT UNSIGNED NOT NULL CHECK (rating >= 1 AND rating <= 5),
   comment       TEXT         DEFAULT NULL,
   created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
   PRIMARY KEY (id),
   UNIQUE KEY uq_order_item_review (order_item_id),
   KEY fk_rev_buyer   (buyer_id),

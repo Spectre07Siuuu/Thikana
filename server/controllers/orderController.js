@@ -202,8 +202,8 @@ async function updateOrderStatus(req, res) {
 
     const order = orders[0]
 
-    // Verify the caller is either the buyer (allowed to cancel) or a seller
-    // who has items in this order (allowed to confirm/ship/deliver).
+    // Verify the caller is either the buyer (allowed to cancel only) or a seller
+    // who has items in this order (allowed to confirm/ship/deliver/cancel).
     const isBuyer = order.buyer_id === req.user.id
     const [sellerItems] = await pool.query(
       'SELECT id FROM order_items WHERE order_id = ? AND seller_id = ? LIMIT 1',
@@ -215,8 +215,9 @@ async function updateOrderStatus(req, res) {
       return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
     }
 
-    // Buyers may only cancel; sellers may confirm/ship/deliver/cancel.
-    if (isBuyer && !isSeller && status !== 'cancelled') {
+    // Sellers with items in this order may update to any valid status.
+    // Non-seller callers (pure buyers) are restricted to cancellation only.
+    if (!isSeller && status !== 'cancelled') {
       return res.status(403).json({ success: false, message: 'Buyers can only cancel orders.' })
     }
 
