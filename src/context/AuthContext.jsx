@@ -8,57 +8,66 @@ import { getMe, logout as apiLogout } from '../services/api'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null)
-  const [loading, setLoading] = useState(true) // true on first mount while verifying token
+ const [user, setUser]    = useState(null)
+ const [loading, setLoading] = useState(true) // true on first mount while verifying token
+ const [appMode, setAppMode] = useState(localStorage.getItem('thikana_appMode') || 'buying')
 
-  // On mount: if a token exists, fetch the current user from /api/auth/me
-  useEffect(() => {
-    const token = localStorage.getItem('thikana_token')
-    if (!token) {
-      setLoading(false)
-      return
-    }
+ // On mount: if a token exists, fetch the current user from /api/auth/me
+ useEffect(() => {
+  const token = localStorage.getItem('thikana_token')
+  if (!token) {
+   setLoading(false)
+   return
+  }
 
-    getMe()
-      .then((data) => setUser(data.user))
-      .catch(() => {
-        // Token invalid / expired — clear it
-        localStorage.removeItem('thikana_token')
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  getMe()
+   .then((data) => setUser(data.user))
+   .catch(() => {
+    // Token invalid / expired — clear it
+    localStorage.removeItem('thikana_token')
+   })
+   .finally(() => setLoading(false))
+ }, [])
 
-  /** Call this after a successful login/signup API response */
-  const login = useCallback((userData) => {
-    setUser(userData)
-  }, [])
+ /** Call this after a successful login/signup API response */
+ const login = useCallback((userData) => {
+  setUser(userData)
+ }, [])
 
-  /** Clear user & token */
-  const logout = useCallback(() => {
-    apiLogout()   // removes token from localStorage
-    setUser(null)
-  }, [])
+ /** Clear user & token */
+ const logout = useCallback(() => {
+  apiLogout()  // removes token from localStorage
+  setUser(null)
+ }, [])
 
-  /** Re-fetch user from server (e.g. after profile edit) */
-  const refreshUser = useCallback(async () => {
-    try {
-      const data = await getMe()
-      setUser(data.user)
-    } catch {
-      // token gone — leave as-is
-    }
-  }, [])
+ /** Re-fetch user from server (e.g. after profile edit) */
+ const refreshUser = useCallback(async () => {
+  try {
+   const data = await getMe()
+   setUser(data.user)
+  } catch {
+   // token gone — leave as-is
+  }
+ }, [])
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
-  )
+ const toggleAppMode = useCallback(() => {
+   setAppMode(prev => {
+     const next = prev === 'buying' ? 'selling' : 'buying'
+     localStorage.setItem('thikana_appMode', next)
+     return next
+   })
+ }, [])
+
+ return (
+  <AuthContext.Provider value={{ user, loading, appMode, toggleAppMode, login, logout, refreshUser }}>
+   {children}
+  </AuthContext.Provider>
+ )
 }
 
 /** Convenience hook */
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
-  return ctx
+ const ctx = useContext(AuthContext)
+ if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
+ return ctx
 }

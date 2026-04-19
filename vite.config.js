@@ -17,6 +17,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Forward Socket.io → Express backend
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     },
   },
 })

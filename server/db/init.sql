@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
   otp_expires_at        DATETIME                   DEFAULT NULL,
   reset_token           VARCHAR(64)                DEFAULT NULL,
   reset_token_expires_at DATETIME                  DEFAULT NULL,
+  points                INT UNSIGNED               NOT NULL DEFAULT 0,
   created_at            TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at            TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP
                         ON UPDATE CURRENT_TIMESTAMP,
@@ -139,4 +140,25 @@ CREATE TABLE IF NOT EXISTS inquiries (
   CONSTRAINT fk_inq_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
   CONSTRAINT fk_inq_sender  FOREIGN KEY (sender_id)  REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_inq_seller  FOREIGN KEY (seller_id)  REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── Reviews ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS reviews (
+  id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_item_id INT UNSIGNED NOT NULL,
+  buyer_id      INT UNSIGNED NOT NULL,
+  seller_id     INT UNSIGNED NOT NULL,
+  product_id    INT UNSIGNED NOT NULL,
+  rating        INT UNSIGNED NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment       TEXT         DEFAULT NULL,
+  created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_order_item_review (order_item_id),
+  KEY fk_rev_buyer   (buyer_id),
+  KEY fk_rev_seller  (seller_id),
+  KEY fk_rev_product (product_id),
+  CONSTRAINT fk_rev_oi      FOREIGN KEY (order_item_id) REFERENCES order_items (id) ON DELETE CASCADE,
+  CONSTRAINT fk_rev_buyer   FOREIGN KEY (buyer_id)      REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_rev_seller  FOREIGN KEY (seller_id)     REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_rev_product FOREIGN KEY (product_id)    REFERENCES products (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
