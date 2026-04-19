@@ -5,13 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          navy:   '#0F172A',
-          orange: '#F97316',
+        theme: {
+          bg: 'rgb(var(--theme-bg) / <alpha-value>)',
+          card: 'rgb(var(--theme-card) / <alpha-value>)',
+          text: 'rgb(var(--theme-text) / <alpha-value>)',
+          muted: 'rgb(var(--theme-text-muted) / <alpha-value>)',
+          border: 'rgb(var(--theme-border) / <alpha-value>)',
+          primary: 'rgb(var(--theme-primary) / <alpha-value>)',
+          'primary-hover': 'rgb(var(--theme-primary-hover) / <alpha-value>)',
+          'primary-text': 'rgb(var(--theme-primary-text) / <alpha-value>)',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
       },
       animation: {
         'fade-in':  'fadeIn 0.3s ease-out',

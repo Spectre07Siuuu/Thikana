@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { createNotification } = require('./notificationController')
 
 /**
  * GET /api/admin/products?status=pending&page=1
@@ -37,7 +38,22 @@ async function reviewProduct(req, res) {
     return res.status(400).json({ success: false, message: 'product_id and valid status required.' })
   }
   try {
+    // Get product info for notification
+    const [prods] = await pool.query('SELECT seller_id, title FROM products WHERE id = ?', [product_id])
     await pool.query('UPDATE products SET status = ? WHERE id = ?', [status, product_id])
+
+    // Notify seller
+    if (prods.length > 0) {
+      const notifType = status === 'approved' ? 'product_approved' : 'product_rejected'
+      const emoji = status === 'approved' ? '✅' : '❌'
+      createNotification(
+        prods[0].seller_id, notifType,
+        `Listing ${status} ${emoji}`,
+        `Your listing "${prods[0].title}" has been ${status} by admin.${admin_note ? ' Note: ' + admin_note : ''}`,
+        status === 'approved' ? `/product/${product_id}` : '/profile'
+      )
+    }
+
     return res.json({ success: true, message: `Product marked as ${status}.` })
   } catch (err) {
     console.error('[admin.reviewProduct]', err)
@@ -89,6 +105,16 @@ async function reviewNid(req, res) {
       [status, admin_note || null, submission_id]
     )
     await pool.query('UPDATE users SET nid_verified = ? WHERE id = ?', [status === 'approved' ? 1 : 0, subs[0].user_id])
+
+    // Notify user with correct type
+    const emoji = status === 'approved' ? '🎉' : '⚠️'
+    createNotification(
+      subs[0].user_id,
+      status === 'approved' ? 'product_approved' : 'product_rejected',
+      `NID Verification ${status === 'approved' ? 'Approved' : 'Rejected'} ${emoji}`,
+      `Your identity verification has been ${status}.${admin_note ? ' Admin note: ' + admin_note : ''}`,
+      '/profile'
+    )
 
     return res.json({ success: true, message: `NID submission marked as ${status}.` })
   } catch (err) {
