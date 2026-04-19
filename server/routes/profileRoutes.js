@@ -1,9 +1,18 @@
 const express = require('express')
+const rateLimit = require('express-rate-limit')
 const { body } = require('express-validator')
 const { getProfile, updateProfile, uploadAvatar } = require('../controllers/profileController')
 const { verifyToken } = require('../middleware/authMiddleware')
 
 const router = express.Router()
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
 
 /* ─── Validation rules for profile update ───────────────── */
 const updateRules = [
@@ -32,12 +41,12 @@ const updateRules = [
 /* ─── Routes (all protected) ────────────────────────────── */
 
 // GET  /api/profile/me
-router.get('/me', verifyToken, getProfile)
+router.get('/me', apiLimiter, verifyToken, getProfile)
 
 // PUT  /api/profile/me
-router.put('/me', verifyToken, updateRules, updateProfile)
+router.put('/me', apiLimiter, verifyToken, updateRules, updateProfile)
 
 // PUT  /api/profile/me/avatar
-router.put('/me/avatar', verifyToken, uploadAvatar)
+router.put('/me/avatar', apiLimiter, verifyToken, uploadAvatar)
 
 module.exports = router
