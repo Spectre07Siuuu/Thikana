@@ -42,7 +42,7 @@ export default function Navbar() {
  const currentLinks = appMode === 'selling' && (user?.role === 'seller' || user?.role === 'owner' || user?.is_admin)
   ? [
      { label: 'Dashboard', href: '/profile', hash: false },
-     { label: 'Upload Property', href: '/upload', hash: false }
+     { label: 'Upload Property', href: '/upload-product', hash: false }
     ]
   : NAV_LINKS
 

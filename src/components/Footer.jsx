@@ -113,8 +113,8 @@ export default function Footer() {
       © {year} Thikana — Team The Full Stop. All rights reserved.
      </p>
      <div className="flex gap-4 text-theme-muted text-xs">
-      <a href="#" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Privacy</a>
-      <a href="#" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Terms</a>
+      <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Privacy</Link>
+      <Link to="/terms" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Terms</Link>
      </div>
     </div>
    </div>

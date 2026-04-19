@@ -195,7 +195,6 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { signup, verifyEmail, resendOtp, login, me, forgotPassword, resetPassword, changePassword }
 /* ─────────────────────────────────────────────────────────
    POST /api/auth/change-password  (authenticated)
    Body: { currentPassword, newPassword }

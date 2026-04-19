@@ -18,10 +18,11 @@ async function getProfile(req, res) {
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
 
     // Fetch dynamic stats for the user
-    const [[{ orders }]] = await pool.query('SELECT COUNT(*) as count FROM orders WHERE buyer_id = ?', [req.user.id])
-    const [[{ favorites }]] = await pool.query('SELECT COUNT(*) as count FROM favourites WHERE user_id = ?', [req.user.id])
-    const [[{ active_listings }]] = await pool.query("SELECT COUNT(*) as count FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id])
-    const [[{ total_sales }]] = await pool.query('SELECT SUM(price * quantity) as total FROM order_items WHERE seller_id = ?', [req.user.id])
+    const [[{ orders }]] = await pool.query('SELECT COUNT(*) as orders FROM orders WHERE buyer_id = ?', [req.user.id])
+    const [[{ favorites }]] = await pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = ?', [req.user.id])
+    const [[{ active_listings }]] = await pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id])
+    const [[{ total_sales }]] = await pool.query('SELECT SUM(price * quantity) as total_sales FROM order_items WHERE seller_id = ?', [req.user.id])
+    const [[{ reviews }]] = await pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = ?', [req.user.id])
 
     return res.json({ 
       success: true, 
@@ -32,7 +33,7 @@ async function getProfile(req, res) {
         active_listings: parseInt(active_listings) || 0,
         total_sales: parseFloat(total_sales) || 0,
         response_rate: '98%', // No tracking mechanism for this yet
-        reviews: 0,           // No reviews table exists
+        reviews: parseInt(reviews) || 0,
         points: rows[0].points || 0
       }
     })

@@ -142,7 +142,60 @@ CREATE TABLE IF NOT EXISTS inquiries (
   CONSTRAINT fk_inq_seller  FOREIGN KEY (seller_id)  REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─── Cart Items ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cart_items (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  product_id INT UNSIGNED NOT NULL,
+  quantity   INT UNSIGNED NOT NULL DEFAULT 1,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_cart (user_id, product_id),
+  KEY fk_cart_product (product_id),
+  CONSTRAINT fk_cart_user    FOREIGN KEY (user_id)    REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_cart_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── Orders ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS orders (
+  id               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  buyer_id         INT UNSIGNED  NOT NULL,
+  status           ENUM('pending','confirmed','shipped','delivered','cancelled')
+                   NOT NULL DEFAULT 'confirmed',
+  total_amount     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  shipping_address VARCHAR(500)  NOT NULL,
+  phone            VARCHAR(20)   NOT NULL,
+  note             TEXT                   DEFAULT NULL,
+  created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+                   ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  KEY fk_order_buyer (buyer_id),
+  CONSTRAINT fk_order_buyer FOREIGN KEY (buyer_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── Order Items ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS order_items (
+  id         INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  order_id   INT UNSIGNED  NOT NULL,
+  product_id INT UNSIGNED  NOT NULL,
+  seller_id  INT UNSIGNED  NOT NULL,
+  price      DECIMAL(12,2) NOT NULL,
+  quantity   INT UNSIGNED  NOT NULL DEFAULT 1,
+
+  PRIMARY KEY (id),
+  KEY fk_oi_order   (order_id),
+  KEY fk_oi_product (product_id),
+  KEY fk_oi_seller  (seller_id),
+  CONSTRAINT fk_oi_order   FOREIGN KEY (order_id)   REFERENCES orders (id)   ON DELETE CASCADE,
+  CONSTRAINT fk_oi_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+  CONSTRAINT fk_oi_seller  FOREIGN KEY (seller_id)  REFERENCES users (id)    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ─── Reviews ──────────────────────────────────────────────
+-- (must come after order_items because of fk_rev_oi)
 CREATE TABLE IF NOT EXISTS reviews (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   order_item_id INT UNSIGNED NOT NULL,
@@ -152,6 +205,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   rating        INT UNSIGNED NOT NULL CHECK (rating >= 1 AND rating <= 5),
   comment       TEXT         DEFAULT NULL,
   created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (id),
   UNIQUE KEY uq_order_item_review (order_item_id),
   KEY fk_rev_buyer   (buyer_id),
@@ -162,3 +216,43 @@ CREATE TABLE IF NOT EXISTS reviews (
   CONSTRAINT fk_rev_seller  FOREIGN KEY (seller_id)     REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_rev_product FOREIGN KEY (product_id)    REFERENCES products (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── Messages ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS messages (
+  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  sender_id   INT UNSIGNED NOT NULL,
+  receiver_id INT UNSIGNED NOT NULL,
+  product_id  INT UNSIGNED          DEFAULT NULL,
+  content     TEXT                  DEFAULT NULL,
+  type        ENUM('text','image','file','voice') NOT NULL DEFAULT 'text',
+  file_url    VARCHAR(500)          DEFAULT NULL,
+  file_name   VARCHAR(255)          DEFAULT NULL,
+  is_read     TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  KEY fk_msg_sender   (sender_id),
+  KEY fk_msg_receiver (receiver_id),
+  KEY fk_msg_product  (product_id),
+  CONSTRAINT fk_msg_sender   FOREIGN KEY (sender_id)   REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_msg_receiver FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_msg_product  FOREIGN KEY (product_id)  REFERENCES products (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── Notifications ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  type       VARCHAR(50)  NOT NULL DEFAULT 'system',
+  title      VARCHAR(255) NOT NULL,
+  body       TEXT                  DEFAULT NULL,
+  link       VARCHAR(500)          DEFAULT NULL,
+  is_read    TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  KEY fk_notif_user (user_id),
+  KEY idx_notif_read (user_id, is_read),
+  CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
