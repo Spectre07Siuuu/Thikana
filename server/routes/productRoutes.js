@@ -14,9 +14,18 @@ const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests. Please try again later.' },
 })
 
+// More permissive limiter for public read endpoints
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+})
+
 // GET /api/products
 // Fetch all products (supports ?status=...&category=...)
-router.get('/', getProducts)
+router.get('/', readLimiter, getProducts)
 
 // POST /api/products
 // Upload a new product (Sellers and Owners only)
@@ -24,7 +33,7 @@ router.post('/', apiLimiter, verifyToken, requireRole('seller', 'owner'), upload
 
 // GET /api/products/:id
 // Fetch a single product detailing
-router.get('/:id', getProductById)
+router.get('/:id', readLimiter, getProductById)
 
 // PATCH /api/products/:id
 // Edit product (Sellers/Owners only — ownership also verified in controller)
