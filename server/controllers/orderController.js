@@ -200,6 +200,26 @@ async function updateOrderStatus(req, res) {
     const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [req.params.id])
     if (orders.length === 0) return res.status(404).json({ success: false, message: 'Order not found.' })
 
+    const order = orders[0]
+
+    // Verify the caller is either the buyer (allowed to cancel) or a seller
+    // who has items in this order (allowed to confirm/ship/deliver).
+    const isBuyer = order.buyer_id === req.user.id
+    const [sellerItems] = await pool.query(
+      'SELECT id FROM order_items WHERE order_id = ? AND seller_id = ? LIMIT 1',
+      [req.params.id, req.user.id]
+    )
+    const isSeller = sellerItems.length > 0
+
+    if (!isBuyer && !isSeller) {
+      return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
+    }
+
+    // Buyers may only cancel; sellers may confirm/ship/deliver/cancel.
+    if (isBuyer && !isSeller && status !== 'cancelled') {
+      return res.status(403).json({ success: false, message: 'Buyers can only cancel orders.' })
+    }
+
     await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
 
     // Notify buyer about status change
