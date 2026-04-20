@@ -35,12 +35,12 @@ async function getUserAccount(userId) {
     [userId]
   )
   if (rows.length === 0) return null
-  const user = rows[0]
+  const dbUser = rows[0]
   return {
-    id: user.id,
-    role: normalizeRole(user.is_admin ? 'admin' : user.role),
-    is_admin: !!user.is_admin,
-    nid_verified: !!user.nid_verified,
+    id: dbUser.id,
+    role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
+    is_admin: !!dbUser.is_admin,
+    nid_verified: !!dbUser.nid_verified,
   }
 }
 

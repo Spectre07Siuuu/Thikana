@@ -211,13 +211,13 @@ async function updateOrderStatus(req, res) {
     )
     const isSeller = sellerItems.length > 0
 
-    if (!req.user.is_admin && !isBuyer && !isSeller) {
-      return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
-    }
-
     if (req.user.is_admin) {
       await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
       return res.json({ success: true, message: `Order status updated to ${status}.` })
+    }
+
+    if (!isBuyer && !isSeller) {
+      return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
     }
 
     // Sellers with items in this order may update to any valid status.
