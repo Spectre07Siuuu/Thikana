@@ -5,7 +5,8 @@ const { saveBase64Image } = require('../utils/fileUpload')
 /* ── Helper: strip password hash ─────────────────────────── */
 function safeUser(row) {
   const { password, otp_code, otp_expires_at, ...user } = row
-  return user
+  const role = row?.is_admin ? 'admin' : (row?.role === 'owner' ? 'seller' : row?.role)
+  return { ...user, role }
 }
 
 /* ─────────────────────────────────────────────────────────

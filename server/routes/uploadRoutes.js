@@ -2,7 +2,7 @@ const express = require('express')
 const multer  = require('multer')
 const path    = require('path')
 const fs      = require('fs')
-const { verifyToken } = require('../middleware/authMiddleware')
+const { verifyToken, requireBuyerOrSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
@@ -40,7 +40,7 @@ const upload = multer({
   },
 })
 
-router.use(verifyToken)
+router.use(verifyToken, requireBuyerOrSeller, requireVerifiedNid)
 
 /**
  * POST /api/upload/chat/:type  — type is 'image', 'file', or 'voice'

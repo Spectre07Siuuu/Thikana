@@ -28,7 +28,7 @@ function getInitials(name = '') {
 const ROLE_COLORS = {
  buyer: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
  seller: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400',
- owner: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+ admin: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
 }
 
 export default function Navbar() {
@@ -39,7 +39,11 @@ export default function Navbar() {
  const { unreadMsgCount }   = useSocket()
  const navigate        = useNavigate()
 
- const currentLinks = appMode === 'selling' && (user?.role === 'seller' || user?.role === 'owner' || user?.is_admin)
+ const canUseSellerMode = user?.role === 'seller' && !user?.is_admin
+ const canUseBuyerMode = user?.role === 'buyer' && !user?.is_admin
+ const displayRole = user?.is_admin ? 'admin' : user?.role
+
+ const currentLinks = appMode === 'selling' && canUseSellerMode
   ? [
      { label: 'Dashboard', href: '/profile', hash: false },
      { label: 'Upload Property', href: '/upload-product', hash: false }
@@ -135,20 +139,22 @@ export default function Navbar() {
       {user && (
        <>
         {/* Messages */}
-        <Link to="/messages" aria-label="Messages"
-         className="hidden sm:flex p-2 rounded-lg text-theme-muted
-          hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative">
-         <MessageSquare size={18} />
-         {unreadMsgCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-950">
-           {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
-          </span>
+         {!user?.is_admin && user?.nid_verified === 1 && (
+          <Link to="/messages" aria-label="Messages"
+           className="hidden sm:flex p-2 rounded-lg text-theme-muted
+            hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative">
+           <MessageSquare size={18} />
+           {unreadMsgCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-950">
+             {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
+            </span>
+           )}
+          </Link>
          )}
-        </Link>
 
         {/* Cart */}
-        {appMode === 'buying' && (
-         <Link to="/cart" aria-label="Cart"
+         {appMode === 'buying' && canUseBuyerMode && (
+          <Link to="/cart" aria-label="Cart"
           className="hidden sm:flex p-2 rounded-lg text-theme-muted
            hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative">
           <ShoppingCart size={18} />
@@ -226,10 +232,10 @@ export default function Navbar() {
             </div>
            </div>
            <div className="flex items-center gap-2 mt-2.5">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
-             ${ROLE_COLORS[user.role] || ROLE_COLORS.buyer}`}>
-             {user.role}
-            </span>
+             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
+              ${ROLE_COLORS[displayRole] || ROLE_COLORS.buyer}`}>
+              {displayRole}
+             </span>
             {user.nid_verified
              ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full"><ShieldCheck size={10} /> NID Verified</span>
              : user.nid_status === 'pending'
@@ -242,9 +248,9 @@ export default function Navbar() {
           <div className="py-1">
            <DropItem icon={<User size={15}/>}      label="My Profile"   onClick={() => { navigate('/profile'); setProfileOpen(false) }} />
            <DropItem icon={<Settings size={15}/>}    label="Settings"    onClick={() => { navigate('/settings'); setProfileOpen(false) }} />
-           {(user?.role === 'seller' || user?.role === 'owner' || user?.is_admin) && (
-            <DropItem icon={<RefreshCcw size={15}/>} label={appMode === 'buying' ? 'Switch to Selling' : 'Switch to Buying'} onClick={() => { toggleAppMode(); setProfileOpen(false) }} />
-           )}
+           {canUseSellerMode && (
+             <DropItem icon={<RefreshCcw size={15}/>} label={appMode === 'buying' ? 'Switch to Selling' : 'Switch to Buying'} onClick={() => { toggleAppMode(); setProfileOpen(false) }} />
+            )}
            {!!user?.is_admin && (
             <DropItem icon={<ShieldCheck size={15}/>} label="Admin Panel"   onClick={() => { navigate('/admin'); setProfileOpen(false) }} />
            )}
@@ -314,12 +320,14 @@ export default function Navbar() {
      {/* Mobile-only links for logged-in users */}
      {user && (
       <div className="space-y-1 pt-2 border-t border-theme-border">
-       <Link to="/messages" onClick={() => setMobileOpen(false)}
-        className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
-        Messages
-       </Link>
-       {appMode === 'buying' && (
-        <Link to="/cart" onClick={() => setMobileOpen(false)}
+        {!user?.is_admin && user?.nid_verified === 1 && (
+         <Link to="/messages" onClick={() => setMobileOpen(false)}
+          className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
+          Messages
+         </Link>
+        )}
+        {appMode === 'buying' && canUseBuyerMode && (
+         <Link to="/cart" onClick={() => setMobileOpen(false)}
          className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
          Cart {cartCount > 0 && `(${cartCount})`}
         </Link>
@@ -345,7 +353,7 @@ export default function Navbar() {
          </div>
          <div>
           <p className="font-semibold text-theme-text text-sm">{user.full_name}</p>
-          <p className="text-theme-muted text-xs capitalize">{user.role}</p>
+           <p className="text-theme-muted text-xs capitalize">{displayRole}</p>
          </div>
         </div>
         <button onClick={handleLogout}

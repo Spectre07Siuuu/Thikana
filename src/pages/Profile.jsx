@@ -28,13 +28,13 @@ function formatDate(dateStr) {
 const ROLE_BADGE = {
  buyer: { label: 'Verified Buyer', cls: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 border-blue-200 dark:border-blue-800' },
  seller: { label: 'Verified Seller', cls: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 border-purple-200 dark:border-purple-800' },
- owner: { label: 'Verified Owner', cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800' },
+ admin: { label: 'Platform Admin', cls: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border-rose-200 dark:border-rose-800' },
 }
 
 const AVATAR_GRADIENT = {
  buyer: 'from-blue-400 to-indigo-600',
  seller: 'from-purple-400 to-fuchsia-600',
- owner: 'from-emerald-400 to-teal-600',
+ admin: 'from-rose-400 to-pink-600',
 }
 
 /* ── Mock stats (Removed - Generated Dynamically) ───────────────────────── */
@@ -76,6 +76,7 @@ export default function Profile() {
  useEffect(() => {
   if (authLoading) return
   if (!user) { navigate('/login'); return }
+  if (user.is_admin) { navigate('/admin'); return }
   Promise.all([
    getProfile(), 
    getNidStatus(),
@@ -106,7 +107,7 @@ export default function Profile() {
 
  const handleLogout = () => { logout(); navigate('/') }
 
- const isSeller = profile?.role === 'seller' || profile?.role === 'owner'
+ const isSeller = profile?.role === 'seller'
 
  /* ── Loading state ── */
  if (authLoading || loading || !profile) {
@@ -961,4 +962,3 @@ function ReviewModal({ item, onClose }) {
   </div>
  )
 }
-

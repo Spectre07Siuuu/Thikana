@@ -80,7 +80,11 @@ export default function Messages() {
  const emojiRef = useRef(null)
 
  // Auth guard
- useEffect(() => { if (!user) navigate('/login') }, [user, navigate])
+ useEffect(() => {
+  if (!user) { navigate('/login'); return }
+  if (user.is_admin || !['buyer', 'seller'].includes(user.role)) { navigate('/'); return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid') }
+ }, [user, navigate])
 
  // Load conversations
  const loadConversations = useCallback(async () => {

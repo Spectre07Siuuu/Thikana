@@ -33,9 +33,8 @@ function validate(f) {
  return e
 }
 const ROLES = [
- { value: 'buyer', label: '🏠 Buyer — Looking to rent or buy' },
- { value: 'seller', label: '🏷️ Seller — Selling home goods' },
- { value: 'owner', label: '🔑 Owner — Listing my property' },
+ { value: 'buyer', label: '🏠 Buyer — Browse and purchase products' },
+ { value: 'seller', label: '🏷️ Seller — List and sell products' },
 ]
 
 /* ── Page ─────────────────────────────────────────────── */
@@ -288,4 +287,3 @@ function Spinner() {
   </svg>
  )
 }
-

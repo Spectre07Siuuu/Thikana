@@ -42,6 +42,14 @@ export default function UploadProduct() {
   if (typeof window !== 'undefined') window.location.href = '/login'
   return null
  }
+ if (user.is_admin || user.role !== 'seller') {
+  if (typeof window !== 'undefined') window.location.href = '/'
+  return null
+ }
+ if (user.nid_verified !== 1) {
+  if (typeof window !== 'undefined') window.location.href = '/verify-nid'
+  return null
+ }
 
  const handleNext = () => {
   if (step === 1 && !category) return setError('Please select a category.')

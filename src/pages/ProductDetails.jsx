@@ -71,6 +71,7 @@ export default function ProductDetails() {
 
  const handleAddToCart = async () => {
   if (!user) { navigate('/login'); return }
+  if (user.is_admin || user.role !== 'buyer') { return }
   setAddingToCart(true)
   try {
    const res = await addToCart(parseInt(id))
@@ -84,6 +85,8 @@ export default function ProductDetails() {
 
  const handleBuyNow = async () => {
   if (!user) { navigate('/login'); return }
+  if (user.is_admin || user.role !== 'buyer') { return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
   setAddingToCart(true)
   try {
    await addToCart(parseInt(id))
@@ -97,6 +100,8 @@ export default function ProductDetails() {
 
  const handleMessage = () => {
   if (!user) { navigate('/login'); return }
+  if (user.is_admin || !['buyer', 'seller'].includes(user.role)) return
+  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
   navigate(`/messages?user=${product.seller_id}&product=${id}`)
  }
 
@@ -136,7 +141,8 @@ export default function ProductDetails() {
  const prevImage = () => setCurrentImageIndex(i => (i === 0 ? images.length - 1 : i - 1))
 
  const isSeller = user?.id === seller_id
- const isCartable = ['furniture', 'appliance'].includes(category) && !isSeller && status !== 'sold'
+ const isBuyer = user?.role === 'buyer' && !user?.is_admin
+ const isCartable = ['furniture', 'appliance'].includes(category) && !isSeller && status !== 'sold' && isBuyer
 
  return (
   <>
