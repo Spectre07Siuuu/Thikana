@@ -37,3 +37,6 @@ build/
 *.njsproj
 *.sln
 *.sw?
+
+# User Uploads
+server/uploads/
