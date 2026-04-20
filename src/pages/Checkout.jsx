@@ -24,6 +24,8 @@ export default function Checkout() {
 
  useEffect(() => {
   if (!user) { navigate('/login'); return }
+  if (user.is_admin || user.role !== 'buyer') { navigate('/'); return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
   refreshCart().finally(() => setPageLoading(false))
  }, [user, navigate, refreshCart])
 

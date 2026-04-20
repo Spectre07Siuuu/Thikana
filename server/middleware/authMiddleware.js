@@ -1,11 +1,16 @@
 const jwt = require('jsonwebtoken')
+const pool = require('../config/db')
+
+function normalizeRole(role) {
+  return role === 'owner' ? 'seller' : role
+}
 
 /**
  * verifyToken — Express middleware.
  * Expects: Authorization: Bearer <jwt_token>
  * Attaches decoded payload to req.user on success.
  */
-function verifyToken(req, res, next) {
+async function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization']
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -19,7 +24,22 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    req.user = decoded // { id, email, role, iat, exp }
+    const [rows] = await pool.query(
+      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+      [decoded.id]
+    )
+    if (rows.length === 0) {
+      return res.status(401).json({ success: false, message: 'User account no longer exists.' })
+    }
+    const dbUser = rows[0]
+    req.user = {
+      ...decoded,
+      id: dbUser.id,
+      email: dbUser.email,
+      role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
+      is_admin: !!dbUser.is_admin,
+      nid_verified: !!dbUser.nid_verified,
+    }
     next()
   } catch (err) {
     const msg =
@@ -60,4 +80,52 @@ function requireAdmin(req, res, next) {
   next()
 }
 
-module.exports = { verifyToken, requireRole, requireAdmin }
+function requireBuyer(req, res, next) {
+  if (req.user?.is_admin || req.user?.role !== 'buyer') {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden. Buyer access required.',
+    })
+  }
+  next()
+}
+
+function requireSeller(req, res, next) {
+  if (req.user?.is_admin || req.user?.role !== 'seller') {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden. Seller access required.',
+    })
+  }
+  next()
+}
+
+function requireBuyerOrSeller(req, res, next) {
+  if (req.user?.is_admin || !['buyer', 'seller'].includes(req.user?.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden. Buyer or seller access required.',
+    })
+  }
+  next()
+}
+
+function requireVerifiedNid(req, res, next) {
+  if (!req.user?.nid_verified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Complete NID verification to access this feature.',
+    })
+  }
+  next()
+}
+
+module.exports = {
+  verifyToken,
+  requireRole,
+  requireAdmin,
+  requireBuyer,
+  requireSeller,
+  requireBuyerOrSeller,
+  requireVerifiedNid,
+}

@@ -1,7 +1,7 @@
 const express = require('express')
 const rateLimit = require('express-rate-limit')
 const { placeOrder, getMyOrders, getSellerOrders, updateOrderStatus } = require('../controllers/orderController')
-const { verifyToken } = require('../middleware/authMiddleware')
+const { verifyToken, requireBuyer, requireSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
@@ -21,11 +21,9 @@ const readLimiter = rateLimit({
   message: { success: false, message: 'Too many requests. Please try again later.' },
 })
 
-router.use(verifyToken)
-
-router.post('/',               apiLimiter,  placeOrder)
-router.get('/',                readLimiter, getMyOrders)
-router.get('/seller',          readLimiter, getSellerOrders)
-router.patch('/:id/status',    apiLimiter,  updateOrderStatus)
+router.post('/',               apiLimiter,  verifyToken, requireBuyer, requireVerifiedNid, placeOrder)
+router.get('/',                readLimiter, verifyToken, requireBuyer, getMyOrders)
+router.get('/seller',          readLimiter, verifyToken, requireSeller, requireVerifiedNid, getSellerOrders)
+router.patch('/:id/status',    apiLimiter,  verifyToken, updateOrderStatus)
 
 module.exports = router

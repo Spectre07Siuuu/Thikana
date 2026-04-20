@@ -1,10 +1,10 @@
 const express = require('express')
 const { getCart, addToCart, removeFromCart, clearCart, getCartCount } = require('../controllers/cartController')
-const { verifyToken } = require('../middleware/authMiddleware')
+const { verifyToken, requireBuyer } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
-router.use(verifyToken)
+router.use(verifyToken, requireBuyer)
 
 router.get('/',        getCart)
 router.get('/count',   getCartCount)
