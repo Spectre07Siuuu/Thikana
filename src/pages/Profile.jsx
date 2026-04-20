@@ -77,12 +77,16 @@ export default function Profile() {
   if (authLoading) return
   if (!user) { navigate('/login'); return }
   if (user.is_admin) { navigate('/admin'); return }
+
+  const isSeller = user.role === 'seller'
+  const isBuyer  = user.role === 'buyer'
+
   Promise.all([
-   getProfile(), 
+   getProfile(),
    getNidStatus(),
-   getProducts({ seller_id: user.id }).catch(() => ({ products: [] })),
-   getFavourites().catch(() => ({ favourites: [] })),
-   getSellerInquiries().catch(() => ({ inquiries: [] })),
+   isSeller ? getProducts({ seller_id: user.id }).catch(() => ({ products: [] })) : Promise.resolve({ products: [] }),
+   isBuyer  ? getFavourites().catch(() => ({ favourites: [] }))                  : Promise.resolve({ favourites: [] }),
+   isSeller ? getSellerInquiries().catch(() => ({ inquiries: [] }))              : Promise.resolve({ inquiries: [] }),
   ])
    .then(([profData, nidData, prodData, favData, inqData]) => {
     setProfile(profData.user)
