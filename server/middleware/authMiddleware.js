@@ -110,6 +110,16 @@ function requireBuyerOrSeller(req, res, next) {
   next()
 }
 
+function requireBuyerSellerOrAdmin(req, res, next) {
+  if (req.user?.is_admin || ['buyer', 'seller'].includes(req.user?.role)) {
+    return next()
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden. Buyer, seller, or admin access required.',
+  })
+}
+
 function requireVerifiedNid(req, res, next) {
   if (!req.user?.nid_verified) {
     return res.status(403).json({
@@ -127,5 +137,6 @@ module.exports = {
   requireBuyer,
   requireSeller,
   requireBuyerOrSeller,
+  requireBuyerSellerOrAdmin,
   requireVerifiedNid,
 }
