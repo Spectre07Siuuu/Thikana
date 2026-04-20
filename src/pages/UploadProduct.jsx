@@ -42,7 +42,7 @@ export default function UploadProduct() {
   if (typeof window !== 'undefined') window.location.href = '/login'
   return null
  }
- if (user.is_admin || user.role !== 'seller') {
+ if (user.role !== 'seller') {
   if (typeof window !== 'undefined') window.location.href = '/'
   return null
  }
