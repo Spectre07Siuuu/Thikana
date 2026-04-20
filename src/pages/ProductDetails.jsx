@@ -50,14 +50,15 @@ export default function ProductDetails() {
    .catch(console.error)
  }, [id])
 
- // Fetch favourite status when user is logged in
+ // Fetch favourite status only for buyers
  useEffect(() => {
-  if (!user || !id) return
+  if (!user || !id || user.role !== 'buyer' || user.is_admin) return
   getFavouriteStatus(id).then(data => setSaved(data.saved)).catch(() => {})
  }, [user, id])
 
  const handleToggleFavourite = async () => {
   if (!user) { navigate('/login'); return }
+  if (user.role !== 'buyer' || user.is_admin) return
   setSavePending(true)
   try {
    const res = await toggleFavourite(id)
@@ -205,12 +206,14 @@ export default function ProductDetails() {
          )}
         </div>
 
-        {/* Favourite button */}
-        <button onClick={handleToggleFavourite} disabled={savePending}
-         className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all
-          ${saved ? 'bg-rose-500 text-white' : 'bg-white/80 bg-theme-card/80 text-theme-muted hover:text-rose-500'}`}>
-         <Heart size={18} className={saved ? 'fill-current' : ''} />
-        </button>
+        {/* Favourite button — buyers only */}
+         {isBuyer && (
+          <button onClick={handleToggleFavourite} disabled={savePending}
+           className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all
+            ${saved ? 'bg-rose-500 text-white' : 'bg-white/80 bg-theme-card/80 text-theme-muted hover:text-rose-500'}`}>
+           <Heart size={18} className={saved ? 'fill-current' : ''} />
+          </button>
+         )}
        </div>
 
        {images && images.length > 1 && (
@@ -312,25 +315,40 @@ export default function ProductDetails() {
          </div>
         </div>
 
-        {!isSeller && (
-         <div className="grid grid-cols-3 gap-2">
-          {seller_phone && (
-           <a href={`tel:${seller_phone}`}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600 transition-all">
-            <Phone size={15} className="text-emerald-500" /> Call
-           </a>
-          )}
-          {seller_email && (
-           <a href={`mailto:${seller_email}`}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-primary text-white hover:bg-orange-600 transition-all">
-            <Mail size={15} /> Email
-           </a>
-          )}
-          <button onClick={handleMessage}
-           className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 transition-all">
-           <MessageSquare size={15} className="text-blue-500" /> Message
-          </button>
-         </div>
+        {/* Contact actions: hidden from admin and the product's own seller */}
+        {!isSeller && !user?.is_admin && (
+         <>
+          <div className="grid grid-cols-3 gap-2">
+           {seller_phone && (
+            <a href={`tel:${seller_phone}`}
+             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600 transition-all">
+             <Phone size={15} className="text-emerald-500" /> Call
+            </a>
+           )}
+           {seller_email && (
+            <a href={`mailto:${seller_email}`}
+             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-primary text-white hover:bg-orange-600 transition-all">
+             <Mail size={15} /> Email
+            </a>
+           )}
+           {user?.nid_verified === 1 ? (
+            <button onClick={handleMessage}
+             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 transition-all">
+             <MessageSquare size={15} className="text-blue-500" /> Message
+            </button>
+           ) : user ? (
+            <button onClick={() => navigate('/verify-nid')}
+             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-amber-300 text-amber-600 hover:bg-amber-50 transition-all">
+             <MessageSquare size={15} className="text-amber-500" /> Verify NID
+            </button>
+           ) : (
+            <button onClick={() => navigate('/login')}
+             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 transition-all">
+             <MessageSquare size={15} className="text-blue-500" /> Message
+            </button>
+           )}
+          </div>
+         </>
         )}
        </div>
       </div>
