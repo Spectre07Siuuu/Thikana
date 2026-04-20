@@ -1,7 +1,7 @@
 const express = require('express')
 const rateLimit = require('express-rate-limit')
 const { uploadProduct, getProducts, reviewProduct, getProductById, editProduct } = require('../controllers/productController')
-const { verifyToken, requireAdmin, requireRole } = require('../middleware/authMiddleware')
+const { verifyToken, requireAdmin, requireSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
@@ -28,20 +28,19 @@ const readLimiter = rateLimit({
 router.get('/', readLimiter, getProducts)
 
 // POST /api/products
-// Upload a new product (Sellers and Owners only)
-router.post('/', apiLimiter, verifyToken, requireRole('seller', 'owner'), uploadProduct)
+// Upload a new product (Verified sellers only)
+router.post('/', apiLimiter, verifyToken, requireSeller, requireVerifiedNid, uploadProduct)
 
 // GET /api/products/:id
 // Fetch a single product detailing
 router.get('/:id', readLimiter, getProductById)
 
 // PATCH /api/products/:id
-// Edit product (Sellers/Owners only — ownership also verified in controller)
-router.patch('/:id', apiLimiter, verifyToken, requireRole('seller', 'owner'), editProduct)
+// Edit product (Verified sellers only — ownership also verified in controller)
+router.patch('/:id', apiLimiter, verifyToken, requireSeller, requireVerifiedNid, editProduct)
 
 // POST /api/products/admin/review
 // Admin-only: approve or reject products.
 router.post('/admin/review', apiLimiter, verifyToken, requireAdmin, reviewProduct)
 
 module.exports = router
-

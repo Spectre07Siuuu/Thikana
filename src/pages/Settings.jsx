@@ -41,11 +41,11 @@ export default function Settings() {
  const [addrMsg, setAddrMsg]     = useState({ type: '', text: '' })
 
  const getInitials = (name) => name?.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase()).join('') || ''
- const AVATAR_GRADIENT = {
-  buyer: 'from-blue-400 to-indigo-600',
-  seller: 'from-purple-400 to-fuchsia-600',
-  owner: 'from-emerald-400 to-teal-600',
- }
+const AVATAR_GRADIENT = {
+ buyer: 'from-blue-400 to-indigo-600',
+ seller: 'from-purple-400 to-fuchsia-600',
+ admin: 'from-rose-400 to-pink-600',
+}
 
  const handleAvatarChange = e => {
   const file = e.target.files[0]
