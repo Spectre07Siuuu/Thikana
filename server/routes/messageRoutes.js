@@ -1,10 +1,19 @@
 const express = require('express')
+const rateLimit = require('express-rate-limit')
 const { getConversations, getMessages, sendMessage, markConversationRead, getUnreadMessageCount } = require('../controllers/messageController')
-const { verifyToken } = require('../middleware/authMiddleware')
+const { verifyToken, requireBuyerOrSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
-router.use(verifyToken)
+const messageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many message requests. Please try again later.' },
+})
+
+router.use(messageLimiter, verifyToken, requireBuyerOrSeller, requireVerifiedNid)
 
 router.get('/conversations',  getConversations)
 router.get('/unread-count',   getUnreadMessageCount)

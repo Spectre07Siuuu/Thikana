@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name             VARCHAR(100)      NOT NULL,
   email                 VARCHAR(191)      NOT NULL,
   password              VARCHAR(255)      NOT NULL,           -- bcrypt hash
-  role                  ENUM('buyer','seller','owner')
+  role                  ENUM('buyer','seller','admin')
                         NOT NULL DEFAULT 'buyer',
   is_verified           TINYINT(1)        NOT NULL DEFAULT 0, -- email verified?
   nid_verified          TINYINT(1)        NOT NULL DEFAULT 0, -- NID verified?
@@ -254,4 +254,3 @@ CREATE TABLE IF NOT EXISTS notifications (
   KEY idx_notif_read (user_id, is_read),
   CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

@@ -146,7 +146,7 @@ export default function Home() {
        </span> you back.
       </h1>
       <p className="text-gray-200 text-lg sm:text-xl font-medium leading-relaxed mb-10 max-w-2xl mx-auto drop-shadow-md">
-       Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified owners, zero brokerage.
+       Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
       </p>
 
       {/* Modern Centered Search Widget */}
@@ -352,7 +352,7 @@ export default function Home() {
        {[
         { icon: Search,    color: 'bg-theme-primary/20 dark:bg-orange-950/50 text-theme-primary',  num: '01', title: 'Search & Filter', desc: 'Browse verified listings by price, location, and type.' },
         { icon: UserCheck,  color: 'bg-blue-100 dark:bg-blue-950/50 text-blue-500',     num: '02', title: 'Verify & Trust',  desc: 'NID-verified listings and trust badges ensure authenticity.' },
-        { icon: Handshake,  color: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-500', num: '03', title: 'Connect Directly', desc: 'Message owners directly, schedule visits — zero brokerage.' },
+        { icon: Handshake,  color: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-500', num: '03', title: 'Connect Directly', desc: 'Message sellers directly, schedule visits — zero brokerage.' },
         { icon: CheckCircle2, color: 'bg-purple-100 dark:bg-purple-950/50 text-purple-500',  num: '04', title: 'Move In & Shop',  desc: 'Finalize your home and furnish it — one trusted platform.' },
        ].map(({ icon: Icon, color, num, title, desc }) => (
         <div key={num} className="group p-6 rounded-2xl border border-theme-border hover:border-theme-primary/30 dark:hover:border-orange-900 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
@@ -372,4 +372,3 @@ export default function Home() {
   </>
  )
 }
-

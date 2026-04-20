@@ -29,6 +29,10 @@ async function migrate() {
   await run('users.reset_token',            `ALTER TABLE users ADD COLUMN reset_token VARCHAR(64) DEFAULT NULL AFTER otp_expires_at`)
   await run('users.reset_token_expires_at', `ALTER TABLE users ADD COLUMN reset_token_expires_at DATETIME DEFAULT NULL AFTER reset_token`)
   await run('users.points',                 `ALTER TABLE users ADD COLUMN points INT UNSIGNED NOT NULL DEFAULT 0 AFTER reset_token_expires_at`)
+  await run('users.role enum expand',       `ALTER TABLE users MODIFY COLUMN role ENUM('buyer','seller','owner','admin') NOT NULL DEFAULT 'buyer'`)
+  await run('users.owner->seller',          `UPDATE users SET role = 'seller' WHERE role = 'owner'`)
+  await run('users.admin role sync',        `UPDATE users SET role = 'admin' WHERE is_admin = 1`)
+  await run('users.role enum final',        `ALTER TABLE users MODIFY COLUMN role ENUM('buyer','seller','admin') NOT NULL DEFAULT 'buyer'`)
 
   // ── nid_submissions table ────────────────────────────────
   await run('nid_submissions table', `

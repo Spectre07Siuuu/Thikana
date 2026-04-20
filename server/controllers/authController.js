@@ -15,9 +15,15 @@ function signToken(payload) {
   })
 }
 
+function effectiveRole(row) {
+  if (row?.is_admin) return 'admin'
+  if (row?.role === 'owner') return 'seller'
+  return row?.role
+}
+
 function safeUser(row) {
   const { password, otp_code, otp_expires_at, reset_token, reset_token_expires_at, ...user } = row
-  return user
+  return { ...user, role: effectiveRole(row) }
 }
 
 function generateOtp() {
@@ -73,7 +79,7 @@ async function verifyEmail(req, res) {
 
     const user = rows[0]
     if (user.is_verified) {
-      const token = signToken({ id: user.id, email: user.email, role: user.role, is_admin: !!user.is_admin })
+      const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
       return res.json({ success: true, message: 'Email already verified.', token, user: safeUser(user) })
     }
     if (!user.otp_code || user.otp_code !== String(otp).trim()) return res.status(400).json({ success: false, message: 'Invalid verification code.' })
@@ -84,7 +90,7 @@ async function verifyEmail(req, res) {
       `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = ?`,
       [user.id]
     )
-    const token = signToken({ id: user.id, email: user.email, role: user.role, is_admin: !!user.is_admin })
+    const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
     return res.json({ success: true, message: 'Email verified! Welcome to Thikana.', token, user: safeUser(fresh[0]) })
   } catch (err) {
     console.error('[verifyEmail error]', err)
@@ -134,7 +140,7 @@ async function login(req, res) {
       return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', requiresVerification: true, email: user.email })
     }
 
-    const token = signToken({ id: user.id, email: user.email, role: user.role, is_admin: !!user.is_admin })
+    const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
     return res.json({ success: true, message: 'Login successful!', token, user: safeUser(user) })
   } catch (err) {
     console.error('[login error]', err)

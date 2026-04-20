@@ -1,8 +1,9 @@
 const express = require('express')
 const multer  = require('multer')
+const rateLimit = require('express-rate-limit')
 const path    = require('path')
 const fs      = require('fs')
-const { verifyToken } = require('../middleware/authMiddleware')
+const { verifyToken, requireBuyerOrSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
@@ -40,7 +41,15 @@ const upload = multer({
   },
 })
 
-router.use(verifyToken)
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many upload requests. Please try again later.' },
+})
+
+router.use(uploadLimiter, verifyToken, requireBuyerOrSeller, requireVerifiedNid)
 
 /**
  * POST /api/upload/chat/:type  — type is 'image', 'file', or 'voice'

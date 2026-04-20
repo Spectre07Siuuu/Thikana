@@ -66,7 +66,7 @@ async function seedDatabase() {
     // Ensure there's at least one seller user
     const [users] = await pool.query(`SELECT id FROM users`);
     if (users.length === 0) {
-      await pool.query(`INSERT INTO users (full_name, email, password, role, is_verified) VALUES ('System Admin', 'admin@thikana.com', 'hashedpassword', 'seller', 1)`);
+      await pool.query(`INSERT INTO users (full_name, email, password, role, is_verified, is_admin) VALUES ('System Admin', 'admin@thikana.com', 'hashedpassword', 'admin', 1, 1)`);
     }
     const [availableSellers] = await pool.query(`SELECT id FROM users LIMIT 10`);
 

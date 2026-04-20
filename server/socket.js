@@ -4,6 +4,50 @@ const pool = require('./config/db')
 
 let io = null
 
+function normalizeRole(role) {
+  return role === 'owner' ? 'seller' : role
+}
+
+function canUsersChat(sender, receiver) {
+  if (!sender || !receiver) return { allowed: false, message: 'Chat participant not found.' }
+  if (sender.is_admin || receiver.is_admin) return { allowed: false, message: 'Admins cannot use direct chat.' }
+  if (!sender.nid_verified) return { allowed: false, message: 'Complete NID verification to chat.' }
+
+  if (sender.role === 'buyer') {
+    if (receiver.role !== 'seller') return { allowed: false, message: 'Buyers can only chat with sellers.' }
+    if (!receiver.nid_verified) return { allowed: false, message: 'Seller must be NID verified for chat.' }
+    return { allowed: true }
+  }
+
+  if (sender.role === 'seller') {
+    if (receiver.role === 'seller') {
+      if (!receiver.nid_verified) return { allowed: false, message: 'Seller must be NID verified for chat.' }
+      return { allowed: true }
+    }
+    if (receiver.role === 'buyer') {
+      if (!receiver.nid_verified) return { allowed: false, message: 'Buyer must be NID verified for chat.' }
+      return { allowed: true }
+    }
+  }
+
+  return { allowed: false, message: 'This chat is not allowed for your account type.' }
+}
+
+async function getUserAccount(userId) {
+  const [rows] = await pool.query(
+    'SELECT id, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+    [userId]
+  )
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return {
+    id: row.id,
+    role: normalizeRole(row.is_admin ? 'admin' : row.role),
+    is_admin: !!row.is_admin,
+    nid_verified: !!row.nid_verified,
+  }
+}
+
 function initSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
@@ -44,6 +88,14 @@ function initSocket(httpServer) {
       if ((type === 'image' || type === 'file' || type === 'voice') && !file_url) return
 
       try {
+        const sender = await getUserAccount(userId)
+        const receiver = await getUserAccount(receiver_id)
+        const chatCheck = canUsersChat(sender, receiver)
+        if (!chatCheck.allowed) {
+          if (callback) callback({ success: false, error: chatCheck.message })
+          return
+        }
+
         const msgType = type || 'text'
         const [result] = await pool.query(
           'INSERT INTO messages (sender_id, receiver_id, product_id, content, type, file_url, file_name) VALUES (?, ?, ?, ?, ?, ?, ?)',

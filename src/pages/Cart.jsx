@@ -17,6 +17,7 @@ export default function Cart() {
 
  useEffect(() => {
   if (!user) { navigate('/login'); return }
+  if (user.is_admin || user.role !== 'buyer') { navigate('/'); return }
   refreshCart().finally(() => setLoading(false))
  }, [user, navigate, refreshCart])
 

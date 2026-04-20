@@ -1,5 +1,57 @@
 const pool = require('../config/db')
 
+function normalizeRole(role) {
+  return role === 'owner' ? 'seller' : role
+}
+
+function canUsersChat(sender, receiver) {
+  if (!sender || !receiver) return { allowed: false, message: 'Chat participant not found.' }
+  if (sender.is_admin || receiver.is_admin) return { allowed: false, message: 'Admins cannot use direct chat.' }
+  if (!sender.nid_verified) return { allowed: false, message: 'Complete NID verification to chat.' }
+
+  if (sender.role === 'buyer') {
+    if (receiver.role !== 'seller') return { allowed: false, message: 'Buyers can only chat with sellers.' }
+    if (!receiver.nid_verified) return { allowed: false, message: 'Seller must be NID verified for chat.' }
+    return { allowed: true }
+  }
+
+  if (sender.role === 'seller') {
+    if (receiver.role === 'seller') {
+      if (!receiver.nid_verified) return { allowed: false, message: 'Seller must be NID verified for chat.' }
+      return { allowed: true }
+    }
+    if (receiver.role === 'buyer') {
+      if (!receiver.nid_verified) return { allowed: false, message: 'Buyer must be NID verified for chat.' }
+      return { allowed: true }
+    }
+  }
+
+  return { allowed: false, message: 'This chat is not allowed for your account type.' }
+}
+
+async function getUserAccount(userId) {
+  const [rows] = await pool.query(
+    'SELECT id, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+    [userId]
+  )
+  if (rows.length === 0) return null
+  const dbUser = rows[0]
+  return {
+    id: dbUser.id,
+    role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
+    is_admin: !!dbUser.is_admin,
+    nid_verified: !!dbUser.nid_verified,
+  }
+}
+
+async function ensureChatPermission(reqUser, partnerId) {
+  const partner = await getUserAccount(partnerId)
+  if (!partner) return { ok: false, status: 404, message: 'Chat user not found.' }
+  const check = canUsersChat(reqUser, partner)
+  if (!check.allowed) return { ok: false, status: 403, message: check.message }
+  return { ok: true, partner }
+}
+
 /**
  * GET /api/messages/conversations
  * Returns unique conversation partners with last message preview and unread count
@@ -13,6 +65,8 @@ async function getConversations(req, res) {
         partner_id,
         u.full_name as partner_name,
         u.avatar_url as partner_avatar,
+        u.role as partner_role,
+        u.is_admin as partner_is_admin,
         u.nid_verified as partner_verified,
         last_message,
         last_message_at,
@@ -44,7 +98,16 @@ async function getConversations(req, res) {
       ORDER BY last_message_at DESC
     `, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId])
 
-    return res.json({ success: true, conversations: rows })
+    const allowedConversations = rows.filter((row) => {
+      const partner = {
+        role: normalizeRole(row.partner_is_admin ? 'admin' : row.partner_role),
+        is_admin: !!row.partner_is_admin,
+        nid_verified: !!row.partner_verified,
+      }
+      return canUsersChat(req.user, partner).allowed
+    })
+
+    return res.json({ success: true, conversations: allowedConversations })
   } catch (err) {
     console.error('[getConversations error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
@@ -58,9 +121,14 @@ async function getConversations(req, res) {
 async function getMessages(req, res) {
   try {
     const userId = req.user.id
-    const partnerId = req.params.userId
+    const partnerId = parseInt(req.params.userId)
     const { product_id, page = 1, limit = 50 } = req.query
     const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit)
+
+    const permission = await ensureChatPermission(req.user, partnerId)
+    if (!permission.ok) {
+      return res.status(permission.status).json({ success: false, message: permission.message })
+    }
 
     let where = '((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))'
     const params = [userId, partnerId, partnerId, userId]
@@ -86,11 +154,7 @@ async function getMessages(req, res) {
       [partnerId]
     )
 
-    return res.json({
-      success: true,
-      messages: rows,
-      partner: partners[0] || null,
-    })
+    return res.json({ success: true, messages: rows, partner: partners[0] || null })
   } catch (err) {
     console.error('[getMessages error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
@@ -103,17 +167,23 @@ async function getMessages(req, res) {
  */
 async function sendMessage(req, res) {
   const { receiver_id, content, product_id } = req.body
+  const receiverIdNum = parseInt(receiver_id)
   if (!receiver_id || !content?.trim()) {
     return res.status(400).json({ success: false, message: 'Receiver and message content are required.' })
   }
-  if (receiver_id === req.user.id) {
+  if (receiverIdNum === req.user.id) {
     return res.status(400).json({ success: false, message: 'You cannot message yourself.' })
   }
 
   try {
+    const permission = await ensureChatPermission(req.user, receiverIdNum)
+    if (!permission.ok) {
+      return res.status(permission.status).json({ success: false, message: permission.message })
+    }
+
     const [result] = await pool.query(
       'INSERT INTO messages (sender_id, receiver_id, product_id, content) VALUES (?, ?, ?, ?)',
-      [req.user.id, receiver_id, product_id || null, content.trim()]
+      [req.user.id, receiverIdNum, product_id || null, content.trim()]
     )
 
     const [msg] = await pool.query(
@@ -134,9 +204,15 @@ async function sendMessage(req, res) {
  */
 async function markConversationRead(req, res) {
   try {
+    const partnerId = parseInt(req.params.userId)
+    const permission = await ensureChatPermission(req.user, partnerId)
+    if (!permission.ok) {
+      return res.status(permission.status).json({ success: false, message: permission.message })
+    }
+
     await pool.query(
       'UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
-      [req.params.userId, req.user.id]
+      [partnerId, req.user.id]
     )
     return res.json({ success: true })
   } catch (err) {
