@@ -41,21 +41,21 @@ const upload = multer({
   },
 })
 
-router.use(verifyToken, requireBuyerOrSeller, requireVerifiedNid)
-
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 120,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many upload requests. Please try again later.' },
 })
 
+router.use(uploadLimiter, verifyToken, requireBuyerOrSeller, requireVerifiedNid)
+
 /**
  * POST /api/upload/chat/:type  — type is 'image', 'file', or 'voice'
  * Accepts multipart/form-data with field name 'file'
  */
-router.post('/:type', uploadLimiter, upload.single('file'), (req, res) => {
+router.post('/:type', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded.' })
   }

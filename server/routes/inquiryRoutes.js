@@ -21,7 +21,7 @@ const inquiryReadLimiter = rateLimit({
   message: { success: false, message: 'Too many inquiry requests. Please try again later.' },
 })
 
-router.post('/',            verifyToken, requireBuyer, requireVerifiedNid, inquiryLimiter, sendInquiry)
+router.post('/',            inquiryLimiter, verifyToken, requireBuyer, requireVerifiedNid, sendInquiry)
 router.get('/seller',       inquiryReadLimiter, verifyToken, requireSeller, requireVerifiedNid, getSellerInquiries)
 router.get('/unread-count', inquiryReadLimiter, verifyToken, requireSeller, requireVerifiedNid, getUnreadCount)
 router.patch('/:id/read',   inquiryReadLimiter, verifyToken, requireSeller, requireVerifiedNid, markRead)

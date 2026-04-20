@@ -13,12 +13,12 @@ const cartLimiter = rateLimit({
   message: { success: false, message: 'Too many cart requests. Please try again later.' },
 })
 
-router.use(verifyToken, requireBuyer)
+router.use(cartLimiter, verifyToken, requireBuyer)
 
-router.get('/',        cartLimiter, getCart)
-router.get('/count',   cartLimiter, getCartCount)
-router.post('/',       cartLimiter, addToCart)
-router.delete('/:id',  cartLimiter, removeFromCart)
-router.delete('/',     cartLimiter, clearCart)
+router.get('/',        getCart)
+router.get('/count',   getCartCount)
+router.post('/',       addToCart)
+router.delete('/:id',  removeFromCart)
+router.delete('/',     clearCart)
 
 module.exports = router
