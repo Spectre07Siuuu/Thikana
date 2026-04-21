@@ -13,6 +13,14 @@ function formatDateTime(dateStr) {
  })
 }
 
+const STATUS_BADGE = {
+ pending:   'bg-blue-50 dark:bg-blue-950/40 text-blue-600 border border-blue-200 dark:border-blue-800',
+ confirmed:  'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800',
+ shipped:   'bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-200 dark:border-amber-800',
+ delivered:  'bg-purple-50 dark:bg-purple-950/40 text-purple-600 border border-purple-200 dark:border-purple-800',
+ cancelled:  'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-800',
+}
+
 const BUYER_CANCEL_REASONS = [
  { value: 'changed_mind', label: 'Changed my mind' },
  { value: 'ordered_by_mistake', label: 'Ordered by mistake' },
@@ -167,7 +175,9 @@ export default function OrderDetails() {
       <Link to="/profile?view=orders" className="inline-flex items-center gap-2 text-sm text-theme-muted hover:text-theme-primary">
        <ArrowLeft size={16} /> Back
       </Link>
-      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-theme-muted capitalize">{order.status}</span>
+      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold capitalize ${STATUS_BADGE[order.status] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
+       {order.status}
+      </span>
      </div>
 
      <div className="bg-theme-card border border-theme-border rounded-2xl p-5">
