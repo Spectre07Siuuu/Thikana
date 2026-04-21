@@ -87,7 +87,7 @@ async function placeOrder(req, res) {
         sellerId, 'order',
         'New Order Received! 🛍️',
         `${buyerName} purchased: ${titles}`,
-        `/profile`
+        `/profile?view=seller-orders&orderId=${orderId}`
       )
     }
 
@@ -96,14 +96,14 @@ async function placeOrder(req, res) {
       req.user.id, 'order',
       'Order Confirmed! ✅',
       `Your order #${orderId} for ৳${totalAmount.toLocaleString()} has been placed successfully.`,
-      `/profile`
+      `/profile?view=orders&orderId=${orderId}`
     )
     if (earnedPoints > 0) {
       createNotification(
         req.user.id, 'system',
         'Reward Points Earned! 🎁',
         `You earned ${earnedPoints} points from your recent purchase.`,
-        `/profile`
+        `/profile?view=orders&orderId=${orderId}`
       )
     }
 
@@ -168,8 +168,8 @@ async function getMyOrders(req, res) {
 async function getSellerOrders(req, res) {
   try {
     const [items] = await pool.query(`
-      SELECT oi.*, o.status as order_status, o.shipping_address, o.phone as buyer_phone, o.created_at as order_date,
-             p.title, p.category,
+       SELECT oi.*, o.status as order_status, o.shipping_address, o.phone as buyer_phone, o.created_at as order_date,
+              p.title, p.category, p.status as product_status,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
              u.full_name as buyer_name, u.email as buyer_email
       FROM order_items oi
@@ -242,7 +242,7 @@ async function updateOrderStatus(req, res) {
         orders[0].buyer_id, 'order',
         statusMessages[status],
         `Order #${req.params.id} status updated to ${status}.`,
-        `/profile`
+        `/profile?view=orders&orderId=${req.params.id}`
       )
     }
 
