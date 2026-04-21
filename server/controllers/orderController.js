@@ -370,12 +370,10 @@ async function updateOrderStatus(req, res) {
         pointsDeducted = earnedPoints
       }
 
-      const [deletedReviews] = await pool.query(`
-        DELETE r
-        FROM reviews r
-        JOIN order_items oi ON oi.id = r.order_item_id
-        WHERE oi.order_id = ?
-      `, [req.params.id])
+      const [deletedReviews] = await pool.query(
+        'DELETE FROM reviews WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ?)',
+        [req.params.id]
+      )
       reviewsRemoved = deletedReviews.affectedRows || 0
     }
 
