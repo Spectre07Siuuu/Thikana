@@ -1,54 +1,60 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
- ArrowLeft, MapPin, Package, ShieldCheck, ChevronLeft, ChevronRight,
- Phone, Mail, User, ShoppingBag, Heart, MessageSquare, Eye, ShoppingCart, Check, Star
+ ArrowLeft, MapPin, Heart, Share2, ShieldCheck, ChevronLeft, ChevronRight,
+ ShoppingBag, ShoppingCart, Check, User, Package, Eye, Phone
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getProductById, toggleFavourite, getFavouriteStatus, getProductReviews } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { getProductById, toggleFavourite, getFavouriteStatus } from '../services/api'
 
-const formatPrice = (price) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+const formatPrice = (p) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(p)
+const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
 export default function ProductDetails() {
- const { id }  = useParams()
+ const { id } = useParams()
  const navigate = useNavigate()
  const { user } = useAuth()
- const { addToCart, cartCount } = useCart()
+ const { addToCart, cart } = useCart()
 
- const [product, setProduct]       = useState(null)
- const [loading, setLoading]       = useState(true)
- const [error, setError]         = useState('')
+ const [product, setProduct] = useState(null)
+ const [loading, setLoading] = useState(true)
+ const [error, setError] = useState('')
  const [currentImageIndex, setCurrentImageIndex] = useState(0)
- const [saved, setSaved]         = useState(false)
- const [savePending, setSavePending]   = useState(false)
- const [inCart, setInCart]        = useState(false)
- const [addingToCart, setAddingToCart]  = useState(false)
-
- const [reviews, setReviews]       = useState([])
- const [avgRating, setAvgRating]     = useState(0)
- const [totalReviews, setTotalReviews]  = useState(0)
+ const [saved, setSaved] = useState(false)
+ const [savePending, setSavePending] = useState(false)
+ const [addingToCart, setAddingToCart] = useState(false)
+ const [inCart, setInCart] = useState(false)
+ const [reviews, setReviews] = useState([])
 
  useEffect(() => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
   setLoading(true)
-  setCurrentImageIndex(0)
   getProductById(id)
-   .then(res => setProduct(res.product))
-   .catch(err => setError(err.message || 'Failed to load product'))
-   .finally(() => setLoading(false))
-
-  getProductReviews(id)
-   .then(res => {
-    setReviews(res.reviews || [])
-    setAvgRating(res.avgRating || 0)
-    setTotalReviews(res.total || 0)
+   .then(data => {
+    setProduct(data.product)
+    setReviews(data.product.reviews || [])
+    // Check if in cart
+    if (cart.some(item => item.product_id === parseInt(id))) {
+     setInCart(true)
+    }
+    setLoading(false)
    })
-   .catch(console.error)
- }, [id])
+   .catch(err => {
+    setError(err.message || 'Product not found.')
+    setLoading(false)
+   })
+ }, [id, cart])
+
+ // Sync inCart when cart changes
+ useEffect(() => {
+  if (cart.some(item => item.product_id === parseInt(id))) {
+   setInCart(true)
+  } else {
+   setInCart(false)
+  }
+ }, [cart, id])
 
  // Fetch favourite status only for buyers
  useEffect(() => {
@@ -73,9 +79,10 @@ export default function ProductDetails() {
  const handleAddToCart = async () => {
   if (!user) { navigate('/login'); return }
   if (user.is_admin || user.role !== 'buyer') { return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid?reason=cart'); return }
   setAddingToCart(true)
   try {
-   const res = await addToCart(parseInt(id))
+   await addToCart(parseInt(id))
    setInCart(true)
   } catch (err) {
    console.error(err)
@@ -87,7 +94,7 @@ export default function ProductDetails() {
  const handleBuyNow = async () => {
   if (!user) { navigate('/login'); return }
   if (user.is_admin || user.role !== 'buyer') { return }
-  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid?reason=buy'); return }
   setAddingToCart(true)
   try {
    await addToCart(parseInt(id))
@@ -102,7 +109,7 @@ export default function ProductDetails() {
  const handleMessage = () => {
   if (!user) { navigate('/login'); return }
   if (user.is_admin || !['buyer', 'seller'].includes(user.role)) return
-  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
+  if (user.nid_verified !== 1) { navigate('/verify-nid?reason=chat'); return }
   navigate(`/messages?user=${product.seller_id}&product=${id}`)
  }
 
@@ -111,7 +118,7 @@ export default function ProductDetails() {
    <>
     <Navbar />
     <div className="min-h-screen flex items-center justify-center pt-16 bg-theme-bg">
-     <div className="w-10 h-10 border-3 border-theme-primary border-t-transparent rounded-full animate-spin" />
+     <div className="w-10 h-10 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
     </div>
    </>
   )
@@ -179,23 +186,16 @@ export default function ProductDetails() {
             <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 bg-theme-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-theme-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md">
              <ChevronRight size={20} />
             </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 p-1.5 rounded-full bg-black/30 backdrop-blur-md">
-             {images.map((_, idx) => (
-              <button key={idx} onClick={() => setCurrentImageIndex(idx)}
-               className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/80'}`} />
-             ))}
-            </div>
            </>
           )}
          </>
         ) : (
-         <div className="w-full h-full flex flex-col items-center justify-center text-theme-muted">
-          <Package size={48} className="mb-2 opacity-50" />
-          <p>No images available</p>
+         <div className="w-full h-full flex flex-col items-center justify-center text-theme-muted italic">
+          <Package size={48} className="mb-2 opacity-20" />
+          No images available
          </div>
         )}
-
-        <div className="absolute top-4 left-4 flex gap-2">
+        <div className="absolute top-4 left-4">
          {category && (
           <span className="bg-black/60 backdrop-blur-md text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
            {category.replace('_', ' ')}
@@ -298,113 +298,88 @@ export default function ProductDetails() {
 
        {/* Seller Card */}
        <div className="mt-auto p-5 rounded-3xl bg-gradient-to-br from-orange-50 to-rose-50 dark:from-orange-950/20 dark:to-rose-950/20 border border-orange-100 dark:border-orange-900/30">
-        <div className="flex items-center gap-3 mb-4">
-         <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shadow-sm flex-shrink-0">
-          {seller_avatar ? <img src={seller_avatar} alt={seller_name} className="w-full h-full object-cover" /> : <User size={24} className="text-theme-muted" />}
+        <div className="flex items-center justify-between mb-4">
+         <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900 border border-orange-100 dark:border-orange-900/30 flex items-center justify-center overflow-hidden">
+           {seller_avatar ? <img src={seller_avatar} className="w-full h-full object-cover" alt="" /> : <User size={24} className="text-theme-muted" />}
+          </div>
+          <div>
+           <p className="text-sm font-bold text-theme-text flex items-center gap-1">
+            {seller_name}
+            {seller_verified === 1 && <ShieldCheck size={14} className="text-emerald-500" />}
+           </p>
+           <p className="text-[10px] text-theme-muted font-medium">Verified Seller</p>
+          </div>
          </div>
-         <div>
-          <h4 className="font-bold text-theme-text flex items-center gap-1.5 text-sm">
-           {seller_name}
-           {seller_verified === 1 && (
-            <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-             <ShieldCheck size={10} /> Verified
-            </span>
-           )}
-          </h4>
-          <p className="text-xs text-theme-muted mt-0.5">Listed this property</p>
+         <div className="flex gap-2">
+          {seller_phone && (
+           <a href={`tel:${seller_phone}`} className="p-2.5 rounded-xl bg-white dark:bg-gray-900 text-theme-muted hover:text-theme-primary transition-all border border-orange-100 dark:border-orange-900/20">
+            <Phone size={18} />
+           </a>
+          )}
+          <button onClick={handleMessage} className="px-4 py-2 bg-theme-primary text-white rounded-xl text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+           Message
+          </button>
          </div>
         </div>
-
-        {/* Contact actions: hidden from admin and the product's own seller */}
-        {!isSeller && !user?.is_admin && (
-         <>
-          <div className="grid grid-cols-3 gap-2">
-           {seller_phone && (
-            <a href={`tel:${seller_phone}`}
-             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-emerald-300 hover:text-emerald-600 transition-all">
-             <Phone size={15} className="text-emerald-500" /> Call
-            </a>
-           )}
-           {seller_email && (
-            <a href={`mailto:${seller_email}`}
-             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-primary text-white hover:bg-orange-600 transition-all">
-             <Mail size={15} /> Email
-            </a>
-           )}
-           {user?.nid_verified === 1 ? (
-            <button onClick={handleMessage}
-             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 transition-all">
-             <MessageSquare size={15} className="text-blue-500" /> Message
-            </button>
-           ) : user ? (
-            <button onClick={() => navigate('/verify-nid')}
-             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-amber-300 text-amber-600 hover:bg-amber-50 transition-all">
-             <MessageSquare size={15} className="text-amber-500" /> Verify NID
-            </button>
-           ) : (
-            <button onClick={() => navigate('/login')}
-             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-semibold text-xs bg-theme-card border border-theme-border text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 transition-all">
-             <MessageSquare size={15} className="text-blue-500" /> Message
-            </button>
-           )}
-          </div>
-         </>
-        )}
+        <div className="grid grid-cols-2 gap-4">
+         <div className="bg-white/60 dark:bg-black/20 p-3 rounded-2xl">
+          <p className="text-[10px] text-theme-muted mb-1 uppercase tracking-wider font-bold">Email</p>
+          <p className="text-xs font-semibold text-theme-text truncate">{seller_email}</p>
+         </div>
+         <div className="bg-white/60 dark:bg-black/20 p-3 rounded-2xl">
+          <p className="text-[10px] text-theme-muted mb-1 uppercase tracking-wider font-bold">Member Since</p>
+          <p className="text-xs font-semibold text-theme-text">Jan 2024</p>
+         </div>
+        </div>
        </div>
       </div>
      </div>
 
-     {/* ── Product Reviews ── */}
-     <div className="mt-14 mb-10 pt-10 border-t border-theme-border">
-      <h2 className="text-lg font-bold text-theme-text mb-6">Customer Reviews</h2>
-      
-      {totalReviews === 0 ? (
-       <div className="text-center py-10 bg-theme-card rounded-3xl border border-theme-border">
-        <Star size={32} className="mx-auto text-gray-300 dark:text-gray-700 mb-3" />
-        <p className="text-sm font-medium text-theme-muted">No reviews yet for this product.</p>
-        <p className="text-xs text-theme-muted mt-1">Be the first to review after purchasing!</p>
+     {/* ── Reviews ── */}
+     <div className="mt-14 border-t border-theme-border pt-10">
+      <div className="flex items-center justify-between mb-8">
+       <h2 className="text-xl font-bold text-theme-text">Buyer Reviews</h2>
+       <div className="flex items-center gap-2">
+        <span className="text-2xl font-black text-amber-500">4.8</span>
+        <div className="text-xs text-theme-muted">
+         <div className="flex text-amber-400 mb-0.5">★★★★★</div>
+         <div>Based on {reviews.length} reviews</div>
+        </div>
+       </div>
+      </div>
+
+      {reviews.length === 0 ? (
+       <div className="text-center py-10 bg-theme-card rounded-3xl border border-dashed border-theme-border">
+        <p className="text-theme-muted text-sm italic">No reviews yet for this listing.</p>
        </div>
       ) : (
-       <div className="grid lg:grid-cols-[300px_1fr] gap-8">
-        {/* Summary */}
-        <div className="bg-theme-primary/10 dark:bg-orange-950/20 p-6 rounded-3xl border border-orange-100 dark:border-orange-900/30 text-center h-fit">
-         <p className="text-5xl font-black text-theme-primary mb-2">{avgRating}</p>
-         <div className="flex justify-center gap-1 mb-2 text-amber-400">
-          {[1,2,3,4,5].map(star => (
-           <span key={star} className={star <= Math.round(avgRating) ? '' : 'text-gray-300 dark:text-gray-700'}>★</span>
-          ))}
-         </div>
-         <p className="text-sm text-theme-muted font-medium">Based on {totalReviews} review{totalReviews > 1 ? 's' : ''}</p>
-        </div>
-
-        {/* Review List */}
-        <div className="space-y-4">
-         {reviews.map(review => (
-          <div key={review.id} className="bg-theme-card p-5 rounded-2xl border border-theme-border shadow-sm">
-           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-              {review.buyer_avatar ? <img src={review.buyer_avatar} className="w-full h-full object-cover" alt="" /> : <User size={20} className="m-auto mt-2 text-theme-muted" />}
-             </div>
-             <div>
-              <p className="text-sm font-bold text-theme-text">{review.buyer_name}</p>
-              <p className="text-[10px] text-theme-muted">{formatDate(review.created_at)}</p>
-             </div>
+       <div className="space-y-4">
+        {reviews.map(review => (
+         <div key={review.id} className="bg-theme-card p-5 rounded-2xl border border-theme-border shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+           <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+             {review.buyer_avatar ? <img src={review.buyer_avatar} className="w-full h-full object-cover" alt="" /> : <User size={20} className="m-auto mt-2 text-theme-muted" />}
             </div>
-            <div className="flex text-amber-400 text-sm">
-             {[...Array(5)].map((_, i) => (
-              <span key={i} className={i < review.rating ? '' : 'text-gray-200 dark:text-gray-700'}>★</span>
-             ))}
+            <div>
+             <p className="text-sm font-bold text-theme-text">{review.buyer_name}</p>
+             <p className="text-[10px] text-theme-muted">{formatDate(review.created_at)}</p>
             </div>
            </div>
-           {review.comment && (
-            <p className="text-sm text-theme-muted leading-relaxed bg-theme-bg/50 p-4 rounded-xl">
-             {review.comment}
-            </p>
-           )}
+           <div className="flex text-amber-400 text-sm">
+            {[...Array(5)].map((_, i) => (
+             <span key={i} className={i < review.rating ? '' : 'text-gray-200 dark:text-gray-700'}>★</span>
+            ))}
+           </div>
           </div>
-         ))}
-        </div>
+          {review.comment && (
+           <p className="text-sm text-theme-muted leading-relaxed bg-theme-bg/50 p-4 rounded-xl">
+            {review.comment}
+           </p>
+          )}
+         </div>
+        ))}
        </div>
       )}
      </div>

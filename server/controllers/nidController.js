@@ -14,6 +14,13 @@ async function getNidStatus(req, res) {
   }
 }
 
+/**
+ * @roadmap
+ * FUTURE IMPLEMENTATION: Automated NID Verification (OCR)
+ * Currently, verification is a manual process where admins review uploaded images.
+ * In a production environment, implement an OCR pipeline (e.g., Google Vision API 
+ * or a specialized KYC provider) to validate NID numbers and extract data automatically.
+ */
 async function submitNid(req, res) {
   const { nid_number, nid_front_base64, nid_selfie_base64 } = req.body
   if (!nid_number || !nid_front_base64 || !nid_selfie_base64) {

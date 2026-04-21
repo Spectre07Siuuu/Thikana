@@ -114,3 +114,10 @@ Thikana/
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 🗺️ Future Roadmap
+
+- **Automated NID Verification**: Integration with OCR APIs (like Google Cloud Vision or specialized local APIs) to automate identity validation.
+- **Dynamic Delivery API**: Integration with local logistics providers (e.g., RedX, Pathao) for real-time delivery fee calculation and automated courier booking.
+- **Payment Gateway Integration**: Adding support for SSLCommerz, Stripe, or bKash PGW to enable automated online payments.
+- **Advanced Admin Controls**: User suspension, fine-grained role management, and dispute resolution dashboards.

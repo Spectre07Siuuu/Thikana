@@ -213,6 +213,9 @@ async function migrate() {
   await run('messages.file_name', `ALTER TABLE messages ADD COLUMN file_name VARCHAR(255) DEFAULT NULL AFTER file_url`)
   await run('messages.content nullable', `ALTER TABLE messages MODIFY COLUMN content TEXT DEFAULT NULL`)
 
+  // ── orders: delivery_fee ──────────────────────────────────
+  await run('orders.delivery_fee', `ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 50.00 AFTER total_amount`)
+
   console.log('\nMigrations complete.')
   process.exit(0)
 }

@@ -17,6 +17,7 @@ export default function Checkout() {
  const [address, setAddress] = useState(user?.address || '')
  const [phone, setPhone]  = useState(user?.phone || '')
  const [note, setNote]   = useState('')
+ const [deliveryType, setDeliveryType] = useState('inside')
  const [loading, setLoading] = useState(false)
  const [error, setError]  = useState('')
  const [success, setSuccess] = useState(null)
@@ -36,7 +37,12 @@ export default function Checkout() {
   setLoading(true)
   setError('')
   try {
-   const res = await placeOrder({ shipping_address: address.trim(), phone: phone.trim(), note: note.trim() || undefined })
+   const res = await placeOrder({
+    shipping_address: address.trim(),
+    phone: phone.trim(),
+    note: note.trim() || undefined,
+    delivery_type: deliveryType
+   })
    setSuccess(res)
    refreshCount()
   } catch (err) {
@@ -152,11 +158,28 @@ export default function Checkout() {
           <input type="text" value={note} onChange={e => setNote(e.target.value)}
            placeholder="Any special instructions..." className="input-field py-2.5 text-sm" />
          </div>
+         <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+           Delivery Method <span className="text-red-400">*</span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+           <button type="button" onClick={() => setDeliveryType('inside')}
+            className={`flex flex-col p-3 rounded-xl border-2 transition-all text-left ${deliveryType === 'inside' ? 'border-theme-primary bg-theme-primary/10' : 'border-theme-border hover:border-gray-300'}`}>
+            <span className="text-xs font-bold text-theme-text">Inside Dhaka</span>
+            <span className="text-[10px] text-theme-muted font-black mt-1">৳20</span>
+           </button>
+           <button type="button" onClick={() => setDeliveryType('outside')}
+            className={`flex flex-col p-3 rounded-xl border-2 transition-all text-left ${deliveryType === 'outside' ? 'border-theme-primary bg-theme-primary/10' : 'border-theme-border hover:border-gray-300'}`}>
+            <span className="text-xs font-bold text-theme-text">Outside Dhaka</span>
+            <span className="text-[10px] text-theme-muted font-black mt-1">৳50</span>
+           </button>
+          </div>
+         </div>
         </div>
 
         <button type="submit" disabled={loading}
          className="btn-primary w-full justify-center py-3 text-sm mt-6 disabled:opacity-70">
-         {loading ? 'Placing Order…' : `Confirm Order — ৳${formatPrice(cartTotal + 50)}`}
+         {loading ? 'Placing Order…' : `Confirm Order — ৳${formatPrice(cartTotal + (deliveryType === 'outside' ? 50 : 20))}`}
         </button>
        </form>
       </div>
@@ -193,11 +216,11 @@ export default function Checkout() {
         </div>
         <div className="flex justify-between text-sm text-theme-muted mb-4">
          <span>Delivery</span>
-         <span>৳50</span>
+         <span>৳{deliveryType === 'outside' ? 50 : 20}</span>
         </div>
         <div className="flex justify-between text-base font-bold text-theme-text">
          <span>Total</span>
-         <span className="text-rose-500">৳{formatPrice(cartTotal + 50)}</span>
+         <span className="text-rose-500">৳{formatPrice(cartTotal + (deliveryType === 'outside' ? 50 : 20))}</span>
         </div>
        </div>
       </div>
