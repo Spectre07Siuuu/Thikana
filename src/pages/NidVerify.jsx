@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle, Info } from 'lucide-react'
 import { submitNid } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-
 import { useAuth } from '../context/AuthContext'
 
 export default function NidVerify() {
  const navigate = useNavigate()
- const { refreshUser } = useAuth()
+ const location = useLocation()
+ const { refreshUser, user } = useAuth()
  
+ // Get reason from URL query
+ const query = new URLSearchParams(location.search)
+ const reason = query.get('reason')
+
  const [nidNumber, setNidNumber] = useState('')
  const [frontPreview, setFrontPreview] = useState('')
  const [selfiePreview, setSelfiePreview] = useState('')
@@ -20,6 +24,11 @@ export default function NidVerify() {
  
  const [loading, setLoading] = useState(false)
  const [error, setError] = useState('')
+
+ useEffect(() => {
+  if (!user) { navigate('/login'); return }
+  if (user.nid_verified === 1) { navigate('/profile'); return }
+ }, [user, navigate])
 
  const handleImageChange = (e, setPreview, setBase64) => {
   const file = e.target.files[0]
@@ -56,6 +65,20 @@ export default function NidVerify() {
   }
  }
 
+ // Dynamic requirement message
+ const getRequirementMessage = () => {
+  switch (reason) {
+   case 'chat':
+    return 'Identity Verification Required: Please verify your NID to start messaging sellers.'
+   case 'buy':
+    return 'Identity Verification Required: Please verify your NID to complete this purchase.'
+   case 'cart':
+    return 'Identity Verification Required: Please verify your NID to add items to your cart.'
+   default:
+    return 'Verify your NID to unlock premium features and build trust in the community.'
+  }
+ }
+
  return (
   <>
    <Navbar />
@@ -71,6 +94,13 @@ export default function NidVerify() {
       </Link>
       <h1 className="text-xl font-bold text-theme-text">Verify Identity</h1>
      </div>
+
+     {reason && (
+       <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 flex items-center gap-3 text-rose-600 dark:text-rose-400">
+         <Info size={20} className="flex-shrink-0" />
+         <p className="text-sm font-bold">{getRequirementMessage()}</p>
+       </div>
+     )}
 
      <div className="bg-theme-card border border-theme-border
       rounded-2xl shadow-sm p-6 sm:p-8">

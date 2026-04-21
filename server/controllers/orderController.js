@@ -6,10 +6,12 @@ const { createNotification } = require('./notificationController')
  * Body: { shipping_address, phone, note? }
  */
 async function placeOrder(req, res) {
-  const { shipping_address, phone, note } = req.body
+  const { shipping_address, phone, note, delivery_type = 'inside' } = req.body
   if (!shipping_address || !phone) {
     return res.status(400).json({ success: false, message: 'Shipping address and phone are required.' })
   }
+
+  const deliveryFee = delivery_type === 'outside' ? 50 : 20;
 
   let conn
   try {
@@ -39,15 +41,15 @@ async function placeOrder(req, res) {
       })
     }
 
-    // 3. Calculate total + Static ৳50 Delivery Fee
+    // 3. Calculate total + Dynamic Delivery Fee
     const itemTotal = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0)
-    const totalAmount = itemTotal + 50
+    const totalAmount = itemTotal + deliveryFee
     const earnedPoints = Math.floor(itemTotal / 100) * 10 // 10 Points per ৳100 spent
 
     // 4. Create order
     const [orderResult] = await conn.query(
-      'INSERT INTO orders (buyer_id, total_amount, shipping_address, phone, note) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, totalAmount, shipping_address.trim(), phone.trim(), note?.trim() || null]
+      'INSERT INTO orders (buyer_id, total_amount, shipping_address, phone, note, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
+      [req.user.id, totalAmount, shipping_address.trim(), phone.trim(), note?.trim() || null, deliveryFee]
     )
     const orderId = orderResult.insertId
 
