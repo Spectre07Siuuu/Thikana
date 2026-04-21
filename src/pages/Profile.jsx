@@ -10,7 +10,7 @@ import {
  FileText, Camera,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, getSellerOrders, addReview } from '../services/api'
+import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, getSellerOrders, addReview, updateOrderStatus } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -925,6 +925,9 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
       Buyer: <span className="text-theme-text font-semibold">{order.buyerName}</span> · {order.buyerEmail} · {order.buyerPhone}
      </p>
      <p className="text-[11px] text-theme-muted mb-3">Shipping: {order.shippingAddress}</p>
+     <div className="mb-3">
+      <Link to={`/orders/${order.id}`} className="text-xs text-theme-primary font-semibold hover:underline">Open full order details →</Link>
+     </div>
      <div className="space-y-3">
       {order.items.map(item => (
        <div key={item.id} className="flex items-center justify-between bg-theme-bg/50 p-2.5 rounded-xl gap-3">
@@ -965,13 +968,41 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
  const [orders, setOrders] = useState([])
  const [loading, setLoading] = useState(true)
  const [reviewItem, setReviewItem] = useState(null)
+ const [expandedOrderIds, setExpandedOrderIds] = useState([])
+ const [updatingOrderId, setUpdatingOrderId] = useState(null)
 
- useEffect(() => {
+ const fetchOrders = () => {
+  setLoading(true)
   getMyOrders()
    .then(res => setOrders(res.orders || []))
    .catch(console.error)
    .finally(() => setLoading(false))
+ }
+
+ useEffect(() => {
+  fetchOrders()
  }, [])
+
+ const toggleExpand = (orderId) => {
+  setExpandedOrderIds(prev => prev.includes(orderId)
+   ? prev.filter(id => id !== orderId)
+   : [...prev, orderId]
+  )
+ }
+
+ const handleCancelOrder = async (orderId) => {
+  const ok = window.confirm('Cancel this order?')
+  if (!ok) return
+  setUpdatingOrderId(orderId)
+  try {
+   await updateOrderStatus(orderId, 'cancelled')
+   fetchOrders()
+  } catch (err) {
+   alert(err.message || 'Failed to cancel order.')
+  } finally {
+   setUpdatingOrderId(null)
+  }
+ }
 
  if (loading) {
   return (
@@ -997,7 +1028,7 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
     <div className="space-y-4">
      {orders.map(order => (
       <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
-       <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
+        <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
         <div>
          <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
          <p className="text-[10px] text-theme-muted">{formatDate(order.created_at)}</p>
@@ -1005,12 +1036,12 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
         <div className="text-right">
          <p className="text-sm font-bold text-rose-500">৳{Number(order.total_amount).toLocaleString()}</p>
          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium capitalize">{order.status}</span>
+         </div>
         </div>
-       </div>
-       <div className="space-y-3">
-        {order.items?.map(item => (
-         <div key={item.id} className="flex items-center justify-between bg-theme-bg/50 p-2.5 rounded-xl">
-          <div className="flex items-center gap-3">
+        <div className="space-y-3">
+         {order.items?.map(item => (
+          <div key={item.id} className="flex items-center justify-between bg-theme-bg/50 p-2.5 rounded-xl">
+           <div className="flex items-center gap-3">
            <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0">
             {item.main_image ? (
              <img src={item.main_image} alt={item.title} className="w-full h-full object-cover" />
@@ -1023,30 +1054,65 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
             <p className="text-[10px] text-theme-muted mt-0.5">৳{Number(item.price).toLocaleString()} × {item.quantity}</p>
            </div>
           </div>
-          {/* Always let them review for now. */}
-          <button onClick={() => setReviewItem(item)} className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 transition-colors">
-           ⭐ Review
-          </button>
+          {item.review_id ? (
+           <span className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-blue-600 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+            Reviewed
+           </span>
+          ) : (
+           <button onClick={() => setReviewItem(item)} className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 transition-colors">
+            ⭐ Review
+           </button>
+          )}
+          </div>
+         ))}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+         <button onClick={() => toggleExpand(order.id)} className="text-xs text-theme-primary font-semibold hover:underline">
+          {expandedOrderIds.includes(order.id) ? 'Hide details' : 'View details'}
+         </button>
+         <Link to={`/orders/${order.id}`} className="text-xs text-theme-muted hover:text-theme-primary">Open full order →</Link>
+        </div>
+        {expandedOrderIds.includes(order.id) && (
+         <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
+          <p className="text-[11px] text-theme-muted">Shipping: {order.shipping_address}</p>
+          <p className="text-[11px] text-theme-muted">Phone: {order.phone}</p>
+          {order.note && <p className="text-[11px] text-theme-muted">Note: {order.note}</p>}
+          <div className="flex flex-wrap gap-2 pt-1">
+           {['pending', 'confirmed', 'shipped'].includes(order.status) && (
+            <button onClick={() => handleCancelOrder(order.id)} disabled={updatingOrderId === order.id}
+             className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 transition-colors disabled:opacity-60">
+             {updatingOrderId === order.id ? 'Cancelling...' : 'Cancel Order'}
+            </button>
+           )}
+           {order.items?.[0] && (
+            <Link
+             to={`/messages?user=${order.items[0].seller_id}&product=${order.items[0].product_id}`}
+             className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 transition-colors"
+            >
+             Chat with Seller
+            </Link>
+           )}
+          </div>
          </div>
-        ))}
+        )}
        </div>
-      </div>
-     ))}
-    </div>
+      ))}
+     </div>
    )}
 
-   {reviewItem && (
-    <ReviewModal item={reviewItem} onClose={() => setReviewItem(null)} />
-   )}
-  </div>
- )
+    {reviewItem && (
+     <ReviewModal item={reviewItem} onClose={() => setReviewItem(null)} onSubmitted={fetchOrders} />
+    )}
+   </div>
+  )
 }
 
-function ReviewModal({ item, onClose }) {
+function ReviewModal({ item, onClose, onSubmitted }) {
  const [rating, setRating] = useState(5)
  const [comment, setComment] = useState('')
  const [loading, setLoading] = useState(false)
  const [error, setError] = useState('')
+ const [submitted, setSubmitted] = useState(false)
 
  const handleSubmit = async (e) => {
   e.preventDefault()
@@ -1058,8 +1124,8 @@ function ReviewModal({ item, onClose }) {
     rating,
     comment
    })
-   alert('Review submitted successfully!')
-   onClose()
+   setSubmitted(true)
+   onSubmitted?.()
   } catch (err) {
    setError(err.message || 'Failed to submit review. You may have already reviewed this item.')
   } finally {
@@ -1073,30 +1139,39 @@ function ReviewModal({ item, onClose }) {
     <button onClick={onClose} className="absolute top-4 right-4 text-theme-muted hover:text-gray-600 dark:hover:text-gray-200">
      <X size={20} />
     </button>
-    <h3 className="text-lg font-bold text-theme-text mb-1">Leave a Review</h3>
-    <p className="text-xs text-theme-muted mb-4 truncate text-center w-full block">For {item.title}</p>
-    
-    {error && <p className="text-xs text-red-500 mb-3 bg-red-50 dark:bg-red-950/30 dark:border dark:border-red-900 p-2 rounded-lg">{error}</p>}
-    
-    <form onSubmit={handleSubmit} className="space-y-4">
-     <div>
-      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 text-center">Tap to rate</label>
-      <div className="flex gap-1 justify-center py-2">
-       {[1, 2, 3, 4, 5].map(star => (
-        <button type="button" key={star} onClick={() => setRating(star)} className={`text-3xl transition-transform ${star <= rating ? 'text-amber-400 scale-110' : 'text-gray-200 dark:text-gray-700'} hover:scale-125`}>
-         ★
-        </button>
-       ))}
-      </div>
+    {!submitted ? (
+     <>
+      <h3 className="text-lg font-bold text-theme-text mb-1">Leave a Review</h3>
+      <p className="text-xs text-theme-muted mb-4 truncate text-center w-full block">For {item.title}</p>
+      {error && <p className="text-xs text-red-500 mb-3 bg-red-50 dark:bg-red-950/30 dark:border dark:border-red-900 p-2 rounded-lg">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+       <div>
+        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 text-center">Tap to rate</label>
+        <div className="flex gap-1 justify-center py-2">
+         {[1, 2, 3, 4, 5].map(star => (
+          <button type="button" key={star} onClick={() => setRating(star)} className={`text-3xl transition-transform ${star <= rating ? 'text-amber-400 scale-110' : 'text-gray-200 dark:text-gray-700'} hover:scale-125`}>
+           ★
+          </button>
+         ))}
+        </div>
+       </div>
+       <div>
+        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Comment (Optional)</label>
+        <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} placeholder="How was your experience?" className="input-field text-sm p-3 w-full" />
+       </div>
+       <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 text-sm disabled:opacity-50 mt-2">
+        {loading ? 'Submitting...' : 'Submit Review'}
+       </button>
+      </form>
+     </>
+    ) : (
+     <div className="text-center py-4">
+      <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-3xl">✓</div>
+      <h4 className="text-base font-bold text-theme-text">Review Submitted</h4>
+      <p className="text-xs text-theme-muted mt-1">Thanks! Your {rating}-star review for this order item is now saved.</p>
+      <button onClick={onClose} className="btn-primary w-full py-2.5 text-sm mt-4">Done</button>
      </div>
-     <div>
-      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Comment (Optional)</label>
-      <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} placeholder="How was your experience?" className="input-field text-sm p-3 w-full" />
-     </div>
-     <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 text-sm disabled:opacity-50 mt-2">
-      {loading ? 'Submitting...' : 'Submit Review'}
-     </button>
-    </form>
+    )}
    </div>
   </div>
  )
