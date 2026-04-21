@@ -36,29 +36,29 @@ const LOCATIONS = [
 
 const CATEGORIES = ['house_sell', 'house_rent', 'furniture', 'appliance'];
 
-// High-quality verified Unsplash Image IDs
+// Deterministic picsum.photos seeds per category (reliable, no API key needed)
 const IMAGE_IDS = {
   house_sell: [
-    '1600593058324-47ef209d8d09', '1600585154340-be6161a56a0c', '1613490493576-7fde63acd811', 
-    '1512917774080-9991f1c4c750', '1564013799919-ab600027ffc6', '1600566752355-3579ab0393cb'
+    'house-sell-1', 'house-sell-2', 'house-sell-3',
+    'house-sell-4', 'house-sell-5', 'house-sell-6'
   ],
   house_rent: [
-    '1616489944695-7852b42cc93d', '1618221195710-dd6b41faeaa6', '1616166330003-8e551043602d', 
-    '1556912177-c540386398df', '1617806118233-f8e1c6622b6c', '1502672260266-1c1ef2d93688'
+    'house-rent-1', 'house-rent-2', 'house-rent-3',
+    'house-rent-4', 'house-rent-5', 'house-rent-6'
   ],
   furniture: [
-    '1586023492125-27b2c045efd7', '1555041469-a586c61ea9bc', '1592078650245-63e1d8821950', 
-    '1538688525198-9b7d96730a4c', '1493663212024-7eb32822846a', '1524758631624-e28a90c3ad6e'
+    'furniture-1', 'furniture-2', 'furniture-3',
+    'furniture-4', 'furniture-5', 'furniture-6'
   ],
   appliance: [
-    '1584622650111-993a426fbf0a', '1556911220-e15b29be8c8f', '1514332304140-8475c03cb471', 
-    '1583394838336-acd97773c3e2', '1494412651409-a9c3606700b1', '1523275335684-37898b6baf30'
+    'appliance-1', 'appliance-2', 'appliance-3',
+    'appliance-4', 'appliance-5', 'appliance-6'
   ]
 };
 
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const buildUrl = (id) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=1200`;
+const buildUrl = (seed) => `https://picsum.photos/seed/${seed}/1200/800`;
 
 async function seedFresh() {
   console.log('🌱 Starting Bulletproof Seeding Process...');

@@ -32,28 +32,28 @@ function generateData(category, index) {
     description = `An absolute masterpiece! This ${title.toLowerCase()} offers an incredible living experience with premium fittings, ample natural light, and top-tier security in the heart of the city. Perfect for families looking for a permanent, luxurious address.`;
     price = getRandInt(8500000, 35000000); // 85 Lakh to 3.5 Crore
     attributes = { beds: getRandInt(2, 5), baths: getRandInt(2, 4), size_sqft: getRandInt(1200, 3500) };
-    imageUrl = `https://loremflickr.com/800/600/luxury,apartment,exterior/all?lock=${index}`;
+    imageUrl = `https://picsum.photos/seed/house-sell-${index}/1200/800`;
   } 
   else if (category === 'house_rent') {
     title = `${adj} ${getRandom(PROPERTY_TYPES)} available for Rent in ${loc.split(',')[0]}`;
     description = `Looking for a comfortable home? We are renting out this ${adj.toLowerCase()} flat immediately. It features an open-plan living room, fully fitted kitchen, and secure parking. Very close to major supermarkets and schools.`;
     price = getRandInt(25000, 150000); // 25K to 1.5 Lakh per month
     attributes = { beds: getRandInt(1, 4), baths: getRandInt(1, 4), size_sqft: getRandInt(800, 2500) };
-    imageUrl = `https://loremflickr.com/800/600/apartment,livingroom/all?lock=${index + 100}`;
+    imageUrl = `https://picsum.photos/seed/house-rent-${index}/1200/800`;
   } 
   else if (category === 'furniture') {
     title = `${adj} ${getRandom(FURNITURE_TYPES)}`;
     description = `Selling this ${title.toLowerCase()} in excellent condition. Barely used and fits perfectly with any modern interior. Made from highly durable materials with an elegant finish. Transport must be arranged by the buyer.`;
     price = getRandInt(5000, 85000); // 5k to 85k
     attributes = { condition: getRandom(['Brand New', 'Like New', 'Good', 'Fair']), brand: getRandom(['Hatil', 'Otobi', 'IKEA', 'Navana', 'Brothers']) };
-    imageUrl = `https://loremflickr.com/800/600/furniture,indoor/all?lock=${index + 200}`;
+    imageUrl = `https://picsum.photos/seed/furniture-${index}/1200/800`;
   } 
   else if (category === 'appliance') {
     title = `${getRandom(['Brand New', 'Slightly Used'])} ${getRandom(APPLIANCE_TYPES)}`;
     description = `Fully functional ${title}. Upgrading to a newer model so looking to sell this off quickly. Comes with all original accessories and power cables. Working perfectly without any issues.`;
     price = getRandInt(8000, 120000); // 8k to 1.2 Lakh
     attributes = { condition: getRandom(['New', 'Used - Like New', 'Used - Good']), warranty: getRandom(['6 Months Left', 'None', '1 Year Official']) };
-    imageUrl = `https://loremflickr.com/800/600/appliance,electronics/all?lock=${index + 300}`;
+    imageUrl = `https://picsum.photos/seed/appliance-${index}/1200/800`;
   }
 
   return { title, description, price, location: loc, attributes, imageUrl };
@@ -101,7 +101,7 @@ async function seedDatabase() {
       if (Math.random() > 0.5) {
         await pool.query(
           `INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, 0)`,
-          [productId, `https://loremflickr.com/800/600/interior,design/all?lock=${i + 1000}`]
+          [productId, `https://picsum.photos/seed/interior-${i}/1200/800`]
         );
       }
 
