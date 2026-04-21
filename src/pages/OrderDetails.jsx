@@ -180,7 +180,7 @@ export default function OrderDetails() {
         <p className="text-theme-muted whitespace-pre-line">{order.shipping_address || 'N/A'}</p>
        </div>
         <div className="p-3 rounded-xl bg-theme-bg/60">
-         <p className="font-semibold text-theme-text mb-1">Contact</p>
+         <p className="font-semibold text-theme-text mb-1">{isBuyerContext ? 'Your Contact' : 'Contact'}</p>
          {isBuyerContext ? (
           <>
            <p className="text-theme-muted">{order.buyer_name || 'You'}</p>
