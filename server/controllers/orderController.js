@@ -87,7 +87,7 @@ async function placeOrder(req, res) {
         sellerId, 'order',
         'New Order Received! 🛍️',
         `${buyerName} purchased: ${titles}`,
-        `/profile?view=seller-orders&orderId=${orderId}`
+        `/orders/${orderId}`
       )
     }
 
@@ -96,14 +96,14 @@ async function placeOrder(req, res) {
       req.user.id, 'order',
       'Order Confirmed! ✅',
       `Your order #${orderId} for ৳${totalAmount.toLocaleString()} has been placed successfully.`,
-      `/profile?view=orders&orderId=${orderId}`
+      `/orders/${orderId}`
     )
     if (earnedPoints > 0) {
       createNotification(
         req.user.id, 'system',
         'Reward Points Earned! 🎁',
         `You earned ${earnedPoints} points from your recent purchase.`,
-        `/profile?view=orders&orderId=${orderId}`
+        `/orders/${orderId}`
       )
     }
 
@@ -138,12 +138,14 @@ async function getMyOrders(req, res) {
     const [allItems] = await pool.query(`
       SELECT oi.*, p.title, p.category,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
-             u.full_name as seller_name
+             u.full_name as seller_name,
+             r.id as review_id
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
       JOIN users u ON oi.seller_id = u.id
+      LEFT JOIN reviews r ON r.order_item_id = oi.id AND r.buyer_id = ?
       WHERE oi.order_id IN (?)
-    `, [orderIds])
+    `, [req.user.id, orderIds])
 
     // Group items by order_id
     const itemMap = {}
@@ -158,6 +160,72 @@ async function getMyOrders(req, res) {
     return res.json({ success: true, orders })
   } catch (err) {
     console.error('[getMyOrders error]', err)
+    return res.status(500).json({ success: false, message: 'Server error.' })
+  }
+}
+
+/**
+ * GET /api/orders/:id — buyer/seller/admin sees full order details
+ */
+async function getOrderById(req, res) {
+  try {
+    const orderId = parseInt(req.params.id)
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid order id.' })
+    }
+
+    const [orders] = await pool.query(`
+      SELECT o.*,
+             b.full_name as buyer_name, b.email as buyer_email, b.phone as buyer_phone, b.address as buyer_address, b.avatar_url as buyer_avatar
+      FROM orders o
+      JOIN users b ON b.id = o.buyer_id
+      WHERE o.id = ?
+      LIMIT 1
+    `, [orderId])
+
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: 'Order not found.' })
+    }
+
+    const order = orders[0]
+    const isBuyer = order.buyer_id === req.user.id
+    const [sellerLinks] = await pool.query(
+      'SELECT seller_id FROM order_items WHERE order_id = ? AND seller_id = ? LIMIT 1',
+      [orderId, req.user.id]
+    )
+    const isSeller = sellerLinks.length > 0
+
+    if (!req.user.is_admin && !isBuyer && !isSeller) {
+      return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
+    }
+
+    const [items] = await pool.query(`
+      SELECT oi.*,
+             p.title, p.status as product_status,
+             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
+             s.full_name as seller_name, s.email as seller_email, s.phone as seller_phone, s.avatar_url as seller_avatar
+      FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      JOIN users s ON s.id = oi.seller_id
+      WHERE oi.order_id = ?
+      ORDER BY oi.id ASC
+    `, [orderId])
+
+    return res.json({
+      success: true,
+      order: {
+        ...order,
+        items,
+        permissions: {
+          is_buyer: isBuyer,
+          is_seller: isSeller,
+          is_admin: !!req.user.is_admin,
+          can_cancel: ['pending', 'confirmed', 'shipped'].includes(order.status),
+        },
+      },
+    })
+  } catch (err) {
+    console.error('[getOrderById error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
   }
 }
@@ -228,7 +296,36 @@ async function updateOrderStatus(req, res) {
       return res.status(403).json({ success: false, message: 'Buyers can only cancel orders.' })
     }
 
+    if (order.status === status) {
+      return res.json({ success: true, message: `Order is already ${status}.` })
+    }
+
     await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
+
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      const [orderItems] = await pool.query(
+        'SELECT product_id FROM order_items WHERE order_id = ?',
+        [req.params.id]
+      )
+      for (const item of orderItems) {
+        await pool.query(
+          "UPDATE products SET status = 'approved' WHERE id = ? AND status = 'sold'",
+          [item.product_id]
+        )
+      }
+
+      const [[{ item_total }]] = await pool.query(
+        'SELECT COALESCE(SUM(price * quantity), 0) as item_total FROM order_items WHERE order_id = ?',
+        [req.params.id]
+      )
+      const earnedPoints = Math.floor(Number(item_total || 0) / 100) * 10
+      if (earnedPoints > 0) {
+        await pool.query(
+          'UPDATE users SET points = GREATEST(points - ?, 0) WHERE id = ?',
+          [earnedPoints, order.buyer_id]
+        )
+      }
+    }
 
     // Notify buyer about status change
     const statusMessages = {
@@ -237,13 +334,39 @@ async function updateOrderStatus(req, res) {
       cancelled: 'Your order has been cancelled.',
     }
 
-    if (statusMessages[status]) {
+    if (statusMessages[status] && status !== 'cancelled') {
       createNotification(
         orders[0].buyer_id, 'order',
         statusMessages[status],
         `Order #${req.params.id} status updated to ${status}.`,
-        `/profile?view=orders&orderId=${req.params.id}`
+        `/orders/${req.params.id}`
       )
+    }
+
+    if (status === 'cancelled') {
+      if (isBuyer) {
+        const [sellerRows] = await pool.query(
+          'SELECT DISTINCT seller_id FROM order_items WHERE order_id = ?',
+          [req.params.id]
+        )
+        for (const row of sellerRows) {
+          createNotification(
+            row.seller_id,
+            'order',
+            'Order Cancelled by Buyer',
+            `Buyer cancelled order #${req.params.id}.`,
+            `/orders/${req.params.id}`
+          )
+        }
+      } else if (isSeller) {
+        createNotification(
+          order.buyer_id,
+          'order',
+          'Order Cancelled by Seller',
+          `Seller cancelled order #${req.params.id}.`,
+          `/orders/${req.params.id}`
+        )
+      }
     }
 
     return res.json({ success: true, message: `Order status updated to ${status}.` })
@@ -253,4 +376,4 @@ async function updateOrderStatus(req, res) {
   }
 }
 
-module.exports = { placeOrder, getMyOrders, getSellerOrders, updateOrderStatus }
+module.exports = { placeOrder, getMyOrders, getSellerOrders, getOrderById, updateOrderStatus }
