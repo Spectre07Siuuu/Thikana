@@ -1026,8 +1026,15 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
     </div>
    ) : (
     <div className="space-y-4">
-     {orders.map(order => (
-      <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
+      {orders.map(order => {
+       const sellerContacts = Array.from(
+        new Map((order.items || [])
+         .map(item => [item.seller_id, { name: item.seller_name || 'N/A', phone: item.seller_phone || 'N/A' }]))
+         .values()
+       )
+
+       return (
+       <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
         <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
         <div>
          <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
@@ -1072,12 +1079,15 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
          </button>
          <Link to={`/orders/${order.id}`} className="text-xs text-theme-muted hover:text-theme-primary">Open full order →</Link>
         </div>
-        {expandedOrderIds.includes(order.id) && (
-         <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
-          <p className="text-[11px] text-theme-muted">Shipping: {order.shipping_address}</p>
-          <p className="text-[11px] text-theme-muted">Phone: {order.phone}</p>
-          {order.note && <p className="text-[11px] text-theme-muted">Note: {order.note}</p>}
-          <div className="flex flex-wrap gap-2 pt-1">
+         {expandedOrderIds.includes(order.id) && (
+          <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
+           {sellerContacts.map((seller, idx) => (
+            <p key={`${seller.name}-${idx}`} className="text-[11px] text-theme-muted">
+             Seller {sellerContacts.length > 1 ? `${idx + 1}` : ''}: {seller.name} · {seller.phone}
+            </p>
+           ))}
+           {order.note && <p className="text-[11px] text-theme-muted">Note: {order.note}</p>}
+           <div className="flex flex-wrap gap-2 pt-1">
            {['pending', 'confirmed', 'shipped'].includes(order.status) && (
             <button onClick={() => handleCancelOrder(order.id)} disabled={updatingOrderId === order.id}
              className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 transition-colors disabled:opacity-60">
@@ -1093,10 +1103,10 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
             </Link>
            )}
           </div>
-         </div>
-        )}
-       </div>
-      ))}
+          </div>
+         )}
+        </div>
+       )})}
      </div>
    )}
 

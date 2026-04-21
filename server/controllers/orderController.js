@@ -138,7 +138,7 @@ async function getMyOrders(req, res) {
     const [allItems] = await pool.query(`
       SELECT oi.*, p.title, p.category,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
-             u.full_name as seller_name,
+             u.full_name as seller_name, u.phone as seller_phone,
              r.id as review_id
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id

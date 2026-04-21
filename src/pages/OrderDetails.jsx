@@ -40,10 +40,18 @@ export default function OrderDetails() {
   loadOrder()
  }, [id, user, navigate])
 
- const subtotal = useMemo(() => (
-  Number(order?.items?.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0) || 0)
- ), [order])
- const deliveryFee = Number(order?.delivery_fee || 0)
+  const subtotal = useMemo(() => (
+   Number(order?.items?.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0) || 0)
+  ), [order])
+  const deliveryFee = Number(order?.delivery_fee || 0)
+  const isBuyerContext = !!order?.permissions?.is_buyer
+  const sellerContacts = useMemo(() => (
+   Array.from(
+    new Map((order?.items || [])
+     .map(item => [item.seller_id, { name: item.seller_name || 'N/A', phone: item.seller_phone || 'N/A' }]))
+     .values()
+   )
+  ), [order])
 
  const handleCancel = async () => {
   if (!order || updating) return
@@ -121,16 +129,40 @@ export default function OrderDetails() {
         <p className="text-theme-muted whitespace-pre-line">{order.shipping_address || 'N/A'}</p>
        </div>
        <div className="p-3 rounded-xl bg-theme-bg/60">
-        <p className="font-semibold text-theme-text mb-1">Contact</p>
-        <p className="text-theme-muted">{order.phone || 'N/A'}</p>
+        <p className="font-semibold text-theme-text mb-1">{isBuyerContext ? 'Seller Contact' : 'Contact'}</p>
+        {isBuyerContext ? (
+         sellerContacts.length ? (
+          sellerContacts.map((seller, idx) => (
+           <p key={`${seller.name}-${idx}`} className="text-theme-muted">
+            {sellerContacts.length > 1 ? `Seller ${idx + 1}: ` : ''}{seller.name} · {seller.phone}
+           </p>
+          ))
+         ) : <p className="text-theme-muted">N/A</p>
+        ) : (
+         <p className="text-theme-muted">{order.phone || 'N/A'}</p>
+        )}
         {order.note && <p className="text-theme-muted mt-2">Note: {order.note}</p>}
        </div>
       </div>
 
       <div className="mt-4 p-3 rounded-xl bg-theme-bg/60 text-xs">
-       <p className="font-semibold text-theme-text mb-2">Buyer</p>
-       <p className="text-theme-muted">{order.buyer_name} · {order.buyer_email || 'N/A'}</p>
-       <p className="text-theme-muted">{order.buyer_phone || order.phone || 'N/A'}</p>
+       <p className="font-semibold text-theme-text mb-2">{isBuyerContext ? 'Seller' : 'Buyer'}</p>
+       {isBuyerContext ? (
+        sellerContacts.length ? (
+         sellerContacts.map((seller, idx) => (
+          <p key={`${seller.name}-card-${idx}`} className="text-theme-muted">
+           {sellerContacts.length > 1 ? `Seller ${idx + 1}: ` : ''}{seller.name} · {seller.phone}
+          </p>
+         ))
+        ) : <p className="text-theme-muted">N/A</p>
+       ) : (
+        <>
+         <p className="text-theme-muted">{order.buyer_name} · {order.buyer_email || 'N/A'}</p>
+         <p className="text-theme-muted">{order.buyer_phone || order.phone || 'N/A'}</p>
+        </>
+       )}
+       <p className="text-theme-muted mt-2">Paid on: {formatDateTime(order.created_at)}</p>
+       <p className="text-theme-muted">Paid by: COD</p>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -143,7 +175,6 @@ export default function OrderDetails() {
           <div className="min-w-0">
            <Link to={`/product/${item.product_id}`} className="text-xs font-semibold text-theme-text hover:text-theme-primary truncate block max-w-[180px] sm:max-w-[320px]">{item.title}</Link>
            <p className="text-[11px] text-theme-muted">৳{Number(item.price).toLocaleString()} × {item.quantity}</p>
-           <p className="text-[10px] text-theme-muted">Seller: {item.seller_name}</p>
           </div>
          </div>
          <p className="text-xs font-semibold text-rose-500">৳{(Number(item.price) * Number(item.quantity)).toLocaleString()}</p>
