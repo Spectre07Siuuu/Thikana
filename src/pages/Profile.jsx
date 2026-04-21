@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
  ArrowLeft, Pencil, ShieldCheck, CalendarDays, ChevronRight,
  ShoppingBag, Heart, Star, Award,
@@ -10,7 +10,7 @@ import {
  FileText, Camera,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, addReview } from '../services/api'
+import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, getSellerOrders, addReview } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -60,6 +60,7 @@ const SELLER_TABS = [
 ═══════════════════════════════════════════════════════════ */
 export default function Profile() {
  const navigate = useNavigate()
+ const [searchParams] = useSearchParams()
  const { user, logout, refreshUser, loading: authLoading } = useAuth()
 
  const [profile, setProfile]    = useState(null)
@@ -87,20 +88,31 @@ export default function Profile() {
    isSeller ? getProducts({ seller_id: user.id }).catch(() => ({ products: [] })) : Promise.resolve({ products: [] }),
    isBuyer  ? getFavourites().catch(() => ({ favourites: [] }))                  : Promise.resolve({ favourites: [] }),
    isSeller ? getSellerInquiries().catch(() => ({ inquiries: [] }))              : Promise.resolve({ inquiries: [] }),
-  ])
-   .then(([profData, nidData, prodData, favData, inqData]) => {
-    setProfile(profData.user)
-    setNidSubmission(nidData.submission)
-    setProducts(prodData.products || [])
-    setFavourites(favData.favourites || [])
-    setInquiries(inqData.inquiries || [])
+   ])
+    .then(([profData, nidData, prodData, favData, inqData]) => {
+     setProfile({ ...profData.user, stats: profData.stats || {} })
+     setNidSubmission(nidData.submission)
+     setProducts(prodData.products || [])
+     setFavourites(favData.favourites || [])
+     setInquiries(inqData.inquiries || [])
    })
    .catch((err) => {
     console.error(err)
     navigate('/login')
    })
    .finally(() => setLoading(false))
- }, [user, navigate])
+ }, [user, navigate, authLoading])
+
+ useEffect(() => {
+  if (!profile) return
+  const view = searchParams.get('view')
+  if (profile.role === 'buyer' && view === 'orders') {
+   setBuyerView('orders')
+  }
+  if (profile.role === 'seller' && view === 'seller-orders') {
+   setActiveTab('orders')
+  }
+ }, [profile, searchParams])
 
  const fetchSellerProducts = () => {
   if (!user) return
@@ -140,7 +152,8 @@ export default function Profile() {
   { icon: Award,    value: profile.stats?.points || 0,  label: 'Points',  color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/40', action: null },
  ]
  
- const sellerStats = [
+  const sellerStats = [
+  { icon: ShoppingBag, value: profile.stats?.seller_orders || 0, label: 'Orders', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: 'orders' },
   { icon: DollarSign,  value: `৳${formatPrice(profile.stats?.total_sales || 0)}`, label: 'Total Sales', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40', action: null },
   { icon: BarChart3,   value: profile.stats?.response_rate || '98%', label: 'Response Rate', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: null },
   { icon: ClipboardList, value: profile.stats?.active_listings || 0, label: 'Active Listings', color: 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40', action: null },
@@ -246,9 +259,13 @@ export default function Profile() {
      <div className={`grid gap-3 mb-6 animate-slide-up ${
       isSeller ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'
      }`} style={{ animationDelay: '60ms' }}>
-      {(isSeller ? sellerStats : buyerStats).map(({ icon: Icon, value, label, color, sub, action }) => (
-       <button key={label} onClick={() => { if(!isSeller && action) setBuyerView(action) }} 
-        className={`stat-card group flex flex-col items-center justify-center ${!isSeller && action ? 'cursor-pointer hover:border-theme-primary transition-colors' : 'cursor-default'}`}>
+     {(isSeller ? sellerStats : buyerStats).map(({ icon: Icon, value, label, color, sub, action }) => (
+      <button key={label} onClick={() => {
+       if (!action) return
+       if (isSeller && action === 'orders') setActiveTab('orders')
+       if (!isSeller) setBuyerView(action)
+      }}
+       className={`stat-card group flex flex-col items-center justify-center ${action ? 'cursor-pointer hover:border-theme-primary transition-colors' : 'cursor-default'}`}>
         <div className={`w-10 h-10 rounded-xl ${color}
          flex items-center justify-center mx-auto mb-2.5
          group-hover:scale-110 transition-transform duration-300`}>
@@ -262,7 +279,9 @@ export default function Profile() {
      </div>
 
      {/* ── Role-specific Content ─────────────── */}
-     {isSeller ? <SellerContent activeTab={activeTab} setActiveTab={setActiveTab} products={products} refreshProducts={fetchSellerProducts} inquiries={inquiries} setInquiries={setInquiries} /> : <BuyerContent onLogout={handleLogout} favourites={favourites} view={buyerView} setView={setBuyerView} />}
+     {isSeller
+      ? <SellerContent activeTab={activeTab} setActiveTab={setActiveTab} products={products} refreshProducts={fetchSellerProducts} inquiries={inquiries} setInquiries={setInquiries} highlightedOrderId={Number(searchParams.get('orderId')) || null} />
+      : <BuyerContent onLogout={handleLogout} favourites={favourites} view={buyerView} setView={setBuyerView} highlightedOrderId={Number(searchParams.get('orderId')) || null} />}
 
     </div>
    </main>
@@ -274,11 +293,11 @@ export default function Profile() {
 /* ══════════════════════════════════════════════════════════
   BUYER CONTENT — Menu list style
 ═══════════════════════════════════════════════════════════ */
-function BuyerContent({ onLogout, favourites, view, setView }) {
+function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId }) {
  const navigate = useNavigate()
 
  if (view === 'orders') {
-  return <BuyerOrdersTab onBack={() => setView('menu')} />
+  return <BuyerOrdersTab onBack={() => setView('menu')} highlightedOrderId={highlightedOrderId} />
  }
 
  if (view === 'saved') {
@@ -349,7 +368,7 @@ function BuyerContent({ onLogout, favourites, view, setView }) {
 /* ══════════════════════════════════════════════════════════
   SELLER CONTENT — Tabs + product grid
 ═══════════════════════════════════════════════════════════ */
-function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inquiries, setInquiries }) {
+function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inquiries, setInquiries, highlightedOrderId }) {
  return (
   <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
    {/* Tab bar */}
@@ -377,7 +396,7 @@ function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inq
     {/* Tab content */}
     <div className="p-5">
      {activeTab === 'products' && <ProductsTab products={products} refreshProducts={refreshProducts} />}
-     {activeTab === 'orders'  && <PlaceholderTab label="Orders" />}
+     {activeTab === 'orders'  && <SellerOrdersTab highlightedOrderId={highlightedOrderId} refreshProducts={refreshProducts} />}
      {activeTab === 'messages' && <InquiriesTab inquiries={inquiries} setInquiries={setInquiries} />}
     </div>
    </div>
@@ -824,9 +843,125 @@ function EditProductModal({ product, onClose, onSuccess }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+  SELLER ORDERS TAB
+═══════════════════════════════════════════════════════════ */
+function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
+ const [items, setItems] = useState([])
+ const [loading, setLoading] = useState(true)
+ const [updatingProductId, setUpdatingProductId] = useState(null)
+
+ useEffect(() => {
+  getSellerOrders()
+   .then(res => setItems(res.orders || []))
+   .catch(console.error)
+   .finally(() => setLoading(false))
+ }, [])
+
+ const handleMarkAsSold = async (item) => {
+  if (item.product_status === 'sold') return
+  setUpdatingProductId(item.product_id)
+  try {
+   await editProduct(item.product_id, { status: 'sold' })
+   setItems(prev => prev.map(it => it.product_id === item.product_id ? { ...it, product_status: 'sold' } : it))
+   refreshProducts?.()
+  } catch (err) {
+   alert(err.message || 'Failed to mark product as sold.')
+  } finally {
+   setUpdatingProductId(null)
+  }
+ }
+
+ const groupedOrders = Object.values(items.reduce((acc, item) => {
+  if (!acc[item.order_id]) {
+   acc[item.order_id] = {
+    id: item.order_id,
+    orderStatus: item.order_status,
+    orderDate: item.order_date,
+    buyerName: item.buyer_name,
+    buyerEmail: item.buyer_email,
+    buyerPhone: item.buyer_phone,
+    shippingAddress: item.shipping_address,
+    total: 0,
+    items: []
+   }
+  }
+  acc[item.order_id].items.push(item)
+  acc[item.order_id].total += Number(item.price) * Number(item.quantity)
+  return acc
+ }, {}))
+
+ if (loading) {
+  return (
+   <div className="py-10 text-center animate-pulse">
+    <div className="w-6 h-6 border-2 border-theme-primary border-t-transparent rounded-full animate-spin mx-auto" />
+   </div>
+  )
+ }
+
+ if (groupedOrders.length === 0) {
+  return (
+   <div className="text-center py-10 bg-theme-card rounded-2xl border border-theme-border">
+    <ShoppingBag size={32} className="mx-auto text-gray-300 dark:text-gray-700 mb-3" />
+    <p className="text-sm font-medium text-theme-muted">No orders yet.</p>
+   </div>
+  )
+ }
+
+ return (
+  <div className="space-y-4">
+   {groupedOrders.map(order => (
+    <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
+     <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
+      <div>
+       <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
+       <p className="text-[10px] text-theme-muted">{new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+      </div>
+      <div className="text-right">
+       <p className="text-sm font-bold text-rose-500">৳{order.total.toLocaleString()}</p>
+       <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium capitalize">{order.orderStatus}</span>
+      </div>
+     </div>
+     <p className="text-[11px] text-theme-muted mb-3">
+      Buyer: <span className="text-theme-text font-semibold">{order.buyerName}</span> · {order.buyerEmail} · {order.buyerPhone}
+     </p>
+     <p className="text-[11px] text-theme-muted mb-3">Shipping: {order.shippingAddress}</p>
+     <div className="space-y-3">
+      {order.items.map(item => (
+       <div key={item.id} className="flex items-center justify-between bg-theme-bg/50 p-2.5 rounded-xl gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+         <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0">
+          {item.main_image ? (
+           <img src={item.main_image} alt={item.title} className="w-full h-full object-cover" />
+          ) : <Package size={16} className="m-auto mt-2 text-theme-muted" />}
+         </div>
+         <div className="min-w-0">
+          <Link to={`/product/${item.product_id}`} className="text-xs font-semibold text-theme-text hover:text-theme-primary truncate block max-w-[170px] sm:max-w-[230px]">
+           {item.title}
+          </Link>
+          <p className="text-[10px] text-theme-muted mt-0.5">৳{Number(item.price).toLocaleString()} × {item.quantity}</p>
+         </div>
+        </div>
+        {item.product_status === 'sold' ? (
+         <span className="text-[10px] px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-500 border border-rose-200 dark:border-rose-800 font-semibold">Sold</span>
+        ) : (
+         <button onClick={() => handleMarkAsSold(item)} disabled={updatingProductId === item.product_id}
+          className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-theme-primary bg-theme-primary/10 hover:bg-theme-primary/20 border border-theme-primary/30 transition-colors disabled:opacity-60">
+          {updatingProductId === item.product_id ? 'Updating...' : 'Mark as Sold'}
+         </button>
+        )}
+       </div>
+      ))}
+     </div>
+    </div>
+   ))}
+  </div>
+ )
+}
+
+/* ══════════════════════════════════════════════════════════
   BUYER ORDERS TAB
 ═══════════════════════════════════════════════════════════ */
-function BuyerOrdersTab({ onBack }) {
+function BuyerOrdersTab({ onBack, highlightedOrderId }) {
  const [orders, setOrders] = useState([])
  const [loading, setLoading] = useState(true)
  const [reviewItem, setReviewItem] = useState(null)
@@ -861,7 +996,7 @@ function BuyerOrdersTab({ onBack }) {
    ) : (
     <div className="space-y-4">
      {orders.map(order => (
-      <div key={order.id} className="bg-theme-card border border-theme-border rounded-2xl p-4 shadow-sm">
+      <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
        <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
         <div>
          <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
