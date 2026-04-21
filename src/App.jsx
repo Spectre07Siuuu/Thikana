@@ -23,6 +23,7 @@ import Cart      from './pages/Cart'
 import Checkout    from './pages/Checkout'
 import Messages    from './pages/Messages'
 import Notifications from './pages/Notifications'
+import OrderDetails from './pages/OrderDetails'
 
 export default function App() {
  return (
@@ -51,6 +52,7 @@ export default function App() {
          <Route path="/checkout"    element={<Checkout />} />
          <Route path="/messages"    element={<Messages />} />
          <Route path="/notifications"  element={<Notifications />} />
+         <Route path="/orders/:id"    element={<OrderDetails />} />
         </Routes>
        </BrowserRouter>
       </NotificationProvider>

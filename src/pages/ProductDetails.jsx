@@ -8,7 +8,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { getProductById, toggleFavourite, getFavouriteStatus } from '../services/api'
+import { getProductById, getProductReviews, toggleFavourite, getFavouriteStatus } from '../services/api'
 
 const formatPrice = (p) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(p)
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -28,17 +28,16 @@ export default function ProductDetails() {
  const [addingToCart, setAddingToCart] = useState(false)
  const [inCart, setInCart] = useState(false)
  const [reviews, setReviews] = useState([])
+ const [avgRating, setAvgRating] = useState(0)
 
  useEffect(() => {
   setLoading(true)
-  getProductById(id)
-   .then(data => {
-    setProduct(data.product)
-    setReviews(data.product.reviews || [])
-    // Check if in cart
-    if (cart.some(item => item.product_id === parseInt(id))) {
-     setInCart(true)
-    }
+  Promise.all([getProductById(id), getProductReviews(id).catch(() => ({ reviews: [], avgRating: 0 }))])
+   .then(([productData, reviewData]) => {
+    setProduct(productData.product)
+    setReviews(reviewData.reviews || [])
+    setAvgRating(Number(reviewData.avgRating || 0))
+    if (cart.some(item => item.product_id === parseInt(id))) setInCart(true)
     setLoading(false)
    })
    .catch(err => {
@@ -151,6 +150,7 @@ export default function ProductDetails() {
  const isSeller = user?.id === seller_id
  const isBuyer = user?.role === 'buyer' && !user?.is_admin
  const isCartable = ['furniture', 'appliance'].includes(category) && !isSeller && status !== 'sold' && isBuyer
+ const ratingStarsFilled = Math.round(avgRating)
 
  return (
   <>
@@ -340,13 +340,17 @@ export default function ProductDetails() {
      <div className="mt-14 border-t border-theme-border pt-10">
       <div className="flex items-center justify-between mb-8">
        <h2 className="text-xl font-bold text-theme-text">Buyer Reviews</h2>
-       <div className="flex items-center gap-2">
-        <span className="text-2xl font-black text-amber-500">4.8</span>
-        <div className="text-xs text-theme-muted">
-         <div className="flex text-amber-400 mb-0.5">★★★★★</div>
-         <div>Based on {reviews.length} reviews</div>
+        <div className="flex items-center gap-2">
+         <span className="text-2xl font-black text-amber-500">{reviews.length ? avgRating.toFixed(1) : '0.0'}</span>
+         <div className="text-xs text-theme-muted">
+          <div className="flex text-amber-400 mb-0.5">
+           {[...Array(5)].map((_, i) => (
+            <span key={i} className={i < ratingStarsFilled ? '' : 'text-gray-200 dark:text-gray-700'}>★</span>
+           ))}
+          </div>
+          <div>Based on {reviews.length} reviews</div>
+         </div>
         </div>
-       </div>
       </div>
 
       {reviews.length === 0 ? (

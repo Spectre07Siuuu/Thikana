@@ -192,6 +192,10 @@ export async function getSellerOrders() {
  return request('/orders/seller')
 }
 
+export async function getOrderById(orderId) {
+ return request(`/orders/${orderId}`)
+}
+
 export async function updateOrderStatus(orderId, status) {
  return request(`/orders/${orderId}/status`, { method: 'PATCH', body: { status } })
 }
