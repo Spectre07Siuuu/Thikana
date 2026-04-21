@@ -1,6 +1,24 @@
 const pool = require('../config/db')
 const { createNotification } = require('./notificationController')
 
+const BUYER_CANCELLATION_REASONS = {
+  changed_mind: 'Changed mind',
+  ordered_by_mistake: 'Ordered by mistake',
+  found_better_option: 'Found a better option',
+  delivery_taking_too_long: 'Delivery is taking too long',
+  payment_or_budget_issue: 'Payment or budget issue',
+  others: 'Others',
+}
+
+const SELLER_CANCELLATION_REASONS = {
+  item_out_of_stock: 'Item is out of stock',
+  listing_issue: 'Listing information issue',
+  unable_to_fulfill: 'Unable to fulfill the order now',
+  buyer_unreachable: 'Buyer is unreachable',
+  logistics_issue: 'Logistics or delivery issue',
+  others: 'Others',
+}
+
 /**
  * POST /api/orders  — place order from cart
  * Body: { shipping_address, phone, note? }
@@ -260,7 +278,12 @@ async function getSellerOrders(req, res) {
  * Body: { status }
  */
 async function updateOrderStatus(req, res) {
-  const { status } = req.body
+  const {
+    status,
+    cancellation_reason = '',
+    cancellation_note = '',
+    acknowledged_consequences = false,
+  } = req.body || {}
   const validStatuses = ['confirmed', 'shipped', 'delivered', 'cancelled']
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ success: false, message: 'Invalid status.' })
@@ -300,7 +323,26 @@ async function updateOrderStatus(req, res) {
       return res.json({ success: true, message: `Order is already ${status}.` })
     }
 
+    if (status === 'cancelled') {
+      if (!['pending', 'confirmed', 'shipped'].includes(order.status)) {
+        return res.status(400).json({ success: false, message: 'This order can no longer be cancelled.' })
+      }
+      if (!cancellation_reason || typeof cancellation_reason !== 'string') {
+        return res.status(400).json({ success: false, message: 'Cancellation reason is required.' })
+      }
+      if (!acknowledged_consequences) {
+        return res.status(400).json({ success: false, message: 'You must agree to cancellation consequences.' })
+      }
+      if (cancellation_reason === 'others' && !String(cancellation_note || '').trim()) {
+        return res.status(400).json({ success: false, message: 'Please provide cancellation details for Others.' })
+      }
+    }
+
     await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
+
+    let reopenedProducts = 0
+    let pointsDeducted = 0
+    let reviewsRemoved = 0
 
     if (status === 'cancelled' && order.status !== 'cancelled') {
       const [orderItems] = await pool.query(
@@ -308,10 +350,11 @@ async function updateOrderStatus(req, res) {
         [req.params.id]
       )
       for (const item of orderItems) {
-        await pool.query(
+        const [result] = await pool.query(
           "UPDATE products SET status = 'approved' WHERE id = ? AND status = 'sold'",
           [item.product_id]
         )
+        reopenedProducts += result.affectedRows || 0
       }
 
       const [[{ item_total }]] = await pool.query(
@@ -324,7 +367,16 @@ async function updateOrderStatus(req, res) {
           'UPDATE users SET points = GREATEST(points - ?, 0) WHERE id = ?',
           [earnedPoints, order.buyer_id]
         )
+        pointsDeducted = earnedPoints
       }
+
+      const [deletedReviews] = await pool.query(`
+        DELETE r
+        FROM reviews r
+        JOIN order_items oi ON oi.id = r.order_item_id
+        WHERE oi.order_id = ?
+      `, [req.params.id])
+      reviewsRemoved = deletedReviews.affectedRows || 0
     }
 
     // Notify buyer about status change
@@ -344,6 +396,19 @@ async function updateOrderStatus(req, res) {
     }
 
     if (status === 'cancelled') {
+      const [actorRows] = await pool.query('SELECT full_name FROM users WHERE id = ? LIMIT 1', [req.user.id])
+      const actorName = actorRows[0]?.full_name || (isBuyer ? 'Buyer' : 'Seller')
+      const reasonMap = isBuyer ? BUYER_CANCELLATION_REASONS : SELLER_CANCELLATION_REASONS
+      const reasonLabel = reasonMap[cancellation_reason] || cancellation_reason
+      const reasonDetails = cancellation_reason === 'others' ? String(cancellation_note || '').trim() : ''
+      const reportBody = [
+        `Order #${req.params.id} was cancelled by ${actorName} (${isBuyer ? 'Buyer' : 'Seller'}).`,
+        `Reason: ${reasonLabel}${reasonDetails ? ` — ${reasonDetails}` : ''}`,
+        `Products restored to active: ${reopenedProducts}`,
+        `Buyer points deducted: ${pointsDeducted}`,
+        `Reviews removed: ${reviewsRemoved}`,
+      ].join('\n')
+
       if (isBuyer) {
         const [sellerRows] = await pool.query(
           'SELECT DISTINCT seller_id FROM order_items WHERE order_id = ?',
@@ -354,7 +419,7 @@ async function updateOrderStatus(req, res) {
             row.seller_id,
             'order',
             'Order Cancelled by Buyer',
-            `Buyer cancelled order #${req.params.id}.`,
+            reportBody,
             `/orders/${req.params.id}`
           )
         }
@@ -363,7 +428,7 @@ async function updateOrderStatus(req, res) {
           order.buyer_id,
           'order',
           'Order Cancelled by Seller',
-          `Seller cancelled order #${req.params.id}.`,
+          reportBody,
           `/orders/${req.params.id}`
         )
       }
