@@ -16,7 +16,7 @@ async function addReview(req, res) {
   try {
     // Check if order item belongs to buyer and get details
     const [orders] = await pool.query(`
-      SELECT oi.id, oi.product_id, oi.seller_id, o.buyer_id
+      SELECT oi.id, oi.product_id, oi.seller_id, o.buyer_id, o.status as order_status
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
       WHERE oi.id = ? AND o.buyer_id = ?
@@ -26,7 +26,10 @@ async function addReview(req, res) {
       return res.status(403).json({ success: false, message: 'Invalid order item or unauthorized.' })
     }
 
-    const { product_id, seller_id } = orders[0]
+    const { product_id, seller_id, order_status } = orders[0]
+    if (order_status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Reviews are not allowed for cancelled orders.' })
+    }
 
     // Insert review
     await pool.query(
