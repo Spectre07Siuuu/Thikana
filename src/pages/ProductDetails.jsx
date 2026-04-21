@@ -249,7 +249,7 @@ export default function ProductDetails() {
        {isCartable && (
         <div className="flex items-center gap-3 mb-6">
          <button onClick={handleBuyNow} disabled={addingToCart}
-          className="flex-1 bg-gray-900 dark:bg-white text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50">
+          className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50">
           <ShoppingBag size={18} /> Buy Now
          </button>
          {inCart ? (

@@ -37,6 +37,14 @@ const AVATAR_GRADIENT = {
  admin: 'from-rose-400 to-pink-600',
 }
 
+const STATUS_BADGE = {
+ pending:   'bg-blue-50 dark:bg-blue-950/40 text-blue-600 border border-blue-200 dark:border-blue-800',
+ confirmed:  'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800',
+ shipped:   'bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-200 dark:border-amber-800',
+ delivered:  'bg-purple-50 dark:bg-purple-950/40 text-purple-600 border border-purple-200 dark:border-purple-800',
+ cancelled:  'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-800',
+}
+
 /* ── Mock stats (Removed - Generated Dynamically) ───────────────────────── */
 
 /* ── Buyer menu items ────────────────────────────────────── */
@@ -927,7 +935,9 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
       </div>
       <div className="text-right">
        <p className="text-sm font-bold text-rose-500">৳{order.total.toLocaleString()}</p>
-       <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium capitalize">{order.orderStatus}</span>
+       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold capitalize ${STATUS_BADGE[order.orderStatus] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
+        {order.orderStatus}
+       </span>
       </div>
      </div>
      <p className="text-[11px] text-theme-muted mb-3">
@@ -1080,9 +1090,11 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
          <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
          <p className="text-[10px] text-theme-muted">{formatDate(order.created_at)}</p>
         </div>
-        <div className="text-right">
-         <p className="text-sm font-bold text-rose-500">৳{Number(order.total_amount).toLocaleString()}</p>
-         <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium capitalize">{order.status}</span>
+         <div className="text-right">
+          <p className="text-sm font-bold text-rose-500">৳{Number(order.total_amount).toLocaleString()}</p>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold capitalize ${STATUS_BADGE[order.status] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
+           {order.status}
+          </span>
          </div>
         </div>
         <div className="space-y-3">
