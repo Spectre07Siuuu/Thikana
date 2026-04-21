@@ -196,8 +196,11 @@ export async function getOrderById(orderId) {
  return request(`/orders/${orderId}`)
 }
 
-export async function updateOrderStatus(orderId, status) {
- return request(`/orders/${orderId}/status`, { method: 'PATCH', body: { status } })
+export async function updateOrderStatus(orderId, statusOrPayload) {
+ const payload = typeof statusOrPayload === 'string'
+  ? { status: statusOrPayload }
+  : (statusOrPayload || {})
+ return request(`/orders/${orderId}/status`, { method: 'PATCH', body: payload })
 }
 
 /* ─── Messages ───────────────────────────────────────────── */

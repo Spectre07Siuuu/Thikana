@@ -13,6 +13,24 @@ function formatDateTime(dateStr) {
  })
 }
 
+const BUYER_CANCEL_REASONS = [
+ { value: 'changed_mind', label: 'Changed my mind' },
+ { value: 'ordered_by_mistake', label: 'Ordered by mistake' },
+ { value: 'found_better_option', label: 'Found a better option' },
+ { value: 'delivery_taking_too_long', label: 'Delivery is taking too long' },
+ { value: 'payment_or_budget_issue', label: 'Payment or budget issue' },
+ { value: 'others', label: 'Others' },
+]
+
+const SELLER_CANCEL_REASONS = [
+ { value: 'item_out_of_stock', label: 'Item is out of stock' },
+ { value: 'listing_issue', label: 'Listing information issue' },
+ { value: 'unable_to_fulfill', label: 'Unable to fulfill the order now' },
+ { value: 'buyer_unreachable', label: 'Buyer is unreachable' },
+ { value: 'logistics_issue', label: 'Logistics or delivery issue' },
+ { value: 'others', label: 'Others' },
+]
+
 export default function OrderDetails() {
  const { id } = useParams()
  const navigate = useNavigate()
@@ -21,6 +39,11 @@ export default function OrderDetails() {
  const [loading, setLoading] = useState(true)
  const [updating, setUpdating] = useState(false)
  const [error, setError] = useState('')
+ const [showCancelDialog, setShowCancelDialog] = useState(false)
+ const [cancelReason, setCancelReason] = useState('')
+ const [cancelOtherReason, setCancelOtherReason] = useState('')
+ const [cancelAgreement, setCancelAgreement] = useState(false)
+ const [cancelError, setCancelError] = useState('')
 
  const loadOrder = async () => {
   setLoading(true)
@@ -53,19 +76,47 @@ export default function OrderDetails() {
    )
   ), [order])
 
+ const cancellationReasons = isBuyerContext ? BUYER_CANCEL_REASONS : SELLER_CANCEL_REASONS
+
+ const resetCancelDialog = () => {
+  setCancelReason('')
+  setCancelOtherReason('')
+  setCancelAgreement(false)
+  setCancelError('')
+  setShowCancelDialog(false)
+ }
+
  const handleCancel = async () => {
-  if (!order || updating) return
-  const ok = window.confirm('Cancel this order?')
-  if (!ok) return
-  setUpdating(true)
-  try {
-   await updateOrderStatus(order.id, 'cancelled')
-   await loadOrder()
-  } catch (err) {
-   setError(err.message || 'Failed to cancel order.')
-  } finally {
-   setUpdating(false)
-  }
+   if (!order || updating) return
+   const finalReason = cancelReason === 'others' ? cancelOtherReason.trim() : cancelReason
+   if (!finalReason) {
+    setCancelError('Please select a cancellation reason.')
+    return
+   }
+   if (cancelReason === 'others' && !cancelOtherReason.trim()) {
+    setCancelError('Please write your cancellation reason.')
+    return
+   }
+   if (!cancelAgreement) {
+    setCancelError('You must agree to the cancellation consequences.')
+    return
+   }
+   setUpdating(true)
+   setCancelError('')
+   try {
+    await updateOrderStatus(order.id, {
+     status: 'cancelled',
+     cancellation_reason: cancelReason,
+     cancellation_note: cancelReason === 'others' ? cancelOtherReason.trim() : '',
+     acknowledged_consequences: true,
+    })
+    resetCancelDialog()
+    await loadOrder()
+   } catch (err) {
+    setCancelError(err.message || 'Failed to cancel order.')
+   } finally {
+    setUpdating(false)
+   }
  }
 
  const handleChat = () => {
@@ -128,21 +179,21 @@ export default function OrderDetails() {
         <p className="font-semibold text-theme-text mb-1">Shipping Address</p>
         <p className="text-theme-muted whitespace-pre-line">{order.shipping_address || 'N/A'}</p>
        </div>
-       <div className="p-3 rounded-xl bg-theme-bg/60">
-        <p className="font-semibold text-theme-text mb-1">{isBuyerContext ? 'Seller Contact' : 'Contact'}</p>
-        {isBuyerContext ? (
-         sellerContacts.length ? (
-          sellerContacts.map((seller, idx) => (
-           <p key={`${seller.name}-${idx}`} className="text-theme-muted">
-            {sellerContacts.length > 1 ? `Seller ${idx + 1}: ` : ''}{seller.name} · {seller.phone}
-           </p>
-          ))
-         ) : <p className="text-theme-muted">N/A</p>
-        ) : (
-         <p className="text-theme-muted">{order.phone || 'N/A'}</p>
-        )}
-        {order.note && <p className="text-theme-muted mt-2">Note: {order.note}</p>}
-       </div>
+        <div className="p-3 rounded-xl bg-theme-bg/60">
+         <p className="font-semibold text-theme-text mb-1">{isBuyerContext ? 'Your Contact' : 'Contact'}</p>
+         {isBuyerContext ? (
+          <>
+           <p className="text-theme-muted">{order.buyer_name || 'You'}</p>
+           <p className="text-theme-muted">{order.phone || order.buyer_phone || 'N/A'}</p>
+          </>
+         ) : (
+          <>
+           <p className="text-theme-muted">{order.buyer_name || 'N/A'}</p>
+           <p className="text-theme-muted">{order.buyer_phone || order.phone || 'N/A'}</p>
+          </>
+         )}
+         {order.note && <p className="text-theme-muted mt-2">Note: {order.note}</p>}
+        </div>
       </div>
 
       <div className="mt-4 p-3 rounded-xl bg-theme-bg/60 text-xs">
@@ -161,9 +212,7 @@ export default function OrderDetails() {
          <p className="text-theme-muted">{order.buyer_phone || order.phone || 'N/A'}</p>
         </>
        )}
-       <p className="text-theme-muted mt-2">Paid on: {formatDateTime(order.created_at)}</p>
-       <p className="text-theme-muted">Paid by: COD</p>
-      </div>
+       </div>
 
       <div className="mt-4 space-y-2">
        {order.items?.map(item => (
@@ -186,14 +235,18 @@ export default function OrderDetails() {
        <div className="flex justify-between text-theme-muted"><span>Subtotal</span><span>৳{subtotal.toLocaleString()}</span></div>
        <div className="flex justify-between text-theme-muted"><span>Delivery Fee</span><span>৳{deliveryFee.toLocaleString()}</span></div>
        <div className="flex justify-between font-bold text-theme-text text-sm"><span>Total</span><span>৳{Number(order.total_amount).toLocaleString()}</span></div>
+       <div className="pt-1 space-y-0.5">
+        <p className="text-theme-muted">Paid on: {formatDateTime(order.created_at)}</p>
+        <p className="text-theme-muted">Paid by: COD</p>
+       </div>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-       {order.permissions?.can_cancel && order.status !== 'cancelled' && (
-        <button onClick={handleCancel} disabled={updating}
-         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-rose-200 dark:border-rose-800 text-rose-600 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 disabled:opacity-60">
-         <XCircle size={14} /> {updating ? 'Cancelling...' : 'Cancel Order'}
-        </button>
+        {order.permissions?.can_cancel && order.status !== 'cancelled' && (
+         <button onClick={() => setShowCancelDialog(true)} disabled={updating}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-rose-200 dark:border-rose-800 text-rose-600 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 disabled:opacity-60">
+          <XCircle size={14} /> {updating ? 'Cancelling...' : 'Cancel Order'}
+         </button>
        )}
        <button onClick={handleChat}
         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 text-blue-600 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40">
@@ -202,8 +255,88 @@ export default function OrderDetails() {
       </div>
      </div>
     </div>
-   </main>
-   <Footer />
-  </>
- )
+    </main>
+    {showCancelDialog && (
+     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-lg bg-theme-card border border-theme-border rounded-3xl shadow-xl p-6">
+       <h3 className="text-lg font-bold text-theme-text">Cancel Order #{order.id}</h3>
+       <p className="text-xs text-theme-muted mt-1">Please complete the required details before cancellation.</p>
+
+       {cancelError && <p className="text-xs text-red-500 mt-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 p-2 rounded-lg">{cancelError}</p>}
+
+       <div className="mt-4 space-y-3">
+        <div>
+         <label className="block text-xs font-semibold text-theme-text mb-1">Cancellation reason *</label>
+         <select
+          value={cancelReason}
+          onChange={(e) => {
+           setCancelReason(e.target.value)
+           setCancelError('')
+           if (e.target.value !== 'others') setCancelOtherReason('')
+          }}
+          className="input-field py-2 text-sm"
+         >
+          <option value="">Select one reason</option>
+          {cancellationReasons.map(reason => (
+           <option key={reason.value} value={reason.value}>{reason.label}</option>
+          ))}
+         </select>
+        </div>
+
+        {cancelReason === 'others' && (
+         <div>
+          <label className="block text-xs font-semibold text-theme-text mb-1">Write your reason *</label>
+          <input
+           type="text"
+           value={cancelOtherReason}
+           onChange={(e) => {
+            setCancelOtherReason(e.target.value)
+            setCancelError('')
+           }}
+           className="input-field py-2 text-sm"
+           placeholder="Write your cancellation reason"
+          />
+         </div>
+        )}
+
+        <div className="rounded-xl border border-theme-border bg-theme-bg/50 p-3 text-[11px] text-theme-muted space-y-1">
+         <p className="font-semibold text-theme-text text-xs">Cancellation consequences</p>
+         <p>• Order stats may be reverted for both buyer and seller.</p>
+         <p>• Earned points from this order will be deducted from the buyer account.</p>
+         <p>• Existing reviews for this order will be removed automatically.</p>
+         <p>• A full cancellation report will be sent to the other party.</p>
+        </div>
+
+        <label className="flex items-start gap-2 text-xs text-theme-muted">
+         <input
+          type="checkbox"
+          checked={cancelAgreement}
+          onChange={(e) => {
+           setCancelAgreement(e.target.checked)
+           setCancelError('')
+          }}
+          className="mt-0.5"
+         />
+         <span>I understand and agree to all cancellation consequences.</span>
+        </label>
+       </div>
+
+       <div className="mt-5 flex justify-end gap-2">
+        <button onClick={resetCancelDialog} disabled={updating} className="px-4 py-2 text-xs font-bold rounded-lg border border-theme-border text-theme-muted hover:bg-theme-bg/70 disabled:opacity-60">
+         Close
+        </button>
+        <button
+         onClick={handleCancel}
+         disabled={updating}
+         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold border border-rose-200 dark:border-rose-800 text-rose-600 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 disabled:opacity-60"
+        >
+         <XCircle size={14} /> {updating ? 'Cancelling...' : 'Confirm Cancellation'}
+        </button>
+       </div>
+      </div>
+     </div>
+    )}
+    <Footer />
+   </>
+  )
 }
