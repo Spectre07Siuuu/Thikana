@@ -6,25 +6,25 @@
 
 @layer base {
   :root {
-    --theme-bg: 250 249 246; 
-    --theme-card: 255 255 255; 
-    --theme-text: 16 44 38; 
-    --theme-text-muted: 107 114 128; 
-    --theme-border: 235 233 228; 
-    --theme-primary: 16 44 38; 
-    --theme-primary-hover: 12 33 28;
-    --theme-primary-text: 255 255 255; 
+    --theme-bg: 255 255 255;
+    --theme-card: 255 250 249;
+    --theme-text: 18 19 19;
+    --theme-text-muted: 97 102 107;
+    --theme-border: 233 236 239;
+    --theme-primary: 255 96 68;
+    --theme-primary-hover: 229 82 58;
+    --theme-primary-text: 18 19 19;
   }
 
   .dark {
-    --theme-bg: 10 24 21; 
-    --theme-card: 16 44 38; 
-    --theme-text: 247 231 206; 
-    --theme-text-muted: 153 168 165; 
-    --theme-border: 24 66 57; 
-    --theme-primary: 247 231 206; 
-    --theme-primary-hover: 255 245 227;
-    --theme-primary-text: 16 44 38; 
+    --theme-bg: 18 19 19;
+    --theme-card: 28 30 30;
+    --theme-text: 245 246 246;
+    --theme-text-muted: 171 176 181;
+    --theme-border: 58 62 62;
+    --theme-primary: 255 96 68;
+    --theme-primary-hover: 255 123 102;
+    --theme-primary-text: 18 19 19;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
