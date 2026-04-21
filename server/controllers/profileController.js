@@ -22,6 +22,7 @@ async function getProfile(req, res) {
     const [[{ orders }]] = await pool.query('SELECT COUNT(*) as orders FROM orders WHERE buyer_id = ?', [req.user.id])
     const [[{ favorites }]] = await pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = ?', [req.user.id])
     const [[{ active_listings }]] = await pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id])
+    const [[{ seller_orders }]] = await pool.query('SELECT COUNT(DISTINCT order_id) as seller_orders FROM order_items WHERE seller_id = ?', [req.user.id])
     const [[{ total_sales }]] = await pool.query('SELECT SUM(price * quantity) as total_sales FROM order_items WHERE seller_id = ?', [req.user.id])
     const [[{ reviews }]] = await pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = ?', [req.user.id])
 
@@ -30,6 +31,7 @@ async function getProfile(req, res) {
       user: safeUser(rows[0]),
       stats: {
         orders: parseInt(orders) || 0,
+        seller_orders: parseInt(seller_orders) || 0,
         favorites: parseInt(favorites) || 0,
         active_listings: parseInt(active_listings) || 0,
         total_sales: parseFloat(total_sales) || 0,

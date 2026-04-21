@@ -78,7 +78,7 @@ export default function Checkout() {
        <p className="text-theme-muted mb-2">Your order <span className="font-bold text-theme-primary">#{success.orderId}</span> has been confirmed.</p>
        <p className="text-2xl font-black text-rose-500 mb-6">৳{formatPrice(success.total)}</p>
        <div className="flex flex-col gap-3">
-        <Link to="/profile" className="btn-primary justify-center py-3">View My Orders</Link>
+         <Link to="/profile?view=orders" className="btn-primary justify-center py-3">View My Orders</Link>
         <Link to="/" className="text-sm text-theme-muted hover:text-theme-primary font-medium transition-colors">Continue Shopping</Link>
        </div>
       </div>
