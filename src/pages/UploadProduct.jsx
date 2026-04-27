@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
  ArrowLeft, Home as HomeIcon, ShoppingBag, Sofa,
- Package, Tv, MapPin, Tag, CheckCircle, Image as ImageIcon, X
+ Package, Tv, MapPin, Tag, CheckCircle, Image as ImageIcon, X,
+ Calendar as CalendarIcon, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { uploadProduct } from '../services/api'
@@ -15,6 +16,89 @@ const CATEGORIES = [
  { id: 'furniture', label: 'Furniture',   icon: Sofa,    desc: 'New or used furniture for home and office.' },
  { id: 'appliance', label: 'Home Appliance', icon: Package,   desc: 'Sell TVs, fridges, washing machines etc.' },
 ]
+
+function GlassDatePicker({ value, onChange }) {
+ const [isOpen, setIsOpen] = useState(false)
+ const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date())
+ const popoverRef = useRef(null)
+
+ useEffect(() => {
+  const handleClickOutside = (e) => {
+   if (popoverRef.current && !popoverRef.current.contains(e.target)) setIsOpen(false)
+  }
+  document.addEventListener('mousedown', handleClickOutside)
+  return () => document.removeEventListener('mousedown', handleClickOutside)
+ }, [])
+
+ const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()
+ const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay()
+ const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
+ const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i)
+
+ const handleDateSelect = (day) => {
+  const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  onChange(`${yyyy}-${mm}-${dd}`)
+  setIsOpen(false)
+ }
+
+ const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
+ const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
+
+ return (
+  <div className="relative w-full" ref={popoverRef}>
+   <button type="button" onClick={() => setIsOpen(!isOpen)}
+    className="w-full bg-theme-bg border border-theme-border text-theme-text rounded-xl px-4 py-3 flex items-center justify-between focus:outline-none focus:border-theme-primary focus:ring-2 focus:ring-theme-primary/20 transition-all text-sm h-[46px] hover:border-theme-primary/50">
+    <span className={value ? "text-theme-text font-medium" : "text-theme-muted"}>
+     {value ? new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select Date'}
+    </span>
+    <CalendarIcon size={16} className="text-theme-muted" />
+   </button>
+
+   {isOpen && (
+    <div className="absolute z-50 top-full left-0 mt-2 p-5 w-[280px] sm:w-[300px] bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800/60 rounded-3xl shadow-2xl animate-scale-in origin-top">
+     <div className="flex items-center justify-between mb-5">
+      <button type="button" onClick={prevMonth} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-theme-text transition-colors shadow-sm"><ChevronLeft size={16} /></button>
+      <span className="font-bold text-sm text-theme-text">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+      <button type="button" onClick={nextMonth} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-theme-text transition-colors shadow-sm"><ChevronRight size={16} /></button>
+     </div>
+     <div className="grid grid-cols-7 gap-1 mb-3">
+      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+       <div key={d} className="text-center text-[10px] font-bold text-theme-muted uppercase tracking-wider">{d}</div>
+      ))}
+     </div>
+     <div className="grid grid-cols-7 gap-1">
+      {blanks.map(b => <div key={`blank-${b}`} className="h-9" />)}
+      {days.map(d => {
+       const isSelected = value && new Date(value).getDate() === d && new Date(value).getMonth() === currentMonth.getMonth() && new Date(value).getFullYear() === currentMonth.getFullYear()
+       
+       const today = new Date()
+       today.setHours(0, 0, 0, 0)
+       const currentDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d)
+       currentDateObj.setHours(0, 0, 0, 0)
+       
+       const isPast = currentDateObj < today
+       const isToday = currentDateObj.getTime() === today.getTime()
+
+       return (
+        <button key={d} type="button" onClick={() => !isPast && handleDateSelect(d)} disabled={isPast}
+         className={`h-9 rounded-full text-xs font-bold flex items-center justify-center transition-all duration-200
+          ${isPast ? 'opacity-30 cursor-not-allowed text-theme-muted font-medium'
+            : isSelected ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 scale-105' 
+            : isToday ? 'bg-gray-200 dark:bg-gray-800 text-theme-text ring-1 ring-inset ring-gray-300 dark:ring-gray-600' 
+            : 'text-theme-text hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-emerald-500 hover:scale-110'}`}>
+         {d}
+        </button>
+       )
+      })}
+     </div>
+    </div>
+   )}
+  </div>
+ )
+}
 
 export default function UploadProduct() {
  const { user, loading: authLoading } = useAuth()
@@ -138,7 +222,7 @@ export default function UploadProduct() {
       <div className="text-sm font-medium text-theme-muted">Step {step} of 3</div>
      </div>
 
-     <div className="bg-theme-card border border-theme-border rounded-3xl shadow-sm overflow-hidden">
+     <div className="bg-theme-card border border-theme-border rounded-3xl shadow-sm overflow-visible relative">
       
       {/* Content Area */}
       <div className="p-6 sm:p-10">
@@ -241,8 +325,10 @@ export default function UploadProduct() {
                </div>
                <div>
                 <label className="block text-xs font-medium text-theme-muted mb-1">Available From</label>
-                <input type="date" value={attributes.available_from || ''} onChange={e => setAttributes({...attributes, available_from: e.target.value})} 
-                 className="input-field text-sm px-2 sm:px-3 min-h-[46px] dark:[color-scheme:dark] w-full cursor-pointer" />
+                <GlassDatePicker 
+                 value={attributes.available_from || ''} 
+                 onChange={val => setAttributes({...attributes, available_from: val})} 
+                />
                </div>
               </>
              )}
@@ -300,7 +386,7 @@ export default function UploadProduct() {
       </div>
 
       {/* Actions Footer */}
-      <div className="px-6 py-4 bg-theme-bg dark:bg-gray-800/50 border-t border-theme-border flex items-center justify-between">
+      <div className="px-6 py-4 bg-theme-bg dark:bg-gray-800/50 border-t border-theme-border flex items-center justify-between rounded-b-3xl">
        {step > 1 ? (
         <button type="button" onClick={handlePrev} disabled={loading}
          className="px-5 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
