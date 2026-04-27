@@ -216,6 +216,12 @@ async function migrate() {
   // ── orders: delivery_fee ──────────────────────────────────
   await run('orders.delivery_fee', `ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 50.00 AFTER total_amount`)
 
+  // ── booking support ─────────────────────────────────────
+  await run('orders.is_booking',       `ALTER TABLE orders ADD COLUMN is_booking TINYINT(1) NOT NULL DEFAULT 0 AFTER delivery_fee`)
+  await run('orders.booking_amount',   `ALTER TABLE orders ADD COLUMN booking_amount DECIMAL(12,2) DEFAULT NULL AFTER is_booking`)
+  await run('order_items.is_booking',      `ALTER TABLE order_items ADD COLUMN is_booking TINYINT(1) NOT NULL DEFAULT 0 AFTER quantity`)
+  await run('order_items.booking_amount',  `ALTER TABLE order_items ADD COLUMN booking_amount DECIMAL(12,2) DEFAULT NULL AFTER is_booking`)
+
   console.log('\nMigrations complete.')
   process.exit(0)
 }

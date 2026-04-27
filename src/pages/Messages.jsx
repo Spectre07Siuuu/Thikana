@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
  ArrowLeft, Send, MessageSquare, Search, ShieldCheck,
  Paperclip, Smile, Mic, X, Image as ImageIcon, FileText,
- Phone, Video, MoreVertical, Check, CheckCheck,
+ Phone, MoreVertical, Check, CheckCheck, AlertTriangle,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
@@ -418,12 +418,12 @@ export default function Messages() {
             {partner?.full_name || 'Loading…'}
             {partner?.nid_verified === 1 && <ShieldCheck size={12} className="text-emerald-500" />}
            </h3>
-           <p className="text-[11px] text-theme-muted">
+           <p className="text-[11px] mt-0.5 flex items-center gap-1.5">
             {typingUser === activePartnerId
-             ? <span className="text-theme-primary font-medium">typing<span className="animate-pulse">...</span></span>
+             ? <span className="text-theme-primary font-medium inline-flex items-center gap-0.5">typing<span className="animate-pulse">...</span></span>
              : onlineUsers.has(activePartnerId)
-              ? <span className="text-emerald-500 font-medium">Online</span>
-              : 'Offline'
+              ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /><span className="text-emerald-500 font-medium">Online</span></>
+              : <><span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" /><span className="text-theme-muted">Offline</span></>
             }
            </p>
           </div>
@@ -431,9 +431,6 @@ export default function Messages() {
          <div className="flex items-center gap-1">
           <button className="p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" title="Voice Call">
            <Phone size={17} />
-          </button>
-          <button className="p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" title="Video Call">
-           <Video size={17} />
           </button>
           <button onClick={() => setShowProfile(v => !v)} className={`p-2 rounded-xl transition-all ${showProfile ? 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/30' : 'text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
            <MoreVertical size={17} />
@@ -660,14 +657,16 @@ export default function Messages() {
              {partner.full_name}
              {partner.nid_verified === 1 && <ShieldCheck size={14} className="text-emerald-500" />}
             </h3>
-            <p className="text-xs text-theme-primary font-semibold uppercase tracking-wider mt-1">
-             {onlineUsers.has(activePartnerId) ? 'Online Now' : 'Offline'}
+            <p className="text-xs font-semibold uppercase tracking-wider mt-1.5 flex items-center justify-center gap-1.5">
+             {onlineUsers.has(activePartnerId)
+              ? <><span className="w-2 h-2 rounded-full bg-emerald-500" /><span className="text-emerald-500">Online Now</span></>
+              : <><span className="w-2 h-2 rounded-full bg-gray-400" /><span className="text-theme-muted">Offline</span></>
+             }
             </p>
            </div>
 
            <div className="px-5 space-y-1">
             <SidebarItem icon={<Phone size={16} />} label="Voice Call" />
-            <SidebarItem icon={<Video size={16} />} label="Video Call" />
            </div>
 
            <div className="px-5 mt-5">
@@ -682,7 +681,11 @@ export default function Messages() {
             </div>
            </div>
 
-           <div className="mt-auto p-5">
+           <div className="mt-auto p-5 space-y-2.5">
+            <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors border border-amber-200 dark:border-amber-800">
+             <AlertTriangle size={14} />
+             Report This {user?.role === 'seller' ? 'Buyer' : 'Seller'}
+            </button>
             <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border border-red-200 dark:border-red-800">
              Block Contact
             </button>

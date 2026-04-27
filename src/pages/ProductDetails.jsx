@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
  ArrowLeft, MapPin, Heart, Share2, ShieldCheck, ChevronLeft, ChevronRight,
- ShoppingBag, ShoppingCart, Check, User, Package, Eye, Phone
+ ShoppingBag, ShoppingCart, Check, User, Package, Eye, Phone, CalendarCheck, X
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { getProductById, getProductReviews, toggleFavourite, getFavouriteStatus } from '../services/api'
+import { getProductById, getProductReviews, toggleFavourite, getFavouriteStatus, placeBooking } from '../services/api'
 
 const formatPrice = (p) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(p)
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -28,6 +28,14 @@ export default function ProductDetails() {
  const [addingToCart, setAddingToCart] = useState(false)
  const [inCart, setInCart] = useState(false)
  const [reviews, setReviews] = useState([])
+ const [showBooking, setShowBooking] = useState(false)
+ const [bookingAmount, setBookingAmount] = useState(null)
+ const [customAmount, setCustomAmount] = useState('')
+ const [bookingPhone, setBookingPhone] = useState(user?.phone || '')
+ const [bookingNote, setBookingNote] = useState('')
+ const [bookingLoading, setBookingLoading] = useState(false)
+ const [bookingError, setBookingError] = useState('')
+ const [bookingSuccess, setBookingSuccess] = useState(null)
  const [avgRating, setAvgRating] = useState(0)
 
  useEffect(() => {
@@ -112,6 +120,48 @@ export default function ProductDetails() {
   navigate(`/messages?user=${product.seller_id}&product=${id}`)
  }
 
+ const handleOpenBooking = () => {
+  if (!user) { navigate('/login'); return }
+  if (user.is_admin || user.role !== 'buyer') return
+  if (!user.nid_verified) { navigate('/verify-nid?reason=booking'); return }
+  setBookingAmount(null)
+  setCustomAmount('')
+  setBookingPhone(user?.phone || '')
+  setBookingNote('')
+  setBookingError('')
+  setShowBooking(true)
+ }
+
+ const getSelectedBookingAmount = () => {
+  if (bookingAmount === 'custom') {
+   const val = parseInt(customAmount)
+   return isNaN(val) ? 0 : val
+  }
+  return bookingAmount || 0
+ }
+
+ const handleConfirmBooking = async () => {
+  const amount = getSelectedBookingAmount()
+  if (amount < 500) { setBookingError('Minimum booking amount is ৳500.'); return }
+  if (!bookingPhone.trim()) { setBookingError('Please enter your phone number.'); return }
+  setBookingLoading(true)
+  setBookingError('')
+  try {
+   const res = await placeBooking({
+    product_id: parseInt(id),
+    booking_amount: amount,
+    phone: bookingPhone.trim(),
+    note: bookingNote.trim() || undefined,
+   })
+   setBookingSuccess(res)
+   setShowBooking(false)
+  } catch (err) {
+   setBookingError(err.message || 'Failed to place booking.')
+  } finally {
+   setBookingLoading(false)
+  }
+ }
+
  if (loading) {
   return (
    <>
@@ -150,7 +200,130 @@ export default function ProductDetails() {
  const isSeller = user?.id === seller_id
  const isBuyer = user?.role === 'buyer' && !user?.is_admin
  const isCartable = ['furniture', 'appliance'].includes(category) && !isSeller && status !== 'sold' && isBuyer
+ const isBookable = category === 'house_rent' && !isSeller && status !== 'sold' && isBuyer
  const ratingStarsFilled = Math.round(avgRating)
+
+ // Booking success screen
+ if (bookingSuccess) {
+  return (
+   <>
+    <Navbar />
+    <main className="min-h-screen bg-theme-bg pt-24 pb-16">
+     <div className="max-w-lg mx-auto px-4 text-center animate-fade-in">
+      <div className="bg-theme-card rounded-3xl border border-theme-border p-10">
+       <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-800 rounded-full flex items-center justify-center mx-auto mb-5">
+        <CalendarCheck size={40} className="text-emerald-500" />
+       </div>
+       <h2 className="text-2xl font-bold text-theme-text mb-2">Booking Confirmed!</h2>
+       <p className="text-theme-muted mb-1">Your advance booking for</p>
+       <p className="text-sm font-bold text-theme-text mb-2">{title}</p>
+       <p className="text-theme-muted mb-2">Order <span className="font-bold text-theme-primary">#{bookingSuccess.orderId}</span></p>
+       <p className="text-2xl font-black text-rose-500 mb-1">৳{formatPrice(bookingSuccess.total)}</p>
+       <p className="text-xs text-theme-muted mb-6">Advance booking amount</p>
+       {bookingSuccess.earnedPoints > 0 && (
+        <p className="text-sm text-emerald-600 font-semibold mb-4">🎁 You earned {bookingSuccess.earnedPoints} reward points!</p>
+       )}
+       <div className="flex flex-col gap-3">
+        <Link to="/profile?view=orders" className="btn-primary justify-center py-3">View My Orders</Link>
+        <Link to="/" className="text-sm text-theme-muted hover:text-theme-primary font-medium transition-colors">Back to Home</Link>
+       </div>
+      </div>
+     </div>
+    </main>
+
+    {/* ── Booking Modal ── */}
+    {showBooking && (
+     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)}>
+      <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+       <button onClick={() => setShowBooking(false)} className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
+        <X size={18} />
+       </button>
+       <div className="text-center mb-6">
+        <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+         <CalendarCheck size={28} className="text-emerald-500" />
+        </div>
+        <h3 className="text-lg font-bold text-theme-text">Book This Property</h3>
+        <p className="text-xs text-theme-muted mt-1">Select advance amount to secure your booking</p>
+       </div>
+       <div className="bg-theme-bg rounded-2xl p-4 mb-5 border border-theme-border">
+        <p className="text-sm font-bold text-theme-text line-clamp-1">{title}</p>
+        <p className="text-xs text-theme-muted flex items-center gap-1 mt-1"><MapPin size={10} className="text-theme-primary" /> {location}</p>
+        <p className="text-base font-black text-rose-500 mt-1.5">৳{formatPrice(price)} <span className="text-xs font-semibold text-theme-muted">/month</span></p>
+       </div>
+       <div className="mb-5">
+        <label className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
+        <div className="grid grid-cols-3 gap-2.5 mb-3">
+         {[1000, 2000, 5000].map(amt => (
+          <button key={amt} type="button" onClick={() => { setBookingAmount(amt); setCustomAmount(''); setBookingError('') }}
+           className={`py-3 rounded-xl text-sm font-bold transition-all border-2 ${bookingAmount === amt ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'border-theme-border text-theme-muted hover:border-emerald-300 hover:text-emerald-600'}`}>
+           ৳{amt.toLocaleString()}
+          </button>
+         ))}
+        </div>
+        <div className="relative">
+         <button type="button" onClick={() => { setBookingAmount('custom'); setBookingError('') }}
+          className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all text-sm ${bookingAmount === 'custom' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-theme-border'}`}>
+          <span className="text-theme-muted text-xs font-semibold">Other Amount</span>
+         </button>
+         {bookingAmount === 'custom' && (
+          <div className="mt-2 relative">
+           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted font-bold text-sm">৳</span>
+           <input type="number" min="500" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setBookingError('') }}
+            placeholder="Min 500" autoFocus
+            className="w-full bg-theme-bg border border-theme-border rounded-xl pl-8 pr-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+          </div>
+         )}
+        </div>
+       </div>
+       <div className="mb-5">
+        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
+        <input type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
+         placeholder="01XXXXXXXXX"
+         className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+       </div>
+       <div className="mb-5">
+        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
+        <input type="text" value={bookingNote} onChange={e => setBookingNote(e.target.value)}
+         placeholder="Move-in date, special requests..."
+         className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+       </div>
+       {bookingError && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-red-600 text-xs font-medium">
+         {bookingError}
+        </div>
+       )}
+       <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-4 mb-4 border border-emerald-100 dark:border-emerald-900/30">
+        <div className="flex justify-between text-sm mb-1">
+         <span className="text-theme-muted">Advance Amount</span>
+         <span className="font-bold text-theme-text">৳{formatPrice(getSelectedBookingAmount())}</span>
+        </div>
+        <div className="flex justify-between text-sm mb-1">
+         <span className="text-theme-muted">Delivery Fee</span>
+         <span className="font-semibold text-emerald-600">Free</span>
+        </div>
+        <div className="h-px bg-emerald-100 dark:bg-emerald-900/30 my-2" />
+        <div className="flex justify-between text-base font-bold">
+         <span className="text-theme-text">Total</span>
+         <span className="text-rose-500">৳{formatPrice(getSelectedBookingAmount())}</span>
+        </div>
+       </div>
+       <button onClick={handleConfirmBooking} disabled={bookingLoading || !bookingAmount}
+        className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+        {bookingLoading ? (
+         <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+        ) : (
+         <><CalendarCheck size={18} /> Confirm Booking — ৳{formatPrice(getSelectedBookingAmount())}</>
+        )}
+       </button>
+       <p className="text-[10px] text-theme-muted text-center mt-3">By confirming, you agree to the advance booking terms</p>
+      </div>
+     </div>
+    )}
+
+    <Footer />
+   </>
+  )
+ }
 
  return (
   <>
@@ -272,6 +445,17 @@ export default function ProductDetails() {
          </button>
         </div>
        )}
+
+        {/* Book Now for Rent */}
+        {isBookable && (
+         <div className="mb-6">
+          <button type="button" onClick={handleOpenBooking}
+           className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 px-6 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30">
+           <CalendarCheck size={20} /> Book Now — Pay Advance
+          </button>
+          <p className="text-[11px] text-theme-muted text-center mt-2">Secure this property with an advance booking payment</p>
+         </div>
+        )}
 
        {/* Attributes */}
        {attributes && Object.keys(attributes).length > 0 && (
@@ -410,6 +594,96 @@ export default function ProductDetails() {
      )}
     </div>
    </main>
+
+   {/* ── Booking Modal ── */}
+   {showBooking && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)}>
+     <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <button onClick={() => setShowBooking(false)} className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
+       <X size={18} />
+      </button>
+      <div className="text-center mb-6">
+       <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <CalendarCheck size={28} className="text-emerald-500" />
+       </div>
+       <h3 className="text-lg font-bold text-theme-text">Book This Property</h3>
+       <p className="text-xs text-theme-muted mt-1">Select advance amount to secure your booking</p>
+      </div>
+      <div className="bg-theme-bg rounded-2xl p-4 mb-5 border border-theme-border">
+       <p className="text-sm font-bold text-theme-text line-clamp-1">{product.title}</p>
+       <p className="text-xs text-theme-muted flex items-center gap-1 mt-1"><MapPin size={10} className="text-theme-primary" /> {product.location}</p>
+       <p className="text-base font-black text-rose-500 mt-1.5">৳{formatPrice(product.price)} <span className="text-xs font-semibold text-theme-muted">/month</span></p>
+      </div>
+      <div className="mb-5">
+       <label className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
+       <div className="grid grid-cols-3 gap-2.5 mb-3">
+        {[1000, 2000, 5000].map(amt => (
+         <button key={amt} type="button" onClick={() => { setBookingAmount(amt); setCustomAmount(''); setBookingError('') }}
+          className={`py-3 rounded-xl text-sm font-bold transition-all border-2 ${bookingAmount === amt ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'border-theme-border text-theme-muted hover:border-emerald-300 hover:text-emerald-600'}`}>
+          ৳{amt.toLocaleString()}
+         </button>
+        ))}
+       </div>
+       <div className="relative">
+        <button type="button" onClick={() => { setBookingAmount('custom'); setBookingError('') }}
+         className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all text-sm ${bookingAmount === 'custom' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-theme-border'}`}>
+         <span className="text-theme-muted text-xs font-semibold">Other Amount</span>
+        </button>
+        {bookingAmount === 'custom' && (
+         <div className="mt-2 relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted font-bold text-sm">৳</span>
+          <input type="number" min="500" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setBookingError('') }}
+           placeholder="Min 500" autoFocus
+           className="w-full bg-theme-bg border border-theme-border rounded-xl pl-8 pr-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+         </div>
+        )}
+       </div>
+      </div>
+      <div className="mb-5">
+       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
+       <input type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
+        placeholder="01XXXXXXXXX"
+        className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+      </div>
+      <div className="mb-5">
+       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
+       <input type="text" value={bookingNote} onChange={e => setBookingNote(e.target.value)}
+        placeholder="Move-in date, special requests..."
+        className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
+      </div>
+      {bookingError && (
+       <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-red-600 text-xs font-medium">
+        {bookingError}
+       </div>
+      )}
+      <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-4 mb-4 border border-emerald-100 dark:border-emerald-900/30">
+       <div className="flex justify-between text-sm mb-1">
+        <span className="text-theme-muted">Advance Amount</span>
+        <span className="font-bold text-theme-text">৳{formatPrice(getSelectedBookingAmount())}</span>
+       </div>
+       <div className="flex justify-between text-sm mb-1">
+        <span className="text-theme-muted">Delivery Fee</span>
+        <span className="font-semibold text-emerald-600">Free</span>
+       </div>
+       <div className="h-px bg-emerald-100 dark:bg-emerald-900/30 my-2" />
+       <div className="flex justify-between text-base font-bold">
+        <span className="text-theme-text">Total</span>
+        <span className="text-rose-500">৳{formatPrice(getSelectedBookingAmount())}</span>
+       </div>
+      </div>
+      <button type="button" onClick={handleConfirmBooking} disabled={bookingLoading || !bookingAmount}
+       className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+       {bookingLoading ? (
+        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+       ) : (
+        <><CalendarCheck size={18} /> Confirm Booking — ৳{formatPrice(getSelectedBookingAmount())}</>
+       )}
+      </button>
+      <p className="text-[10px] text-theme-muted text-center mt-3">By confirming, you agree to the advance booking terms</p>
+     </div>
+    </div>
+   )}
+
    <Footer />
   </>
  )
