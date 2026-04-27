@@ -465,7 +465,7 @@ export default function ProductDetails() {
           {Object.entries(attributes).map(([key, value]) => !value ? null : (
            <div key={key} className="p-3 rounded-xl bg-gray-100/70 dark:bg-gray-800/70 flex flex-col">
             <span className="text-[10px] text-theme-muted font-semibold uppercase tracking-wider">{key.replace('_', ' ')}</span>
-            <span className="text-sm font-bold text-theme-text capitalize mt-0.5">{value}</span>
+            <span className="text-sm font-bold text-theme-text capitalize mt-0.5">{key === 'available_from' ? formatDate(value) : value}</span>
            </div>
           ))}
          </div>

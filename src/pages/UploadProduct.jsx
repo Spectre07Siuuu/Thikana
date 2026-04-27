@@ -230,14 +230,21 @@ export default function UploadProduct() {
               <input type="number" min="0" value={attributes.sqft || ''} onChange={e => setAttributes({...attributes, sqft: e.target.value})} className="input-field" />
              </div>
              {category === 'house_rent' && (
-              <div>
-               <label className="block text-xs font-medium text-theme-muted mb-1">Available For</label>
-               <select value={attributes.available_for || ''} onChange={e => setAttributes({...attributes, available_for: e.target.value})} className="input-field">
-                <option value="">Any</option>
-                <option value="Family">Family</option>
-                <option value="Bachelor">Bachelor</option>
-               </select>
-              </div>
+              <>
+               <div>
+                <label className="block text-xs font-medium text-theme-muted mb-1">Available For</label>
+                <select value={attributes.available_for || ''} onChange={e => setAttributes({...attributes, available_for: e.target.value})} className="input-field text-sm">
+                 <option value="">Any</option>
+                 <option value="Family">Family</option>
+                 <option value="Bachelor">Bachelor</option>
+                </select>
+               </div>
+               <div>
+                <label className="block text-xs font-medium text-theme-muted mb-1">Available From</label>
+                <input type="date" value={attributes.available_from || ''} onChange={e => setAttributes({...attributes, available_from: e.target.value})} 
+                 className="input-field text-sm" />
+               </div>
+              </>
              )}
             </div>
            )}
