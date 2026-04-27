@@ -82,8 +82,14 @@ async function getProducts(req, res) {
     if (minPrice) { where += ' AND p.price >= ?'; params.push(parseFloat(minPrice)) }
     if (maxPrice) { where += ' AND p.price <= ?'; params.push(parseFloat(maxPrice)) }
     if (q) {
-      where += ' AND (p.title LIKE ? OR p.location LIKE ?)'
-      params.push(`%${q}%`, `%${q}%`)
+      const words = q.trim().split(/\s+/)
+      where += ' AND ('
+      words.forEach((w, index) => {
+        if (index > 0) where += ' OR '
+        where += '(p.title LIKE ? OR p.location LIKE ? OR p.description LIKE ?)'
+        params.push(`%${w}%`, `%${w}%`, `%${w}%`)
+      })
+      where += ')'
     }
     // JSON attribute filters
     if (beds) { where += ` AND JSON_EXTRACT(p.attributes, '$.beds') = ?`; params.push(String(beds)) }
