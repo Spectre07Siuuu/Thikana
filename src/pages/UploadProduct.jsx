@@ -242,7 +242,7 @@ export default function UploadProduct() {
                <div>
                 <label className="block text-xs font-medium text-theme-muted mb-1">Available From</label>
                 <input type="date" value={attributes.available_from || ''} onChange={e => setAttributes({...attributes, available_from: e.target.value})} 
-                 className="input-field text-sm" />
+                 className="input-field text-sm px-2 sm:px-3 min-h-[46px] dark:[color-scheme:dark] w-full cursor-pointer" />
                </div>
               </>
              )}
