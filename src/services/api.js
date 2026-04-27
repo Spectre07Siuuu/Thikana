@@ -184,6 +184,10 @@ export async function placeOrder(payload) {
  return request('/orders', { method: 'POST', body: payload })
 }
 
+export async function placeBooking(payload) {
+ return request('/orders/booking', { method: 'POST', body: payload })
+}
+
 export async function getMyOrders() {
  return request('/orders')
 }

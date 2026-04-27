@@ -181,7 +181,12 @@ export default function OrderDetails() {
      </div>
 
      <div className="bg-theme-card border border-theme-border rounded-2xl p-5">
-      <h1 className="text-lg font-bold text-theme-text">Order #{order.id}</h1>
+      <div className="flex items-center gap-2">
+       <h1 className="text-lg font-bold text-theme-text">Order #{order.id}</h1>
+       {order.is_booking && (
+        <span className="text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 uppercase tracking-tight">Booking</span>
+       )}
+      </div>
       <p className="text-xs text-theme-muted mt-1">Placed on {formatDateTime(order.created_at)}</p>
 
       <div className="mt-4 grid sm:grid-cols-2 gap-3 text-xs">

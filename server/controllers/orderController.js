@@ -255,9 +255,10 @@ async function getSellerOrders(req, res) {
   try {
     const [items] = await pool.query(`
        SELECT oi.*, o.status as order_status, o.shipping_address, o.phone as buyer_phone, o.created_at as order_date,
+              o.is_booking, o.booking_amount,
               p.title, p.category, p.status as product_status,
-             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
-             u.full_name as buyer_name, u.email as buyer_email
+              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
+              u.full_name as buyer_name, u.email as buyer_email
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
       JOIN products p ON oi.product_id = p.id
@@ -439,4 +440,115 @@ async function updateOrderStatus(req, res) {
   }
 }
 
-module.exports = { placeOrder, getMyOrders, getSellerOrders, getOrderById, updateOrderStatus }
+/**
+ * POST /api/orders/booking — place advance booking for house_rent
+ * Body: { product_id, booking_amount, phone, note? }
+ */
+async function placeBooking(req, res) {
+  const { product_id, booking_amount, phone, note } = req.body
+  if (!product_id || !booking_amount || !phone) {
+    return res.status(400).json({ success: false, message: 'Product ID, booking amount, and phone are required.' })
+  }
+
+  const amount = parseFloat(booking_amount)
+  if (isNaN(amount) || amount < 500) {
+    return res.status(400).json({ success: false, message: 'Minimum booking amount is ৳500.' })
+  }
+
+  let conn
+  try {
+    conn = await pool.getConnection()
+    await conn.beginTransaction()
+
+    // 1. Validate product
+    const [prods] = await conn.query(
+      'SELECT id, title, price, category, status, seller_id, location FROM products WHERE id = ?',
+      [product_id]
+    )
+    if (prods.length === 0) {
+      conn.release()
+      return res.status(404).json({ success: false, message: 'Product not found.' })
+    }
+
+    const prod = prods[0]
+    if (prod.category !== 'house_rent') {
+      conn.release()
+      return res.status(400).json({ success: false, message: 'Booking is only available for rental properties.' })
+    }
+    if (prod.status !== 'approved') {
+      conn.release()
+      return res.status(400).json({ success: false, message: 'This property is no longer available.' })
+    }
+    if (prod.seller_id === req.user.id) {
+      conn.release()
+      return res.status(400).json({ success: false, message: 'You cannot book your own property.' })
+    }
+
+    // 2. Create order with booking flag
+    const totalAmount = amount
+    const earnedPoints = Math.floor(amount / 100) * 10
+
+    const [orderResult] = await conn.query(
+      `INSERT INTO orders (buyer_id, total_amount, delivery_fee, shipping_address, phone, note, is_booking, booking_amount)
+       VALUES (?, ?, 0, ?, ?, ?, 1, ?)`,
+      [req.user.id, totalAmount, prod.location, phone.trim(), note?.trim() || null, amount]
+    )
+    const orderId = orderResult.insertId
+
+    // 3. Create order item with booking info
+    await conn.query(
+      `INSERT INTO order_items (order_id, product_id, seller_id, price, quantity, is_booking, booking_amount)
+       VALUES (?, ?, ?, ?, 1, 1, ?)`,
+      [orderId, prod.id, prod.seller_id, prod.price, amount]
+    )
+
+    // 4. Award points
+    if (earnedPoints > 0) {
+      await conn.query('UPDATE users SET points = points + ? WHERE id = ?', [earnedPoints, req.user.id])
+    }
+
+    await conn.commit()
+    conn.release()
+
+    // 5. Notify seller
+    const [buyers] = await pool.query('SELECT full_name FROM users WHERE id = ?', [req.user.id])
+    const buyerName = buyers[0]?.full_name || 'A buyer'
+
+    createNotification(
+      prod.seller_id, 'order',
+      'New Booking Received! 🏠',
+      `${buyerName} placed an advance booking of ৳${amount.toLocaleString()} for "${prod.title}".`,
+      `/orders/${orderId}`
+    )
+
+    // 6. Notify buyer
+    createNotification(
+      req.user.id, 'order',
+      'Booking Confirmed! ✅',
+      `Your advance booking of ৳${amount.toLocaleString()} for "${prod.title}" has been confirmed. Order #${orderId}.`,
+      `/orders/${orderId}`
+    )
+    if (earnedPoints > 0) {
+      createNotification(
+        req.user.id, 'system',
+        'Reward Points Earned! 🎁',
+        `You earned ${earnedPoints} points from your booking.`,
+        `/orders/${orderId}`
+      )
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Booking placed successfully!',
+      orderId,
+      total: totalAmount,
+      earnedPoints,
+    })
+  } catch (err) {
+    if (conn) { await conn.rollback(); conn.release() }
+    console.error('[placeBooking error]', err)
+    return res.status(500).json({ success: false, message: 'Failed to place booking.' })
+  }
+}
+
+module.exports = { placeOrder, placeBooking, getMyOrders, getSellerOrders, getOrderById, updateOrderStatus }

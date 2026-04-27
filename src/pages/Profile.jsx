@@ -898,6 +898,8 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
     buyerEmail: item.buyer_email,
     buyerPhone: item.buyer_phone,
     shippingAddress: item.shipping_address,
+    is_booking: item.is_booking,
+    booking_amount: item.booking_amount,
     total: 0,
     items: []
    }
@@ -930,7 +932,12 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
     <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
      <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
       <div>
-       <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
+       <div className="flex items-center gap-2">
+        <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
+        {order.is_booking && (
+         <span className="text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 uppercase tracking-tight">Booking</span>
+        )}
+       </div>
        <p className="text-[10px] text-theme-muted">{new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
       </div>
       <div className="text-right">
@@ -1087,7 +1094,12 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
        <div key={order.id} className={`bg-theme-card border rounded-2xl p-4 shadow-sm ${highlightedOrderId === order.id ? 'border-theme-primary ring-1 ring-theme-primary/30' : 'border-theme-border'}`}>
         <div className="flex items-center justify-between border-b border-theme-border pb-3 mb-3">
         <div>
-         <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
+         <div className="flex items-center gap-2">
+          <p className="text-xs font-bold text-theme-text">Order #{order.id}</p>
+          {order.is_booking && (
+           <span className="text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 uppercase tracking-tight">Booking</span>
+          )}
+         </div>
          <p className="text-[10px] text-theme-muted">{formatDate(order.created_at)}</p>
         </div>
          <div className="text-right">
