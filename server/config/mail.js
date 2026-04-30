@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer')
 
 let transporter = null
 
-async function getTransporter() {
+function getTransporter() {
   if (transporter) return transporter
 
   if (process.env.SMTP_HOST) {
@@ -15,38 +15,33 @@ async function getTransporter() {
         pass: process.env.SMTP_PASS,
       },
     })
+    console.log(`📧 SMTP configured: ${process.env.SMTP_USER}`)
   } else {
-    const testAccount = await nodemailer.createTestAccount()
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    })
-    console.log('\n📧 No SMTP configured — using Ethereal test email.')
-    console.log(`📧 Ethereal account: ${testAccount.user}`)
+    console.warn('⚠️  No SMTP configured. Emails will NOT be sent.')
+    console.warn('   Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env to enable.')
+    // Return a dummy transporter that logs instead of sending
+    return {
+      sendMail: async (opts) => {
+        console.log(`📧 [DRY RUN] Would send to: ${opts.to} | Subject: ${opts.subject}`)
+        return { messageId: 'dry-run' }
+      }
+    }
   }
 
   return transporter
 }
 
 async function sendMail({ to, subject, html, text }) {
-  const transport = await getTransporter()
+  const transport = getTransporter()
   const info = await transport.sendMail({
-    from: process.env.SMTP_FROM || '"Thikana" <noreply@thikana.com>',
+    from: process.env.SMTP_FROM || '"Thikana Marketplace" <thikana.marketplace@gmail.com>',
     to,
     subject,
     html,
     text: text || '',
   })
 
-  if (!process.env.SMTP_HOST) {
-    console.log(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`)
-  }
-
+  console.log(`📧 Email sent to ${to} [${info.messageId}]`)
   return info
 }
 
