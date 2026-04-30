@@ -39,4 +39,5 @@ build/
 *.sw?
 
 # User Uploads
-server/uploads/
+server/uploads/**/*
+!server/uploads/**/.gitkeep
