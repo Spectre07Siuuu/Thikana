@@ -57,7 +57,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', fn)
+    window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
@@ -302,7 +302,7 @@ export default function Navbar() {
             return hash ? (
               <a key={label} href={target} onClick={() => setMobileOpen(false)}
                 className={`block px-4 py-2.5 rounded-xl font-medium text-sm transition-colors
-         ${isActive ? 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/30' : 'text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30'}`}>
+         ${isActive ? 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/30' : 'text-theme-text hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30'}`}>
                 {label}
               </a>
             ) : (
@@ -311,7 +311,7 @@ export default function Navbar() {
                 if (href === '/') window.scrollTo({ top: 0, behavior: 'smooth' })
               }}
                 className={`block px-4 py-2.5 rounded-xl font-medium text-sm transition-colors
-         ${isActive ? 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/30' : 'text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30'}`}>
+         ${isActive ? 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/30' : 'text-theme-text hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30'}`}>
                 {label}
               </Link>
             )
@@ -322,18 +322,18 @@ export default function Navbar() {
             <div className="space-y-1 pt-2 border-t border-theme-border">
               {!user?.is_admin && user?.nid_verified === 1 && (
                 <Link to="/messages" onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
+                  className="block px-4 py-2.5 rounded-xl font-medium text-sm text-theme-text hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
                   Messages
                 </Link>
               )}
               {appMode === 'buying' && canUseBuyerMode && (
                 <Link to="/cart" onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
+                  className="block px-4 py-2.5 rounded-xl font-medium text-sm text-theme-text hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
                   Cart {cartCount > 0 && `(${cartCount})`}
                 </Link>
               )}
               <Link to="/notifications" onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 rounded-xl font-medium text-sm text-gray-700 dark:text-gray-300 hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
+                className="block px-4 py-2.5 rounded-xl font-medium text-sm text-theme-text hover:text-theme-primary hover:bg-theme-primary/10 dark:hover:bg-orange-950/30">
                 Notifications {unreadCount > 0 && `(${unreadCount})`}
               </Link>
             </div>

@@ -344,7 +344,7 @@ export default function ProductDetails() {
           <div className="mt-2 relative">
            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted font-bold text-sm">৳</span>
            <input type="number" min="500" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setBookingError('') }}
-            placeholder="Min 500" autoFocus
+            placeholder="Min 500"
             className="w-full bg-theme-bg border border-theme-border rounded-xl pl-8 pr-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
           </div>
          )}

@@ -77,7 +77,6 @@ export default function ForgotPassword() {
         value={email}
         onChange={e => { setEmail(e.target.value); setError('') }}
         placeholder="you@example.com"
-        autoFocus
         className="input-field"
        />
       </div>

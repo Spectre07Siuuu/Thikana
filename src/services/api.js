@@ -55,10 +55,6 @@ export function logout() {
  localStorage.removeItem('thikana_token')
 }
 
-export function isLoggedIn() {
- return Boolean(localStorage.getItem('thikana_token'))
-}
-
 export async function forgotPassword(email) {
  return request('/auth/forgot-password', { method: 'POST', body: { email } })
 }

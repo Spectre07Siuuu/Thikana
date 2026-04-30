@@ -565,7 +565,7 @@ export default function Home() {
            group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-sm`}>
                     <Icon size={22} />
                   </div>
-                  <p className="text-theme-border text-5xl font-black mb-2 select-none leading-none group-hover:text-theme-primary/20 transition-colors duration-500">{num}</p>
+                  <p className="text-theme-border text-5xl font-black mb-2 leading-none group-hover:text-theme-primary/20 transition-colors duration-500">{num}</p>
                   <h3 className="text-theme-text font-bold text-base mb-2 group-hover:text-theme-primary transition-colors duration-300">{title}</h3>
                   <p className="text-theme-muted text-sm leading-relaxed">{desc}</p>
                 </div>
