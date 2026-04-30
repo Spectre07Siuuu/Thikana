@@ -178,8 +178,8 @@ const AVATAR_GRADIENT = {
            </div>
           </div>
           <div className="mb-2">
-           <label className="block text-xs font-medium text-theme-muted mb-1">Bio</label>
-           <textarea rows="3" className="input-field py-2 text-sm resize-none" value={profileForm.bio} onChange={e => setProfileForm(p => ({...p, bio: e.target.value}))} placeholder="Tell us about yourself..." />
+           <label htmlFor="settings-input-1" className="block text-xs font-medium text-theme-muted mb-1">Bio</label>
+           <textarea id="settings-input-1" rows="3" className="input-field py-2 text-sm resize-none" value={profileForm.bio} onChange={e => setProfileForm(p => ({...p, bio: e.target.value}))} placeholder="Tell us about yourself..." />
           </div>
           <div className="flex justify-end">
            <button type="submit" disabled={profLoading} className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 disabled:opacity-70">

@@ -135,8 +135,8 @@ export default function VerifyEmail() {
 
      {!emailParam && (
       <div className="mb-4">
-       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Your Email</label>
-       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="input-field" />
+       <label htmlFor="verifyemail-input-1" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Your Email</label>
+       <input id="verifyemail-input-1" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="input-field" />
       </div>
      )}
 

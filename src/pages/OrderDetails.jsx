@@ -281,8 +281,8 @@ export default function OrderDetails() {
 
        <div className="mt-4 space-y-3">
         <div>
-         <label className="block text-xs font-semibold text-theme-text mb-1">Cancellation reason *</label>
-         <select
+         <label htmlFor="orderdetails-input-1" className="block text-xs font-semibold text-theme-text mb-1">Cancellation reason *</label>
+         <select id="orderdetails-input-1"
           value={cancelReason}
           onChange={(e) => {
            setCancelReason(e.target.value)
@@ -300,8 +300,8 @@ export default function OrderDetails() {
 
         {cancelReason === 'others' && (
          <div>
-          <label className="block text-xs font-semibold text-theme-text mb-1">Write your reason *</label>
-          <input
+          <label htmlFor="orderdetails-input-2" className="block text-xs font-semibold text-theme-text mb-1">Write your reason *</label>
+          <input id="orderdetails-input-2"
            type="text"
            value={cancelOtherReason}
            onChange={(e) => {

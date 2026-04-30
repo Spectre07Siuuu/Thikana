@@ -365,23 +365,23 @@ export default function Home() {
               <div className="bg-theme-card border border-theme-border rounded-2xl p-5 mb-6 animate-slide-up shadow-sm">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-theme-muted mb-1.5">Min Price (৳)</label>
-                    <input type="number" placeholder="e.g. 5000" value={minPrice} onChange={e => setMinPrice(e.target.value)} className="input-field py-2 text-sm" />
+                    <label htmlFor="filter-min-price" className="block text-xs font-semibold text-theme-muted mb-1.5">Min Price (৳)</label>
+                    <input id="filter-min-price" type="number" placeholder="e.g. 5000" value={minPrice} onChange={e => setMinPrice(e.target.value)} className="input-field py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-theme-muted mb-1.5">Max Price (৳)</label>
-                    <input type="number" placeholder="e.g. 100000" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} className="input-field py-2 text-sm" />
+                    <label htmlFor="filter-max-price" className="block text-xs font-semibold text-theme-muted mb-1.5">Max Price (৳)</label>
+                    <input id="filter-max-price" type="number" placeholder="e.g. 100000" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} className="input-field py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-theme-muted mb-1.5">Bedrooms</label>
-                    <select value={beds} onChange={e => setBeds(e.target.value)} className="input-field py-2 text-sm">
+                    <label htmlFor="filter-beds" className="block text-xs font-semibold text-theme-muted mb-1.5">Bedrooms</label>
+                    <select id="filter-beds" value={beds} onChange={e => setBeds(e.target.value)} className="input-field py-2 text-sm">
                       <option value="">Any</option>
                       {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}+</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-theme-muted mb-1.5">Condition</label>
-                    <select value={condition} onChange={e => setCondition(e.target.value)} className="input-field py-2 text-sm">
+                    <label htmlFor="filter-condition" className="block text-xs font-semibold text-theme-muted mb-1.5">Condition</label>
+                    <select id="filter-condition" value={condition} onChange={e => setCondition(e.target.value)} className="input-field py-2 text-sm">
                       <option value="">Any</option>
                       {['New', 'Like New', 'Good', 'Fair', 'Poor'].map(c => <option key={c} value={c}>{c}</option>)}
                     </select>

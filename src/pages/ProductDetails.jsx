@@ -308,8 +308,8 @@ export default function ProductDetails() {
 
     {/* ── Booking Modal ── */}
     {showBooking && (
-     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)}>
-      <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+     <div role="dialog" aria-modal="true" aria-label="Booking modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)} onKeyDown={e => e.key === 'Escape' && setShowBooking(false)}>
+      <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} role="document">
        <button onClick={() => setShowBooking(false)} className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
         <X size={18} />
        </button>
@@ -326,7 +326,7 @@ export default function ProductDetails() {
         <p className="text-base font-black text-rose-500 mt-1.5">৳{formatPrice(price)} <span className="text-xs font-semibold text-theme-muted">/month</span></p>
        </div>
        <div className="mb-5">
-        <label className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
+        <label htmlFor="booking-amount-2" className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
         <div className="grid grid-cols-3 gap-2.5 mb-3">
          {[1000, 2000, 5000].map(amt => (
           <button key={amt} type="button" onClick={() => { setBookingAmount(amt); setCustomAmount(''); setBookingError('') }}
@@ -351,13 +351,13 @@ export default function ProductDetails() {
         </div>
        </div>
        <div className="mb-5">
-        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
-        <input type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
+        <label htmlFor="booking-phone-2" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
+        <input id="booking-phone-2" type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
          placeholder="01XXXXXXXXX"
          className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
        </div>
        <div className="mb-5">
-        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
+        <label htmlFor="booking-note-2" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
         <input type="text" value={bookingNote} onChange={e => setBookingNote(e.target.value)}
          placeholder="Move-in date, special requests..."
          className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
@@ -696,7 +696,7 @@ export default function ProductDetails() {
        <p className="text-base font-black text-rose-500 mt-1.5">৳{formatPrice(product.price)} <span className="text-xs font-semibold text-theme-muted">/month</span></p>
       </div>
       <div className="mb-5">
-       <label className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
+       <label htmlFor="booking-amount" className="block text-sm font-semibold text-theme-text mb-3">Select Advance Amount</label>
        <div className="grid grid-cols-3 gap-2.5 mb-3">
         {[1000, 2000, 5000].map(amt => (
          <button key={amt} type="button" onClick={() => { setBookingAmount(amt); setCustomAmount(''); setBookingError('') }}
@@ -714,21 +714,21 @@ export default function ProductDetails() {
          <div className="mt-2 relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-muted font-bold text-sm">৳</span>
           <input type="number" min="500" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setBookingError('') }}
-           placeholder="Min 500" autoFocus
+           placeholder="Min 500"
            className="w-full bg-theme-bg border border-theme-border rounded-xl pl-8 pr-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
          </div>
         )}
        </div>
       </div>
       <div className="mb-5">
-       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
-       <input type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
+       <label htmlFor="booking-phone" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Phone Number <span className="text-red-400">*</span></label>
+       <input id="booking-phone" type="tel" value={bookingPhone} onChange={e => { setBookingPhone(e.target.value); setBookingError('') }}
         placeholder="01XXXXXXXXX"
         className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
       </div>
       <div className="mb-5">
-       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
-       <input type="text" value={bookingNote} onChange={e => setBookingNote(e.target.value)}
+       <label htmlFor="booking-note" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Note (optional)</label>
+       <input id="booking-note" type="text" value={bookingNote} onChange={e => setBookingNote(e.target.value)}
         placeholder="Move-in date, special requests..."
         className="w-full bg-theme-bg border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900/40 transition-all" />
       </div>

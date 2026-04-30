@@ -703,8 +703,8 @@ function EditProfileModal({ profile, onClose, onSaved }) {
      </ModalField>
 
      <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Bio</label>
-      <textarea name="bio" value={form.bio} onChange={handleChange} rows={3}
+      <label htmlFor="profile-input-1" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Bio</label>
+      <textarea id="profile-input-1" name="bio" value={form.bio} onChange={handleChange} rows={3}
        placeholder="Tell us about yourself…"
        className="input-field resize-none" />
      </div>
@@ -814,20 +814,20 @@ function EditProductModal({ product, onClose, onSuccess }) {
 
      <form id="edit-prod-form" onSubmit={handleSubmit} className="space-y-4">
       <div>
-       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Title</label>
-       <input type="text" name="title" value={formData.title} onChange={handleChange} required
+       <label htmlFor="profile-input-2" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Title</label>
+       <input id="profile-input-2" type="text" name="title" value={formData.title} onChange={handleChange} required
         className="input-field py-2" />
       </div>
 
       <div>
-       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Price (BDT)</label>
-       <input type="number" name="price" value={formData.price} onChange={handleChange} required
+       <label htmlFor="profile-input-3" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Price (BDT)</label>
+       <input id="profile-input-3" type="number" name="price" value={formData.price} onChange={handleChange} required
         className="input-field py-2" />
       </div>
 
       <div>
-       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-       <select name="status" value={formData.status} onChange={handleChange}
+       <label htmlFor="profile-input-4" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+       <select id="profile-input-4" name="status" value={formData.status} onChange={handleChange}
         className="input-field py-2">
         <option value="approved">Active</option>
         <option value="sold">Mark as Sold Out</option>
@@ -836,8 +836,8 @@ function EditProductModal({ product, onClose, onSuccess }) {
       </div>
 
       <div>
-       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
-       <textarea name="description" value={formData.description} onChange={handleChange} rows="4"
+       <label htmlFor="profile-input-5" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+       <textarea id="profile-input-5" name="description" value={formData.description} onChange={handleChange} rows="4"
         className="input-field py-2 min-h-[100px] resize-y" />
       </div>
      </form>
@@ -1188,8 +1188,8 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
 
        <div className="mt-4 space-y-3">
         <div>
-         <label className="block text-xs font-semibold text-theme-text mb-1">Cancellation reason *</label>
-         <select
+         <label htmlFor="profile-input-6" className="block text-xs font-semibold text-theme-text mb-1">Cancellation reason *</label>
+         <select id="profile-input-6"
           value={cancelReason}
           onChange={(e) => {
            setCancelReason(e.target.value)
@@ -1207,8 +1207,8 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
 
         {cancelReason === 'others' && (
          <div>
-          <label className="block text-xs font-semibold text-theme-text mb-1">Write your reason *</label>
-          <input
+          <label htmlFor="profile-input-7" className="block text-xs font-semibold text-theme-text mb-1">Write your reason *</label>
+          <input id="profile-input-7"
            type="text"
            value={cancelOtherReason}
            onChange={(e) => {
@@ -1315,8 +1315,8 @@ function ReviewModal({ item, onClose, onSubmitted }) {
         </div>
        </div>
        <div>
-        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Comment (Optional)</label>
-        <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3} placeholder="How was your experience?" className="input-field text-sm p-3 w-full" />
+        <label htmlFor="profile-input-8" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Comment (Optional)</label>
+        <textarea id="profile-input-8" value={comment} onChange={e => setComment(e.target.value)} rows={3} placeholder="How was your experience?" className="input-field text-sm p-3 w-full" />
        </div>
        <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 text-sm disabled:opacity-50 mt-2">
         {loading ? 'Submitting...' : 'Submit Review'}

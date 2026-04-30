@@ -94,8 +94,8 @@ export default function ResetPassword() {
       </div>
 
       <div>
-       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirm new password</label>
-       <input
+       <label htmlFor="resetpassword-input-1" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirm new password</label>
+       <input id="resetpassword-input-1"
         type={showPw ? 'text' : 'password'}
         value={form.confirmPassword}
         onChange={e => { setForm(f => ({ ...f, confirmPassword: e.target.value })); setError('') }}

@@ -136,26 +136,26 @@ export default function Checkout() {
 
         <div className="space-y-4">
          <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <label htmlFor="shipping-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
            Shipping Address <span className="text-red-400">*</span>
           </label>
-          <textarea
+          <textarea id="shipping-address"
            value={address} onChange={e => { setAddress(e.target.value); setError('') }}
            placeholder="House no, Road no, Area, City" rows={3}
            className="input-field resize-none text-sm" />
          </div>
          <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <label htmlFor="shipping-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
            Phone Number <span className="text-red-400">*</span>
           </label>
-          <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
+          <input id="shipping-phone" type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
            placeholder="01XXXXXXXXX" className="input-field py-2.5 text-sm" />
          </div>
          <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <label htmlFor="shipping-note" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
            Note (optional)
           </label>
-          <input type="text" value={note} onChange={e => setNote(e.target.value)}
+          <input id="shipping-note" type="text" value={note} onChange={e => setNote(e.target.value)}
            placeholder="Any special instructions..." className="input-field py-2.5 text-sm" />
          </div>
          <div>

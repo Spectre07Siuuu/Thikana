@@ -544,9 +544,9 @@ export default function Messages() {
               }
              </div>
              <div className="bg-white dark:bg-gray-800 border border-theme-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5 shadow-sm">
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <span className="w-2 h-2 bg-gray-400 rounded-full" style={{ animation: 'typingDot 0.8s cubic-bezier(0.16,1,0.3,1) infinite', animationDelay: '0ms' }} />
+              <span className="w-2 h-2 bg-gray-400 rounded-full" style={{ animation: 'typingDot 0.8s cubic-bezier(0.16,1,0.3,1) infinite', animationDelay: '200ms' }} />
+              <span className="w-2 h-2 bg-gray-400 rounded-full" style={{ animation: 'typingDot 0.8s cubic-bezier(0.16,1,0.3,1) infinite', animationDelay: '400ms' }} />
              </div>
             </div>
            )}
@@ -605,7 +605,7 @@ export default function Messages() {
                <div className="absolute bottom-14 left-0 bg-theme-card border border-theme-border rounded-2xl shadow-xl p-3 animate-fade-in z-20 w-72">
                 <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
                  {EMOJI_LIST.map((emoji, i) => (
-                  <button key={i} type="button" onClick={() => { setNewMsg(prev => prev + emoji) }}
+                  <button key={`emoji-${i}`} type="button" onClick={() => { setNewMsg(prev => prev + emoji) }}
                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-lg transition-colors">
                    {emoji}
                   </button>

@@ -387,15 +387,15 @@ export default function UploadProduct() {
          
          <div className="space-y-5">
           <div>
-           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Listing Title <span className="text-red-500">*</span></label>
-           <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})}
+           <label htmlFor="uploadproduct-input-1" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Listing Title <span className="text-red-500">*</span></label>
+           <input id="uploadproduct-input-1" type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})}
             placeholder="e.g., Luxury Sofa Set / 3BHK Flat" className="input-field" />
           </div>
 
            <div className="grid sm:grid-cols-2 gap-5 mb-5">
             <div>
-             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Price (BDT) <span className="text-red-500">*</span></label>
-             <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
+             <label htmlFor="uploadproduct-input-2" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Price (BDT) <span className="text-red-500">*</span></label>
+             <input id="uploadproduct-input-2" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
               placeholder="e.g., 15000" className="input-field" />
             </div>
             <div>
@@ -454,8 +454,8 @@ export default function UploadProduct() {
            )}
 
            <div>
-           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
-           <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
+           <label htmlFor="uploadproduct-input-3" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
+           <textarea id="uploadproduct-input-3" value={form.description} onChange={e => setForm({...form, description: e.target.value})}
             rows={4} placeholder="Describe your item in detail..." className="input-field resize-none" />
           </div>
 
@@ -466,22 +466,22 @@ export default function UploadProduct() {
            {(category === 'house_sell' || category === 'house_rent') && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
              <div>
-              <label className="block text-xs font-medium text-theme-muted mb-1">Beds</label>
-              <input type="number" min="0" value={attributes.beds || ''} onChange={e => setAttributes({...attributes, beds: e.target.value})} className="input-field" />
+              <label htmlFor="uploadproduct-input-4" className="block text-xs font-medium text-theme-muted mb-1">Beds</label>
+              <input id="uploadproduct-input-4" type="number" min="0" value={attributes.beds || ''} onChange={e => setAttributes({...attributes, beds: e.target.value})} className="input-field" />
              </div>
              <div>
-              <label className="block text-xs font-medium text-theme-muted mb-1">Baths</label>
-              <input type="number" min="0" value={attributes.baths || ''} onChange={e => setAttributes({...attributes, baths: e.target.value})} className="input-field" />
+              <label htmlFor="uploadproduct-input-5" className="block text-xs font-medium text-theme-muted mb-1">Baths</label>
+              <input id="uploadproduct-input-5" type="number" min="0" value={attributes.baths || ''} onChange={e => setAttributes({...attributes, baths: e.target.value})} className="input-field" />
              </div>
              <div>
-              <label className="block text-xs font-medium text-theme-muted mb-1">Size (sqft)</label>
-              <input type="number" min="0" value={attributes.sqft || ''} onChange={e => setAttributes({...attributes, sqft: e.target.value})} className="input-field" />
+              <label htmlFor="uploadproduct-input-6" className="block text-xs font-medium text-theme-muted mb-1">Size (sqft)</label>
+              <input id="uploadproduct-input-6" type="number" min="0" value={attributes.sqft || ''} onChange={e => setAttributes({...attributes, sqft: e.target.value})} className="input-field" />
              </div>
              {category === 'house_rent' && (
               <>
                <div>
-                <label className="block text-xs font-medium text-theme-muted mb-1">Available For</label>
-                <select value={attributes.available_for || ''} onChange={e => setAttributes({...attributes, available_for: e.target.value})} className="input-field text-sm">
+                <label htmlFor="uploadproduct-input-7" className="block text-xs font-medium text-theme-muted mb-1">Available For</label>
+                <select id="uploadproduct-input-7" value={attributes.available_for || ''} onChange={e => setAttributes({...attributes, available_for: e.target.value})} className="input-field text-sm">
                  <option value="">Any</option>
                  <option value="Family">Family</option>
                  <option value="Bachelor">Bachelor</option>
@@ -501,8 +501,8 @@ export default function UploadProduct() {
 
            {(category === 'furniture' || category === 'appliance') && (
             <div className="w-full sm:w-1/2">
-             <label className="block text-xs font-medium text-theme-muted mb-1">Condition</label>
-             <select value={attributes.condition || ''} onChange={e => setAttributes({...attributes, condition: e.target.value})} className="input-field">
+             <label htmlFor="uploadproduct-input-8" className="block text-xs font-medium text-theme-muted mb-1">Condition</label>
+             <select id="uploadproduct-input-8" value={attributes.condition || ''} onChange={e => setAttributes({...attributes, condition: e.target.value})} className="input-field">
               <option value="">Select condition</option>
               <option value="New">New</option>
               <option value="Used">Used</option>

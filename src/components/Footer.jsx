@@ -67,7 +67,7 @@ export default function Footer() {
       {/* Social */}
       <div className="flex items-center gap-2">
        {SOCIAL.map(({ Icon, label }) => (
-        <a key={label} href="#" aria-label={label}
+        <a key={label} href="/" aria-label={label}
          className="w-8 h-8 rounded-lg bg-white dark:bg-gray-800
           border border-theme-border
           hover:border-theme-primary/50 hover:text-theme-primary dark:hover:text-orange-400
@@ -87,7 +87,7 @@ export default function Footer() {
        <ul className="space-y-2.5">
         {links.map(label => (
          <li key={label}>
-          <a href="#"
+          <a href="/"
            className="group flex items-center gap-1 text-theme-muted
             hover:text-theme-primary text-sm transition-colors">
            <ChevronRight size={12}
