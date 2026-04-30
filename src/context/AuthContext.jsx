@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { getMe, logout as apiLogout } from '../services/api'
+import { getMe, logout as apiLogout, refreshSession, setAccessToken } from '../services/api'
 
 /**
  * AuthContext — global auth state accessible throughout the app.
@@ -12,20 +12,11 @@ export function AuthProvider({ children }) {
  const [loading, setLoading] = useState(true) // true on first mount while verifying token
  const [appMode, setAppMode] = useState(localStorage.getItem('thikana_appMode') || 'buying')
 
- // On mount: if a token exists, fetch the current user from /api/auth/me
+ // On mount: restore the session from the HTTP-only refresh cookie.
  useEffect(() => {
-  const token = localStorage.getItem('thikana_token')
-  if (!token) {
-   setLoading(false)
-   return
-  }
-
-  getMe()
+  refreshSession()
    .then((data) => setUser(data.user))
-   .catch(() => {
-    // Token invalid / expired — clear it
-    localStorage.removeItem('thikana_token')
-   })
+   .catch(() => setAccessToken(null))
    .finally(() => setLoading(false))
  }, [])
 
@@ -34,9 +25,9 @@ export function AuthProvider({ children }) {
   setUser(userData)
  }, [])
 
- /** Clear user & token */
+ /** Clear user and revoke the refresh session */
  const logout = useCallback(() => {
-  apiLogout()  // removes token from localStorage
+  apiLogout()
   setUser(null)
  }, [])
 

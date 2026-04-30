@@ -24,6 +24,7 @@ import Checkout    from './pages/Checkout'
 import Messages    from './pages/Messages'
 import Notifications from './pages/Notifications'
 import OrderDetails from './pages/OrderDetails'
+import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
  return (
@@ -40,19 +41,19 @@ export default function App() {
          <Route path="/verify-email"  element={<VerifyEmail />} />
          <Route path="/forgot-password" element={<ForgotPassword />} />
          <Route path="/reset-password" element={<ResetPassword />} />
-         <Route path="/profile"     element={<Profile />} />
-         <Route path="/verify-nid"   element={<NidVerify />} />
-         <Route path="/upload-product" element={<UploadProduct />} />
+         <Route path="/profile"     element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+         <Route path="/verify-nid"   element={<ProtectedRoute roles={['buyer', 'seller']}><NidVerify /></ProtectedRoute>} />
+         <Route path="/upload-product" element={<ProtectedRoute roles={['seller']} requireVerifiedNid><UploadProduct /></ProtectedRoute>} />
          <Route path="/product/:id"   element={<ProductDetails />} />
-         <Route path="/settings"    element={<Settings />} />
+         <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
          <Route path="/terms"      element={<Terms />} />
          <Route path="/privacy"     element={<Privacy />} />
-         <Route path="/admin"      element={<Admin />} />
-         <Route path="/cart"      element={<Cart />} />
-         <Route path="/checkout"    element={<Checkout />} />
-         <Route path="/messages"    element={<Messages />} />
-         <Route path="/notifications"  element={<Notifications />} />
-         <Route path="/orders/:id"    element={<OrderDetails />} />
+         <Route path="/admin"      element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+         <Route path="/cart"      element={<ProtectedRoute roles={['buyer']}><Cart /></ProtectedRoute>} />
+         <Route path="/checkout"    element={<ProtectedRoute roles={['buyer']} requireVerifiedNid><Checkout /></ProtectedRoute>} />
+         <Route path="/messages"    element={<ProtectedRoute roles={['buyer', 'seller']} requireVerifiedNid><Messages /></ProtectedRoute>} />
+         <Route path="/notifications"  element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+         <Route path="/orders/:id"    element={<ProtectedRoute roles={['buyer', 'seller']} allowAdmin><OrderDetails /></ProtectedRoute>} />
         </Routes>
        </BrowserRouter>
       </NotificationProvider>

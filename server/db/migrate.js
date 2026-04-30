@@ -34,6 +34,22 @@ async function migrate() {
   await run('users.admin role sync',        `UPDATE users SET role = 'admin' WHERE is_admin = 1`)
   await run('users.role enum final',        `ALTER TABLE users MODIFY COLUMN role ENUM('buyer','seller','admin') NOT NULL DEFAULT 'buyer'`)
 
+  // ── refresh tokens table ────────────────────────────────
+  await run('refresh_tokens table', `
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id    INT UNSIGNED NOT NULL,
+      token      VARCHAR(512) NOT NULL,
+      expires_at DATETIME     NOT NULL,
+      created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY fk_rt_user (user_id),
+      KEY idx_refresh_token (token),
+      CONSTRAINT fk_rt_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `)
+  await run('refresh_tokens.token index', `ALTER TABLE refresh_tokens ADD INDEX idx_refresh_token (token)`)
+
   // ── nid_submissions table ────────────────────────────────
   await run('nid_submissions table', `
     CREATE TABLE IF NOT EXISTS nid_submissions (

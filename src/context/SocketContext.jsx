@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import { useAuth } from './AuthContext'
-import { getUnreadMessageCount } from '../services/api'
+import { getAccessToken, getUnreadMessageCount } from '../services/api'
 
 const SocketContext = createContext(null)
 
@@ -37,7 +37,7 @@ export function SocketProvider({ children }) {
    return
   }
 
-  const token = localStorage.getItem('thikana_token')
+  const token = getAccessToken()
   if (!token) return
 
   const socket = io(window.location.origin, {

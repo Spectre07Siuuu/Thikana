@@ -3,17 +3,51 @@
  */
 
 const BASE_URL = '/api'
+let accessToken = null
+let refreshPromise = null
 
-async function request(endpoint, { method = 'GET', body, token } = {}) {
- const storedToken = token || localStorage.getItem('thikana_token')
- const headers = { 'Content-Type': 'application/json' }
- if (storedToken) headers['Authorization'] = `Bearer ${storedToken}`
+export function getAccessToken() {
+ return accessToken
+}
+
+export function setAccessToken(token) {
+ accessToken = token || null
+ localStorage.removeItem('thikana_token')
+}
+
+async function refreshAccessToken() {
+ if (!refreshPromise) {
+  refreshPromise = request('/auth/refresh', { method: 'POST', skipAuth: true, skipRefresh: true })
+   .then(data => {
+    setAccessToken(data.token)
+    return data
+   })
+   .finally(() => { refreshPromise = null })
+ }
+ return refreshPromise
+}
+
+async function request(endpoint, { method = 'GET', body, token, skipAuth = false, skipRefresh = false } = {}) {
+ const headers = {}
+ const authToken = token || accessToken
+ if (!skipAuth && authToken) headers['Authorization'] = `Bearer ${authToken}`
+ if (body && !(body instanceof FormData)) headers['Content-Type'] = 'application/json'
 
  const res = await fetch(`${BASE_URL}${endpoint}`, {
   method,
   headers,
-  body: body ? JSON.stringify(body) : undefined,
+  credentials: 'include',
+  body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
  })
+
+ if (res.status === 401 && !skipRefresh) {
+  try {
+   await refreshAccessToken()
+   return request(endpoint, { method, body, token, skipAuth, skipRefresh: true })
+  } catch {
+   setAccessToken(null)
+  }
+ }
 
  const data = await res.json()
  if (!res.ok) {
@@ -33,7 +67,7 @@ export async function signup(payload) {
 
 export async function verifyEmail(payload) {
  const data = await request('/auth/verify-email', { method: 'POST', body: payload })
- if (data.token) localStorage.setItem('thikana_token', data.token)
+ if (data.token) setAccessToken(data.token)
  return data
 }
 
@@ -43,7 +77,7 @@ export async function resendOtp(email) {
 
 export async function login(payload) {
  const data = await request('/auth/login', { method: 'POST', body: payload })
- if (data.token) localStorage.setItem('thikana_token', data.token)
+ if (data.token) setAccessToken(data.token)
  return data
 }
 
@@ -51,8 +85,13 @@ export async function getMe() {
  return request('/auth/me')
 }
 
+export async function refreshSession() {
+ return refreshAccessToken()
+}
+
 export function logout() {
- localStorage.removeItem('thikana_token')
+ setAccessToken(null)
+ return request('/auth/logout', { method: 'POST', skipAuth: true, skipRefresh: true }).catch(() => {})
 }
 
 export async function forgotPassword(email) {
@@ -224,6 +263,12 @@ export async function markConversationRead(userId) {
 
 export async function getUnreadMessageCount() {
  return request('/messages/unread-count')
+}
+
+export async function uploadChatFile(type, file) {
+ const formData = new FormData()
+ formData.append('file', file)
+ return request(`/upload/chat/${type}`, { method: 'POST', body: formData })
 }
 
 /* ─── Notifications ──────────────────────────────────────── */

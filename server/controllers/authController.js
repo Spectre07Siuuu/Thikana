@@ -8,11 +8,63 @@ const { sendMail } = require('../config/mail')
 const SALT_ROUNDS = 12
 const OTP_TTL_MINUTES = 15
 const RESET_TTL_HOURS = 1
+const REFRESH_COOKIE = 'thikana_refresh_token'
+const REFRESH_TTL_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 30
 
 function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
   })
+}
+
+function signAccessToken(user) {
+  return signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
+}
+
+function parseCookies(header = '') {
+  return header.split(';').reduce((cookies, part) => {
+    const [rawName, ...rawValue] = part.trim().split('=')
+    if (!rawName) return cookies
+    cookies[rawName] = decodeURIComponent(rawValue.join('=') || '')
+    return cookies
+  }, {})
+}
+
+function hashRefreshToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+function refreshCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production'
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/api/auth',
+    maxAge: REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
+  }
+}
+
+async function createRefreshSession(res, userId) {
+  const rawToken = crypto.randomBytes(64).toString('hex')
+  const tokenHash = hashRefreshToken(rawToken)
+  const expiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000)
+
+  await pool.query(
+    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+    [userId, tokenHash, expiresAt]
+  )
+  res.cookie(REFRESH_COOKIE, rawToken, refreshCookieOptions())
+}
+
+function clearRefreshCookie(res) {
+  res.clearCookie(REFRESH_COOKIE, { ...refreshCookieOptions(), maxAge: undefined })
+}
+
+async function issueAuthResponse(res, user, message) {
+  await createRefreshSession(res, user.id)
+  const token = signAccessToken(user)
+  return res.json({ success: true, message, token, user: safeUser(user) })
 }
 
 function effectiveRole(row) {
@@ -22,7 +74,7 @@ function effectiveRole(row) {
 }
 
 function safeUser(row) {
-  const { password, otp_code, otp_expires_at, reset_token, reset_token_expires_at, ...user } = row
+  const { password, otp_code, otp_expires_at, reset_token, reset_token_expires_at, refresh_id, refresh_expires_at, ...user } = row
   return { ...user, role: effectiveRole(row) }
 }
 
@@ -79,8 +131,7 @@ async function verifyEmail(req, res) {
 
     const user = rows[0]
     if (user.is_verified) {
-      const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
-      return res.json({ success: true, message: 'Email already verified.', token, user: safeUser(user) })
+      return issueAuthResponse(res, user, 'Email already verified.')
     }
     if (!user.otp_code || user.otp_code !== String(otp).trim()) return res.status(400).json({ success: false, message: 'Invalid verification code.' })
     if (!user.otp_expires_at || new Date() > new Date(user.otp_expires_at)) return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' })
@@ -90,8 +141,7 @@ async function verifyEmail(req, res) {
       `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = ?`,
       [user.id]
     )
-    const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
-    return res.json({ success: true, message: 'Email verified! Welcome to Thikana.', token, user: safeUser(fresh[0]) })
+    return issueAuthResponse(res, fresh[0], 'Email verified! Welcome to Thikana.')
   } catch (err) {
     console.error('[verifyEmail error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
@@ -140,8 +190,7 @@ async function login(req, res) {
       return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', requiresVerification: true, email: user.email })
     }
 
-    const token = signToken({ id: user.id, email: user.email, role: effectiveRole(user), is_admin: !!user.is_admin })
-    return res.json({ success: true, message: 'Login successful!', token, user: safeUser(user) })
+    return issueAuthResponse(res, user, 'Login successful!')
   } catch (err) {
     console.error('[login error]', err)
     return res.status(500).json({ success: false, message: 'Server error. Please try again later.' })
@@ -158,6 +207,59 @@ async function me(req, res) {
     return res.json({ success: true, user: safeUser(rows[0]) })
   } catch (err) {
     console.error('[me error]', err)
+    return res.status(500).json({ success: false, message: 'Server error.' })
+  }
+}
+
+async function refresh(req, res) {
+  const cookies = parseCookies(req.headers.cookie)
+  const rawToken = cookies[REFRESH_COOKIE]
+  if (!rawToken) return res.status(401).json({ success: false, message: 'Session refresh required.' })
+
+  const tokenHash = hashRefreshToken(rawToken)
+  try {
+    const [rows] = await pool.query(
+      `SELECT rt.id AS refresh_id, rt.expires_at AS refresh_expires_at, u.*,
+        (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status
+       FROM refresh_tokens rt
+       JOIN users u ON u.id = rt.user_id
+       WHERE rt.token = ?
+       LIMIT 1`,
+      [tokenHash]
+    )
+
+    if (rows.length === 0) {
+      clearRefreshCookie(res)
+      return res.status(401).json({ success: false, message: 'Invalid session.' })
+    }
+
+    const session = rows[0]
+    await pool.query('DELETE FROM refresh_tokens WHERE id = ? OR expires_at < NOW()', [session.refresh_id])
+    if (!session.refresh_expires_at || new Date() > new Date(session.refresh_expires_at)) {
+      clearRefreshCookie(res)
+      return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' })
+    }
+
+    await createRefreshSession(res, session.id)
+    const token = signAccessToken(session)
+    return res.json({ success: true, token, user: safeUser(session) })
+  } catch (err) {
+    console.error('[refresh error]', err)
+    return res.status(500).json({ success: false, message: 'Server error.' })
+  }
+}
+
+async function logout(req, res) {
+  const cookies = parseCookies(req.headers.cookie)
+  const rawToken = cookies[REFRESH_COOKIE]
+  try {
+    if (rawToken) {
+      await pool.query('DELETE FROM refresh_tokens WHERE token = ?', [hashRefreshToken(rawToken)])
+    }
+    clearRefreshCookie(res)
+    return res.json({ success: true, message: 'Logged out successfully.' })
+  } catch (err) {
+    console.error('[logout error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
   }
 }
@@ -223,4 +325,4 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { signup, verifyEmail, resendOtp, login, me, forgotPassword, resetPassword, changePassword }
+module.exports = { signup, verifyEmail, resendOtp, login, me, refresh, logout, forgotPassword, resetPassword, changePassword }

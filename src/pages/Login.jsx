@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react'
 import { login as loginApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -17,7 +17,9 @@ function validate({ email, password }) {
 
 export default function Login() {
  const navigate = useNavigate()
+ const location = useLocation()
  const auth   = useAuth()
+ const redirectPath = location.state?.from?.pathname || '/'
 
  const [fields,    setFields]    = useState({ email: '', password: '' })
  const [errors,    setErrors]    = useState({})
@@ -41,7 +43,7 @@ export default function Login() {
   try {
    const data = await loginApi({ email: fields.email, password: fields.password })
    auth.login(data.user)
-   navigate('/')
+   navigate(redirectPath, { replace: true })
   } catch (err) {
    // Backend signals account exists but not verified
    if (err.data?.requiresVerification) {
@@ -161,5 +163,4 @@ function Spinner() {
   </svg>
  )
 }
-
 

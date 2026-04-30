@@ -8,7 +8,7 @@ import {
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
-import { getConversations, getMessageHistory, markConversationRead as apiMarkRead, sendMsg } from '../services/api'
+import { getConversations, getMessageHistory, markConversationRead as apiMarkRead, sendMsg, uploadChatFile } from '../services/api'
 
 /* ─── Emoji Grid ─── */
 const EMOJI_LIST = [
@@ -201,14 +201,7 @@ export default function Messages() {
   setUploading(true)
   setShowAttach(false)
   try {
-   const formData = new FormData()
-   formData.append('file', file)
-   const token = localStorage.getItem('thikana_token')
-   const uploadRes = await fetch(`/api/upload/chat/${type}`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData,
-   })
-   const uploadData = await uploadRes.json()
-   if (!uploadData.success) throw new Error(uploadData.message)
+   const uploadData = await uploadChatFile(type, file)
 
    const res = await socketSend({
     receiver_id: activePartnerId, type,
