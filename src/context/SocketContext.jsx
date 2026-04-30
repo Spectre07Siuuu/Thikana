@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import { useAuth } from './AuthContext'
-import { getAccessToken, getUnreadMessageCount } from '../services/api'
+import { getAccessToken, getUnreadMessageCount, refreshSession } from '../services/api'
 
 const SocketContext = createContext(null)
 
@@ -53,6 +53,17 @@ export function SocketProvider({ children }) {
   socket.on('disconnect', () => {
    setConnected(false)
    console.log('🔌 Socket disconnected')
+  })
+
+  socket.on('connect_error', async (err) => {
+   if (err.message !== 'Invalid token' && err.message !== 'Authentication required') return
+   try {
+    const data = await refreshSession()
+    socket.auth = { token: data.token }
+    socket.connect()
+   } catch {
+    setConnected(false)
+   }
   })
 
   socket.on('user_online', ({ userId }) => {

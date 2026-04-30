@@ -85,7 +85,7 @@ async function getProducts(req, res) {
       const words = q.trim().split(/\s+/)
       where += ' AND ('
       words.forEach((w, index) => {
-        if (index > 0) where += ' OR '
+        if (index > 0) where += ' AND '
         where += '(p.title LIKE ? OR p.location LIKE ? OR p.description LIKE ?)'
         params.push(`%${w}%`, `%${w}%`, `%${w}%`)
       })
@@ -102,11 +102,17 @@ async function getProducts(req, res) {
       price_desc: 'p.price DESC',
     }
     const orderBy = orderMap[sort] || 'p.created_at DESC'
+    const includeFavourite = req.user?.role === 'buyer'
+    const favouriteSelect = includeFavourite
+      ? ', EXISTS(SELECT 1 FROM favourites f WHERE f.product_id = p.id AND f.user_id = ?) as is_favourited'
+      : ', 0 as is_favourited'
+    const favouriteParams = includeFavourite ? [req.user.id] : []
 
     const baseQuery = `
       SELECT p.*,
              u.full_name as seller_name, u.avatar_url as seller_avatar, u.nid_verified as seller_verified,
              (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image
+             ${favouriteSelect}
       FROM products p
       JOIN users u ON p.seller_id = u.id
       ${where}
@@ -115,12 +121,13 @@ async function getProducts(req, res) {
 
     const countQuery = `SELECT COUNT(*) as total FROM products p JOIN users u ON p.seller_id = u.id ${where}`
 
-    const [rows] = await pool.query(baseQuery, [...params, pageSize, offset])
+    const [rows] = await pool.query(baseQuery, [...favouriteParams, ...params, pageSize, offset])
     const [countRows] = await pool.query(countQuery, params)
     const total = countRows[0].total
 
     const formatted = rows.map(r => ({
       ...r,
+      is_favourited: !!r.is_favourited,
       attributes: r.attributes && typeof r.attributes === 'string' ? JSON.parse(r.attributes) : (r.attributes || {}),
     }))
 
@@ -168,6 +175,10 @@ async function getProductById(req, res) {
     )
     product.images    = images.map(img => img.image_url)
     product.main_image = images.length > 0 ? images[0].image_url : null
+    if (!req.user?.nid_verified) {
+      delete product.seller_phone
+      delete product.seller_email
+    }
 
     // Increment view count (fire and forget)
     pool.query('UPDATE products SET views = views + 1 WHERE id = ?', [id]).catch(() => {})
@@ -199,7 +210,7 @@ async function getProductById(req, res) {
 async function editProduct(req, res) {
   try {
     const { id } = req.params
-    const { title, description, price, status } = req.body
+    const { title, description, price } = req.body
     const seller_id = req.user.id
 
     const [rows] = await pool.query('SELECT seller_id FROM products WHERE id = ?', [id])
@@ -211,7 +222,6 @@ async function editProduct(req, res) {
     if (title !== undefined)       { updates.push('title = ?');       params.push(title) }
     if (description !== undefined) { updates.push('description = ?'); params.push(description) }
     if (price !== undefined)       { updates.push('price = ?');       params.push(price) }
-    if (status !== undefined)      { updates.push('status = ?');      params.push(status) }
 
     if (updates.length > 0) {
       params.push(id)

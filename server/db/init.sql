@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS products (
   location    VARCHAR(255) NOT NULL,
   lat         DECIMAL(10,8) DEFAULT NULL,
   lng         DECIMAL(11,8) DEFAULT NULL,
-  status      ENUM('pending','approved','rejected','sold') NOT NULL DEFAULT 'pending',
+  status      ENUM('pending','approved','rejected','sold','booked') NOT NULL DEFAULT 'pending',
   attributes  JSON         DEFAULT NULL,
   views       INT UNSIGNED NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS products (
   PRIMARY KEY (id),
   KEY idx_products_status   (status),
   KEY idx_products_category (category),
+  KEY idx_prod_cat_price    (category, status, price),
   KEY idx_products_seller   (seller_id),
   CONSTRAINT fk_product_seller FOREIGN KEY (seller_id)
     REFERENCES users (id) ON DELETE CASCADE
@@ -165,19 +166,26 @@ CREATE TABLE IF NOT EXISTS orders (
   id               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   buyer_id         INT UNSIGNED  NOT NULL,
   status           ENUM('pending','confirmed','shipped','delivered','cancelled')
-                   NOT NULL DEFAULT 'confirmed',
+                   NOT NULL DEFAULT 'pending',
   total_amount     DECIMAL(12,2) NOT NULL DEFAULT 0,
   delivery_fee     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  is_booking       TINYINT(1)    NOT NULL DEFAULT 0,
+  booking_amount   DECIMAL(12,2)          DEFAULT NULL,
   shipping_address VARCHAR(500)  NOT NULL,
   phone            VARCHAR(20)   NOT NULL,
   note             TEXT                   DEFAULT NULL,
+  cancellation_reason VARCHAR(100)        DEFAULT NULL,
+  cancellation_note   TEXT                DEFAULT NULL,
+  cancelled_by     INT UNSIGNED           DEFAULT NULL,
   created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
                    ON UPDATE CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),
   KEY fk_order_buyer (buyer_id),
-  CONSTRAINT fk_order_buyer FOREIGN KEY (buyer_id) REFERENCES users (id) ON DELETE CASCADE
+  KEY fk_order_cancelled_by (cancelled_by),
+  CONSTRAINT fk_order_buyer FOREIGN KEY (buyer_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_order_cancelled_by FOREIGN KEY (cancelled_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ─── Order Items ──────────────────────────────────────────
@@ -188,11 +196,14 @@ CREATE TABLE IF NOT EXISTS order_items (
   seller_id  INT UNSIGNED  NOT NULL,
   price      DECIMAL(12,2) NOT NULL,
   quantity   INT UNSIGNED  NOT NULL DEFAULT 1,
+  is_booking TINYINT(1)    NOT NULL DEFAULT 0,
+  booking_amount DECIMAL(12,2) DEFAULT NULL,
 
   PRIMARY KEY (id),
   KEY fk_oi_order   (order_id),
   KEY fk_oi_product (product_id),
   KEY fk_oi_seller  (seller_id),
+  KEY idx_oi_seller_order (seller_id, order_id),
   CONSTRAINT fk_oi_order   FOREIGN KEY (order_id)   REFERENCES orders (id)   ON DELETE CASCADE,
   CONSTRAINT fk_oi_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
   CONSTRAINT fk_oi_seller  FOREIGN KEY (seller_id)  REFERENCES users (id)    ON DELETE CASCADE
@@ -214,6 +225,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   KEY fk_rev_buyer   (buyer_id),
   KEY fk_rev_seller  (seller_id),
   KEY fk_rev_product (product_id),
+  KEY idx_rev_product (product_id, created_at),
   CONSTRAINT fk_rev_oi      FOREIGN KEY (order_item_id) REFERENCES order_items (id) ON DELETE CASCADE,
   CONSTRAINT fk_rev_buyer   FOREIGN KEY (buyer_id)      REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_rev_seller  FOREIGN KEY (seller_id)     REFERENCES users (id) ON DELETE CASCADE,
@@ -237,6 +249,7 @@ CREATE TABLE IF NOT EXISTS messages (
   KEY fk_msg_sender   (sender_id),
   KEY fk_msg_receiver (receiver_id),
   KEY fk_msg_product  (product_id),
+  KEY idx_msg_conversation (sender_id, receiver_id, created_at),
   CONSTRAINT fk_msg_sender   FOREIGN KEY (sender_id)   REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_msg_receiver FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_msg_product  FOREIGN KEY (product_id)  REFERENCES products (id) ON DELETE SET NULL

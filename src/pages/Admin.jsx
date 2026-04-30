@@ -26,6 +26,7 @@ export default function Admin() {
  const [products, setProducts]  = useState([])
  const [nidList, setNidList]   = useState([])
  const [loading, setLoading]   = useState(true)
+ const [error, setError]       = useState('')
  const [statusFilter, setStatusFilter] = useState('pending')
 
  // Redirect non-admins
@@ -38,6 +39,7 @@ export default function Admin() {
  const fetchData = useCallback(async () => {
   if (!user?.is_admin) return
   setLoading(true)
+  setError('')
   try {
    const [statsData, prodData, nidData] = await Promise.all([
     getAdminStats(),
@@ -49,6 +51,7 @@ export default function Admin() {
    setNidList(nidData.submissions || [])
   } catch (err) {
    console.error(err)
+   setError(err.message || 'Failed to load admin data.')
   } finally {
    setLoading(false)
   }
@@ -57,22 +60,24 @@ export default function Admin() {
  useEffect(() => { fetchData() }, [fetchData])
 
  const handleProductReview = async (product_id, status) => {
+  setError('')
   try {
    await adminReviewProduct({ product_id, status })
    setProducts(prev => prev.filter(p => p.id !== product_id))
    setStats(prev => prev ? { ...prev, pending_prod: Math.max(0, (prev.pending_prod || 1) - 1) } : prev)
   } catch (err) {
-   alert(err.message || 'Failed to update product.')
+   setError(err.message || 'Failed to update product.')
   }
  }
 
  const handleNidReview = async (submission_id, status) => {
+  setError('')
   try {
    await adminReviewNid({ submission_id, status })
    setNidList(prev => prev.filter(n => n.id !== submission_id))
    setStats(prev => prev ? { ...prev, pending_nid: Math.max(0, (prev.pending_nid || 1) - 1) } : prev)
   } catch (err) {
-   alert(err.message || 'Failed to update NID.')
+   setError(err.message || 'Failed to update NID.')
   }
  }
 
@@ -100,6 +105,12 @@ export default function Admin() {
        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
       </button>
      </div>
+
+     {error && (
+      <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300">
+       {error}
+      </div>
+     )}
 
      {/* Tabs */}
      <div className="bg-theme-card border border-theme-border rounded-2xl shadow-sm mb-4">
@@ -178,7 +189,7 @@ function ProductsTab({ products, onReview, statusFilter }) {
        <div>
         <p className="font-semibold text-theme-text text-sm truncate">{p.title}</p>
         <p className="text-xs text-theme-muted mt-0.5">{p.seller_name} · {p.seller_email}</p>
-        <p className="text-xs text-theme-muted mt-0.5 capitalize">{p.category.replace('_', ' ')} · ৳{Number(p.price).toLocaleString()}</p>
+        <p className="text-xs text-theme-muted mt-0.5 capitalize">{p.category.replaceAll('_', ' ')} · ৳{Number(p.price).toLocaleString()}</p>
        </div>
        <Link to={`/product/${p.id}`} target="_blank" className="text-theme-muted hover:text-theme-primary flex-shrink-0">
         <ExternalLink size={14} />

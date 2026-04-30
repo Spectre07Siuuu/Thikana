@@ -118,6 +118,7 @@ async function seed() {
     if (isFresh) {
       console.log('🗑️  Wiping all existing data (Users, Products, etc.)...');
       await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+      await pool.query('TRUNCATE refresh_tokens');
       await pool.query('TRUNCATE users');
       await pool.query('TRUNCATE products');
       await pool.query('TRUNCATE product_images');

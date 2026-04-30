@@ -1,8 +1,8 @@
-const bcrypt   = require('bcryptjs')
-const jwt      = require('jsonwebtoken')
-const crypto   = require('crypto')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 const { validationResult } = require('express-validator')
-const pool     = require('../config/db')
+const pool = require('../config/db')
 const { sendMail } = require('../config/mail')
 
 const SALT_ROUNDS = 12
@@ -271,10 +271,11 @@ async function forgotPassword(req, res) {
     const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()])
     if (rows.length > 0) {
       const token = crypto.randomBytes(32).toString('hex')
+      const tokenHash = hashRefreshToken(token)
       const expires = new Date(Date.now() + RESET_TTL_HOURS * 60 * 60 * 1000)
-      await pool.query('UPDATE users SET reset_token = ?, reset_token_expires_at = ? WHERE id = ?', [token, expires, rows[0].id])
+      await pool.query('UPDATE users SET reset_token = ?, reset_token_expires_at = ? WHERE id = ?', [tokenHash, expires, rows[0].id])
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
-      const resetUrl  = `${clientUrl}/reset-password?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`
+      const resetUrl = `${clientUrl}/reset-password?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`
       sendMail({ to: email, subject: 'Reset your Thikana password', html: resetEmailHtml(resetUrl), text: `Reset your password: ${resetUrl}` })
         .catch(err => console.error('[mail error]', err))
     }
@@ -288,10 +289,11 @@ async function forgotPassword(req, res) {
 async function resetPassword(req, res) {
   const { email, token, newPassword } = req.body
   if (!email || !token || !newPassword) return res.status(400).json({ success: false, message: 'Email, token, and new password are required.' })
-  if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' })
+  if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' })
   try {
+    const tokenHash = hashRefreshToken(String(token))
     const [rows] = await pool.query('SELECT id, reset_token, reset_token_expires_at FROM users WHERE email = ?', [email.toLowerCase()])
-    if (rows.length === 0 || rows[0].reset_token !== token) return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' })
+    if (rows.length === 0 || rows[0].reset_token !== tokenHash) return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' })
     if (!rows[0].reset_token_expires_at || new Date() > new Date(rows[0].reset_token_expires_at)) return res.status(400).json({ success: false, message: 'Reset link has expired. Please request a new one.' })
 
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS)
@@ -310,7 +312,7 @@ async function resetPassword(req, res) {
 async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body
   if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Both current and new passwords are required.' })
-  if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' })
+  if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'New password must be at least 8 characters.' })
   try {
     const [rows] = await pool.query('SELECT id, password FROM users WHERE id = ?', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })

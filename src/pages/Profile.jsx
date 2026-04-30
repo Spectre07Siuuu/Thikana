@@ -5,8 +5,8 @@ import {
  ShoppingBag, Heart, Star, Award,
  DollarSign, BarChart3, ClipboardList,
  Package, MessageSquare, Plus,
- Bookmark, MapPin, CreditCard, Bell,
- HelpCircle, Settings, LogOut, X, User, Phone, Home as HomeIcon,
+ Bookmark, MapPin, Bell,
+ Settings, LogOut, X, User, Phone, Home as HomeIcon,
  FileText, Camera,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -49,10 +49,10 @@ const STATUS_BADGE = {
 
 /* ── Buyer menu items ────────────────────────────────────── */
 const BUYER_MENU = [
- { icon: MapPin,   label: 'Address Book' },
- { icon: CreditCard, label: 'Payment Method' },
+ { icon: ShoppingBag, label: 'My Orders' },
+ { icon: Bookmark, label: 'Saved Listings' },
  { icon: Bell,    label: 'Notifications' },
- { icon: HelpCircle, label: 'Help & Support' },
+ { icon: Settings, label: 'Settings' },
 ]
 
 /* ── Seller tabs ─────────────────────────────────────────── */
@@ -358,6 +358,7 @@ function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId 
       onClick={() => {
        if (label === 'My Orders') { setView('orders'); return }
        if (label === 'Saved Listings') { setView('saved'); return }
+       if (label === 'Notifications') { navigate('/notifications'); return }
        if (label === 'Settings') { navigate('/settings'); return }
       }}>
       <span className="w-9 h-9 rounded-lg bg-theme-bg dark:bg-gray-800 flex items-center justify-center text-theme-muted flex-shrink-0">
@@ -449,7 +450,7 @@ function ProductsTab({ products, refreshProducts }) {
       <div className="flex items-start justify-between gap-2">
        <div className="min-w-0 flex-1 pr-2">
         <Link to={`/product/${p.id}`} className="text-sm font-semibold text-theme-text truncate hover:text-theme-primary hover:underline block">{p.title}</Link>
-        <p className="text-xs text-theme-muted mt-0.5 capitalize">{p.category.replace('_', ' ')}</p>
+        <p className="text-xs text-theme-muted mt-0.5 capitalize">{p.category.replaceAll('_', ' ')}</p>
        </div>
        <span className={`text-[10px] whitespace-nowrap font-bold px-2 py-0.5 rounded-full uppercase
         ${p.status === 'approved' || p.status === 'active'

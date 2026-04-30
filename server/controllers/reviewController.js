@@ -27,8 +27,8 @@ async function addReview(req, res) {
     }
 
     const { product_id, seller_id, order_status } = orders[0]
-    if (order_status === 'cancelled') {
-      return res.status(400).json({ success: false, message: 'Reviews are not allowed for cancelled orders.' })
+    if (order_status !== 'delivered') {
+      return res.status(400).json({ success: false, message: 'You can only review delivered orders.' })
     }
 
     // Insert review

@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 /**
  * Saves a base64 encoded image to the specified directory.
  * @param {string} base64Str - The base64 data URL string.
@@ -32,6 +34,9 @@ function saveBase64Image(base64Str, dir, filenamePrefix) {
   
   const filepath = path.join(dirPath, filename);
   const buffer = Buffer.from(matches[2], 'base64');
+  if (buffer.length > MAX_IMAGE_BYTES) {
+    throw new Error('Image exceeds maximum size of 5MB.');
+  }
   
   fs.writeFileSync(filepath, buffer);
   return `/uploads/${dir}/${filename}`;

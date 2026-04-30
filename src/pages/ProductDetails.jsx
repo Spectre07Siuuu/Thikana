@@ -446,7 +446,7 @@ export default function ProductDetails() {
         <div className="absolute top-4 left-4">
          {category && (
           <span className="bg-black/60 backdrop-blur-md text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-           {category.replace('_', ' ')}
+           {category.replaceAll('_', ' ')}
           </span>
          )}
          {status === 'sold' && (
@@ -539,7 +539,7 @@ export default function ProductDetails() {
          <div className="grid grid-cols-2 gap-3">
           {Object.entries(attributes).map(([key, value]) => !value ? null : (
            <div key={key} className="p-3 rounded-xl bg-gray-100/70 dark:bg-gray-800/70 flex flex-col">
-            <span className="text-[10px] text-theme-muted font-semibold uppercase tracking-wider">{key.replace('_', ' ')}</span>
+            <span className="text-[10px] text-theme-muted font-semibold uppercase tracking-wider">{key.replaceAll('_', ' ')}</span>
             <span className="text-sm font-bold text-theme-text capitalize mt-0.5">{key === 'available_from' ? formatDate(value) : value}</span>
            </div>
           ))}

@@ -24,16 +24,20 @@ const SORT_OPTIONS = [
 function SmallProductCard({ product }) {
   const { id, title, location, price, category, main_image, attributes, seller_verified, status } = product
   const isRent = category === 'house_rent'
-  const [isLiked, setIsLiked] = useState(false)
+  const [isLiked, setIsLiked] = useState(Boolean(product.is_favourited))
   const { user } = useAuth()
 
   useEffect(() => {
+    if (product.is_favourited !== undefined) {
+      setIsLiked(Boolean(product.is_favourited))
+      return
+    }
     if (user && user.role === 'buyer') {
       getFavouriteStatus(id)
         .then(res => { if (res.success) setIsLiked(res.saved) })
         .catch(() => {})
     }
-  }, [id, user])
+  }, [id, product.is_favourited, user])
 
   const handleToggle = async (e) => {
     e.preventDefault()
@@ -71,7 +75,7 @@ function SmallProductCard({ product }) {
         {/* Glassmorphism badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
           <span className="bg-black/40 backdrop-blur-xl text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full w-fit border border-white/10 shadow-lg">
-            {category.replace('_', ' ')}
+            {category.replaceAll('_', ' ')}
           </span>
           {status === 'sold' && (
             <span className="bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-full shadow-lg w-fit border border-rose-400/30">SOLD OUT</span>

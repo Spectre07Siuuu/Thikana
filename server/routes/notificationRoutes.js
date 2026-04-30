@@ -6,9 +6,9 @@ const router = express.Router()
 
 router.use(verifyToken)
 
-router.get('/',               getNotifications)
-router.get('/unread-count',   getUnreadCount)
-router.patch('/read-all',     markAllRead)
-router.patch('/:id/read',     markRead)
+router.get('/', getNotifications)
+router.get('/unread-count', getUnreadCount)
+router.patch('/read-all', markAllRead)
+router.patch('/:id/read', markRead)
 
 module.exports = router

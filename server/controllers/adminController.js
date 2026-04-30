@@ -110,7 +110,7 @@ async function reviewNid(req, res) {
     const emoji = status === 'approved' ? '🎉' : '⚠️'
     createNotification(
       subs[0].user_id,
-      status === 'approved' ? 'product_approved' : 'product_rejected',
+      status === 'approved' ? 'nid_approved' : 'nid_rejected',
       `NID Verification ${status === 'approved' ? 'Approved' : 'Rejected'} ${emoji}`,
       `Your identity verification has been ${status}.${admin_note ? ' Admin note: ' + admin_note : ''}`,
       '/profile'

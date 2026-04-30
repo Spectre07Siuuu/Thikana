@@ -50,6 +50,35 @@ async function verifyToken(req, res, next) {
   }
 }
 
+async function optionalVerifyToken(req, _res, next) {
+  const authHeader = req.headers['authorization']
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return next()
+
+  const token = authHeader.split(' ')[1]
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const [rows] = await pool.query(
+      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+      [decoded.id]
+    )
+    if (rows.length === 0) return next()
+    const dbUser = rows[0]
+    req.user = {
+      ...decoded,
+      id: dbUser.id,
+      email: dbUser.email,
+      role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
+      is_admin: !!dbUser.is_admin,
+      nid_verified: !!dbUser.nid_verified,
+    }
+  } catch {
+    // Public routes should remain public when an optional token is absent,
+    // expired, or malformed.
+  }
+  next()
+}
+
 /**
  * requireRole(...roles) — role-based access control middleware.
  * Usage: router.get('/admin', verifyToken, requireRole('admin'), handler)
@@ -132,6 +161,7 @@ function requireVerifiedNid(req, res, next) {
 
 module.exports = {
   verifyToken,
+  optionalVerifyToken,
   requireRole,
   requireAdmin,
   requireBuyer,

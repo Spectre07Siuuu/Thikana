@@ -57,13 +57,18 @@ function initSocket(httpServer) {
   })
 
   // ── JWT Auth Middleware ──
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token
     if (!token) return next(new Error('Authentication required'))
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
-      socket.user = decoded
+      const account = await getUserAccount(decoded.id)
+      if (!account) return next(new Error('Account not found'))
+      socket.user = {
+        ...decoded,
+        ...account,
+      }
       next()
     } catch {
       next(new Error('Invalid token'))

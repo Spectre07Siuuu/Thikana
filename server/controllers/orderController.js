@@ -42,17 +42,22 @@ async function placeOrder(req, res) {
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
       WHERE ci.user_id = ?
+      FOR UPDATE
     `, [req.user.id])
 
     if (cartItems.length === 0) {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(400).json({ success: false, message: 'Your cart is empty.' })
     }
 
     // 2. Validate all items are still available
     const unavailable = cartItems.filter(i => i.status !== 'approved')
     if (unavailable.length > 0) {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(400).json({
         success: false,
         message: `Some items are no longer available: ${unavailable.map(i => i.title).join(', ')}`,
@@ -66,7 +71,7 @@ async function placeOrder(req, res) {
 
     // 4. Create order
     const [orderResult] = await conn.query(
-      'INSERT INTO orders (buyer_id, total_amount, shipping_address, phone, note, delivery_fee) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO orders (buyer_id, status, total_amount, shipping_address, phone, note, delivery_fee) VALUES (?, "confirmed", ?, ?, ?, ?, ?)',
       [req.user.id, totalAmount, shipping_address.trim(), phone.trim(), note?.trim() || null, deliveryFee]
     )
     const orderId = orderResult.insertId
@@ -78,7 +83,7 @@ async function placeOrder(req, res) {
         [orderId, item.product_id, item.seller_id, item.price, item.quantity]
       )
       await conn.query(
-        'UPDATE products SET status = "sold" WHERE id = ?',
+        'UPDATE products SET status = "sold" WHERE id = ? AND status = "approved"',
         [item.product_id]
       )
     }
@@ -305,18 +310,13 @@ async function updateOrderStatus(req, res) {
     )
     const isSeller = sellerItems.length > 0
 
-    if (req.user.is_admin) {
-      await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
-      return res.json({ success: true, message: `Order status updated to ${status}.` })
-    }
-
-    if (!isBuyer && !isSeller) {
+    if (!req.user.is_admin && !isBuyer && !isSeller) {
       return res.status(403).json({ success: false, message: 'Forbidden. You are not associated with this order.' })
     }
 
     // Sellers with items in this order may update to any valid status.
     // Non-seller callers (pure buyers) are restricted to cancellation only.
-    if (!isSeller && status !== 'cancelled') {
+    if (!req.user.is_admin && !isSeller && status !== 'cancelled') {
       return res.status(403).json({ success: false, message: 'Buyers can only cancel orders.' })
     }
 
@@ -339,7 +339,14 @@ async function updateOrderStatus(req, res) {
       }
     }
 
-    await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
+    if (status === 'cancelled') {
+      await pool.query(
+        'UPDATE orders SET status = ?, cancellation_reason = ?, cancellation_note = ?, cancelled_by = ? WHERE id = ?',
+        [status, cancellation_reason, String(cancellation_note || '').trim() || null, req.user.id, req.params.id]
+      )
+    } else {
+      await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id])
+    }
 
     let reopenedProducts = 0
     let pointsDeducted = 0
@@ -352,7 +359,7 @@ async function updateOrderStatus(req, res) {
       )
       for (const item of orderItems) {
         const [result] = await pool.query(
-          "UPDATE products SET status = 'approved' WHERE id = ? AND status = 'sold'",
+          "UPDATE products SET status = 'approved' WHERE id = ? AND status IN ('sold', 'booked')",
           [item.product_id]
         )
         reopenedProducts += result.affectedRows || 0
@@ -396,12 +403,13 @@ async function updateOrderStatus(req, res) {
 
     if (status === 'cancelled') {
       const [actorRows] = await pool.query('SELECT full_name FROM users WHERE id = ? LIMIT 1', [req.user.id])
-      const actorName = actorRows[0]?.full_name || (isBuyer ? 'Buyer' : 'Seller')
+      const actorRole = req.user.is_admin ? 'Admin' : (isBuyer ? 'Buyer' : 'Seller')
+      const actorName = actorRows[0]?.full_name || actorRole
       const reasonMap = isBuyer ? BUYER_CANCELLATION_REASONS : SELLER_CANCELLATION_REASONS
       const reasonLabel = reasonMap[cancellation_reason] || cancellation_reason
       const reasonDetails = cancellation_reason === 'others' ? String(cancellation_note || '').trim() : ''
       const reportBody = [
-        `Order #${req.params.id} was cancelled by ${actorName} (${isBuyer ? 'Buyer' : 'Seller'}).`,
+        `Order #${req.params.id} was cancelled by ${actorName} (${actorRole}).`,
         `Reason: ${reasonLabel}${reasonDetails ? ` — ${reasonDetails}` : ''}`,
         `Products restored to active: ${reopenedProducts}`,
         `Buyer points deducted: ${pointsDeducted}`,
@@ -430,6 +438,27 @@ async function updateOrderStatus(req, res) {
           reportBody,
           `/orders/${req.params.id}`
         )
+      } else if (req.user.is_admin) {
+        createNotification(
+          order.buyer_id,
+          'order',
+          'Order Cancelled by Admin',
+          reportBody,
+          `/orders/${req.params.id}`
+        )
+        const [sellerRows] = await pool.query(
+          'SELECT DISTINCT seller_id FROM order_items WHERE order_id = ?',
+          [req.params.id]
+        )
+        for (const row of sellerRows) {
+          createNotification(
+            row.seller_id,
+            'order',
+            'Order Cancelled by Admin',
+            reportBody,
+            `/orders/${req.params.id}`
+          )
+        }
       }
     }
 
@@ -462,25 +491,33 @@ async function placeBooking(req, res) {
 
     // 1. Validate product
     const [prods] = await conn.query(
-      'SELECT id, title, price, category, status, seller_id, location FROM products WHERE id = ?',
+      'SELECT id, title, price, category, status, seller_id, location FROM products WHERE id = ? FOR UPDATE',
       [product_id]
     )
     if (prods.length === 0) {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(404).json({ success: false, message: 'Product not found.' })
     }
 
     const prod = prods[0]
     if (prod.category !== 'house_rent') {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(400).json({ success: false, message: 'Booking is only available for rental properties.' })
     }
     if (prod.status !== 'approved') {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(400).json({ success: false, message: 'This property is no longer available.' })
     }
     if (prod.seller_id === req.user.id) {
+      await conn.rollback()
       conn.release()
+      conn = null
       return res.status(400).json({ success: false, message: 'You cannot book your own property.' })
     }
 
@@ -489,8 +526,8 @@ async function placeBooking(req, res) {
     const earnedPoints = Math.floor(amount / 100) * 10
 
     const [orderResult] = await conn.query(
-      `INSERT INTO orders (buyer_id, total_amount, delivery_fee, shipping_address, phone, note, is_booking, booking_amount)
-       VALUES (?, ?, 0, ?, ?, ?, 1, ?)`,
+      `INSERT INTO orders (buyer_id, status, total_amount, delivery_fee, shipping_address, phone, note, is_booking, booking_amount)
+       VALUES (?, 'confirmed', ?, 0, ?, ?, ?, 1, ?)`,
       [req.user.id, totalAmount, prod.location, phone.trim(), note?.trim() || null, amount]
     )
     const orderId = orderResult.insertId
@@ -501,6 +538,7 @@ async function placeBooking(req, res) {
        VALUES (?, ?, ?, ?, 1, 1, ?)`,
       [orderId, prod.id, prod.seller_id, prod.price, amount]
     )
+    await conn.query("UPDATE products SET status = 'booked' WHERE id = ? AND status = 'approved'", [prod.id])
 
     // 4. Award points
     if (earnedPoints > 0) {

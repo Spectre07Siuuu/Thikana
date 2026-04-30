@@ -4,7 +4,14 @@ const { saveBase64Image } = require('../utils/fileUpload')
 
 /* ── Helper: strip password hash ─────────────────────────── */
 function safeUser(row) {
-  const { password, otp_code, otp_expires_at, ...user } = row
+  const {
+    password,
+    otp_code,
+    otp_expires_at,
+    reset_token,
+    reset_token_expires_at,
+    ...user
+  } = row
   const role = row?.is_admin ? 'admin' : (row?.role === 'owner' ? 'seller' : row?.role)
   return { ...user, role }
 }
@@ -18,26 +25,34 @@ async function getProfile(req, res) {
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
 
-    // Fetch dynamic stats for the user
-    const [[{ orders }]] = await pool.query("SELECT COUNT(*) as orders FROM orders WHERE buyer_id = ? AND status != 'cancelled'", [req.user.id])
-    const [[{ favorites }]] = await pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = ?', [req.user.id])
-    const [[{ active_listings }]] = await pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id])
-    const [[{ seller_orders }]] = await pool.query(`
-      SELECT COUNT(DISTINCT oi.order_id) as seller_orders
-      FROM order_items oi
-      JOIN orders o ON o.id = oi.order_id
-      WHERE oi.seller_id = ? AND o.status != 'cancelled'
-    `, [req.user.id])
-    const [[{ total_sales }]] = await pool.query(`
-      SELECT SUM(oi.price * oi.quantity) as total_sales
-      FROM order_items oi
-      JOIN orders o ON o.id = oi.order_id
-      WHERE oi.seller_id = ? AND o.status != 'cancelled'
-    `, [req.user.id])
-    const [[{ reviews }]] = await pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = ?', [req.user.id])
+    const [
+      [[{ orders }]],
+      [[{ favorites }]],
+      [[{ active_listings }]],
+      [[{ seller_orders }]],
+      [[{ total_sales }]],
+      [[{ reviews }]],
+    ] = await Promise.all([
+      pool.query("SELECT COUNT(*) as orders FROM orders WHERE buyer_id = ? AND status != 'cancelled'", [req.user.id]),
+      pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = ?', [req.user.id]),
+      pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id]),
+      pool.query(`
+        SELECT COUNT(DISTINCT oi.order_id) as seller_orders
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE oi.seller_id = ? AND o.status != 'cancelled'
+      `, [req.user.id]),
+      pool.query(`
+        SELECT SUM(oi.price * oi.quantity) as total_sales
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE oi.seller_id = ? AND o.status != 'cancelled'
+      `, [req.user.id]),
+      pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = ?', [req.user.id]),
+    ])
 
-    return res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       user: safeUser(rows[0]),
       stats: {
         orders: parseInt(orders) || 0,
@@ -45,7 +60,6 @@ async function getProfile(req, res) {
         favorites: parseInt(favorites) || 0,
         active_listings: parseInt(active_listings) || 0,
         total_sales: parseFloat(total_sales) || 0,
-        response_rate: '98%', // No tracking mechanism for this yet
         reviews: parseInt(reviews) || 0,
         points: rows[0].points || 0
       }
@@ -79,9 +93,9 @@ async function updateProfile(req, res) {
     const values = []
 
     if (fullName !== undefined) { fields.push('full_name = ?'); values.push(fullName.trim()) }
-    if (phone !== undefined)    { fields.push('phone = ?');     values.push(phone.trim() || null) }
-    if (address !== undefined)  { fields.push('address = ?');   values.push(address.trim() || null) }
-    if (bio !== undefined)      { fields.push('bio = ?');       values.push(bio.trim() || null) }
+    if (phone !== undefined) { fields.push('phone = ?'); values.push(phone.trim() || null) }
+    if (address !== undefined) { fields.push('address = ?'); values.push(address.trim() || null) }
+    if (bio !== undefined) { fields.push('bio = ?'); values.push(bio.trim() || null) }
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' })
@@ -128,7 +142,7 @@ async function uploadAvatar(req, res) {
 
     // Get updated user
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id])
-    
+
     return res.json({
       success: true,
       message: 'Profile picture updated!',

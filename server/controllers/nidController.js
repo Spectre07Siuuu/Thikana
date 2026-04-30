@@ -26,14 +26,22 @@ async function submitNid(req, res) {
   if (!nid_number || !nid_front_base64 || !nid_selfie_base64) {
     return res.status(400).json({ success: false, message: 'Missing required fields.' })
   }
+  if (!/^\d{10}$|^\d{17}$/.test(String(nid_number).trim())) {
+    return res.status(400).json({ success: false, message: 'NID number must be 10 or 17 digits.' })
+  }
 
   try {
     const [existing] = await pool.query(
-      'SELECT id FROM nid_submissions WHERE user_id = ? AND status = "pending"',
+      'SELECT id, status FROM nid_submissions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
       [req.user.id]
     )
-    if (existing.length > 0) {
-      return res.status(400).json({ success: false, message: 'You already have a pending submission in review.' })
+    if (existing.length > 0 && ['pending', 'approved'].includes(existing[0].status)) {
+      return res.status(400).json({
+        success: false,
+        message: existing[0].status === 'approved'
+          ? 'Your identity is already verified.'
+          : 'You already have a pending submission in review.',
+      })
     }
 
     const frontUrl  = saveBase64Image(nid_front_base64,  'nid', `nid-front-${req.user.id}`)

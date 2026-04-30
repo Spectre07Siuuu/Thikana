@@ -34,7 +34,7 @@ const refreshLimiter = rateLimit({
 const signupRules = [
   body('fullName').trim().isLength({ min: 3 }).withMessage('Full name must be at least 3 characters.'),
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email address.'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
   body('role').isIn(['buyer', 'seller']).withMessage('Role must be buyer or seller.'),
 ]
 
@@ -43,15 +43,15 @@ const loginRules = [
   body('password').notEmpty().withMessage('Password is required.'),
 ]
 
-router.post('/signup',           strictLimiter, signupRules, signup)
-router.post('/verify-email',     otpLimiter, verifyEmail)
-router.post('/resend-otp',       otpLimiter, resendOtp)
-router.post('/login',            strictLimiter, loginRules, login)
-router.post('/refresh',          refreshLimiter, refresh)
-router.post('/logout',           strictLimiter, logout)
-router.get('/me',                verifyToken, me)
-router.post('/forgot-password',  strictLimiter, forgotPassword)
-router.post('/reset-password',   strictLimiter, resetPassword)
-router.post('/change-password',  strictLimiter, verifyToken, changePassword)
+router.post('/signup', strictLimiter, signupRules, signup)
+router.post('/verify-email', otpLimiter, verifyEmail)
+router.post('/resend-otp', otpLimiter, resendOtp)
+router.post('/login', strictLimiter, loginRules, login)
+router.post('/refresh', refreshLimiter, refresh)
+router.post('/logout', strictLimiter, logout)
+router.get('/me', verifyToken, me)
+router.post('/forgot-password', strictLimiter, forgotPassword)
+router.post('/reset-password', strictLimiter, resetPassword)
+router.post('/change-password', strictLimiter, verifyToken, changePassword)
 
 module.exports = router
