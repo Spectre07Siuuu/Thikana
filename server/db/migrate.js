@@ -141,6 +141,7 @@ async function migrate() {
       buyer_id         INT UNSIGNED NOT NULL,
       status           ENUM('pending','confirmed','shipped','delivered','cancelled') NOT NULL DEFAULT 'confirmed',
       total_amount     DECIMAL(12,2) NOT NULL DEFAULT 0,
+      delivery_fee     DECIMAL(12,2) NOT NULL DEFAULT 0,
       shipping_address VARCHAR(500)  NOT NULL,
       phone            VARCHAR(20)   NOT NULL,
       note             TEXT                   DEFAULT NULL,
@@ -151,6 +152,8 @@ async function migrate() {
       CONSTRAINT fk_order_buyer FOREIGN KEY (buyer_id) REFERENCES users (id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `)
+
+  await run('orders.delivery_fee', `ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER total_amount`)
 
   // ── order_items table ─────────────────────────────────────
   await run('order_items table', `

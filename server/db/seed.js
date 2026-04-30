@@ -56,6 +56,8 @@ const CATEGORIES = ['house_sell', 'house_rent', 'furniture', 'appliance'];
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const buildUrl = (category, i) => `https://picsum.photos/seed/${category}-${i}/1200/800`;
+const buildPhone = (i) => `+88017${String(10000000 + i).slice(-8)}`;
+const buildAddress = () => getRandom(LOCATIONS);
 
 // ─── GENERATORS ────────────────────────────────────────────────────────
 
@@ -129,11 +131,20 @@ async function seed() {
       );
 
       console.log('👥 Seeding Demo Users...');
-      for (const u of USER_DATA) {
+      for (const [i, u] of USER_DATA.entries()) {
         await pool.query(
-          `INSERT INTO users (full_name, email, password, role, avatar_url, bio, is_verified, nid_verified) 
-           VALUES (?, ?, ?, ?, ?, ?, 1, 1)`,
-          [u.name, u.email, userPass, u.role, `https://i.pravatar.cc/300?u=${u.email}`, u.bio]
+          `INSERT INTO users (full_name, email, password, role, avatar_url, bio, phone, address, is_verified, nid_verified) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)`,
+          [
+            u.name,
+            u.email,
+            userPass,
+            u.role,
+            `https://i.pravatar.cc/300?u=${u.email}`,
+            u.bio,
+            buildPhone(i + 1),
+            buildAddress(),
+          ]
         );
       }
     } else {
@@ -144,7 +155,7 @@ async function seed() {
       await pool.query('SET FOREIGN_KEY_CHECKS = 1');
     }
 
-    const [sellers] = await pool.query("SELECT id FROM users WHERE role = 'seller' OR role = 'admin'");
+    const [sellers] = await pool.query("SELECT id FROM users WHERE role = 'seller'");
     if (sellers.length === 0) throw new Error('No sellers found in database. Run with --fresh first.');
 
     console.log('📦 Generating 100 Premium Products...');

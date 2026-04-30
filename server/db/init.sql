@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS orders (
   status           ENUM('pending','confirmed','shipped','delivered','cancelled')
                    NOT NULL DEFAULT 'confirmed',
   total_amount     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  delivery_fee     DECIMAL(12,2) NOT NULL DEFAULT 0,
   shipping_address VARCHAR(500)  NOT NULL,
   phone            VARCHAR(20)   NOT NULL,
   note             TEXT                   DEFAULT NULL,
