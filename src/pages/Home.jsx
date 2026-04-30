@@ -9,7 +9,8 @@ import {
 import { useRef } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getProducts } from '../services/api'
+import { getProducts, toggleFavourite, getFavouriteStatus } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const formatPrice = (price) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)
 
@@ -24,6 +25,31 @@ function SmallProductCard({ product }) {
   const { id, title, location, price, category, main_image, attributes, seller_verified, status } = product
   const isRent = category === 'house_rent'
   const [isLiked, setIsLiked] = useState(false)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user && user.role === 'buyer') {
+      getFavouriteStatus(id)
+        .then(res => { if (res.success) setIsLiked(res.saved) })
+        .catch(() => {})
+    }
+  }, [id, user])
+
+  const handleToggle = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) return alert('Please log in to save favourites.')
+    if (user.role !== 'buyer') return alert('Only buyers can save favourites.')
+
+    const prev = isLiked
+    setIsLiked(!prev)
+    try {
+      const res = await toggleFavourite(id)
+      if (!res.success) setIsLiked(prev)
+    } catch (err) {
+      setIsLiked(prev)
+    }
+  }
 
   return (
     <Link to={`/product/${id}`} className="group bg-theme-card rounded-2xl overflow-hidden border border-theme-border
@@ -54,7 +80,7 @@ function SmallProductCard({ product }) {
 
         {/* Hover-reveal Heart icon */}
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsLiked(v => !v) }}
+          onClick={handleToggle}
           className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center
       transition-all duration-300 backdrop-blur-xl border
       ${isLiked

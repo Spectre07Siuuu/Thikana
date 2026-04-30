@@ -9,9 +9,84 @@ import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { getProductById, getProductReviews, toggleFavourite, getFavouriteStatus, placeBooking } from '../services/api'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+import icon from 'leaflet/dist/images/marker-icon.png'
+import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const formatPrice = (p) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(p)
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+
+function LocationMap({ location, lat, lng }) {
+  const [coords, setCoords] = useState(null)
+  
+  useEffect(() => {
+    // 1. If we have precise DB coordinates, use them immediately!
+    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+      return setCoords([parseFloat(lat), parseFloat(lng)]);
+    }
+
+    // 2. Otherwise fallback to geocoding the location string
+    if (!location) return setCoords([23.8103, 90.4125]);
+
+    const fetchCoords = async (query) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        return data && data.length > 0 ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const getBestCoords = async () => {
+      let coords = await fetchCoords(location);
+      if (coords) return setCoords(coords);
+
+      const parts = location.split(',').map(p => p.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        coords = await fetchCoords(`${parts[0]}, ${parts[parts.length - 1]}`);
+        if (coords) return setCoords(coords);
+        
+        coords = await fetchCoords(parts[0]);
+        if (coords) return setCoords(coords);
+        
+        if (parts.length > 2) {
+          coords = await fetchCoords(`${parts[parts.length - 2]}, ${parts[parts.length - 1]}`);
+          if (coords) return setCoords(coords);
+        }
+      }
+
+      setCoords([23.8103, 90.4125]);
+    };
+
+    getBestCoords();
+  }, [location, lat, lng])
+
+  if (!coords) return <div className="h-64 bg-theme-bg/50 rounded-2xl animate-pulse border border-theme-border" />
+
+  return (
+    <div className="h-64 rounded-2xl overflow-hidden border border-theme-border shadow-sm relative z-0">
+      <MapContainer center={coords} zoom={13} style={{ height: '100%', width: '100%', zIndex: 0 }}>
+        <TileLayer
+          attribution='&copy; OpenStreetMap'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={coords}>
+          <Popup>{location}</Popup>
+        </Marker>
+      </MapContainer>
+    </div>
+  )
+}
 
 export default function ProductDetails() {
  const { id } = useParams()
@@ -189,7 +264,7 @@ export default function ProductDetails() {
  }
 
  const {
-  title, location, price, description, category, created_at, status, attributes,
+  title, location, lat, lng, price, description, category, created_at, status, attributes,
   seller_name, seller_verified, seller_avatar, seller_phone, seller_email, seller_id,
   images, related, views,
  } = product
@@ -518,6 +593,12 @@ export default function ProductDetails() {
         </div>
        </div>
       </div>
+     </div>
+
+     {/* ── Location Map ── */}
+     <div className="mt-14 border-t border-theme-border pt-10">
+      <h2 className="text-xl font-bold text-theme-text mb-6">Location</h2>
+      <LocationMap location={location} lat={lat} lng={lng} />
      </div>
 
      {/* ── Reviews ── */}

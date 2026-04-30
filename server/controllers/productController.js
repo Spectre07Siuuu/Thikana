@@ -5,7 +5,7 @@ const { saveBase64Image } = require('../utils/fileUpload')
  * POST /api/products
  */
 async function uploadProduct(req, res) {
-  const { category, title, description, price, location, attributes, images_base64 } = req.body
+  const { category, title, description, price, location, lat, lng, attributes, images_base64 } = req.body
   const seller_id = req.user.id
 
   if (!category || !title || !price || !location) {
@@ -19,9 +19,9 @@ async function uploadProduct(req, res) {
 
     const attrsJson = attributes ? JSON.stringify(attributes) : null
     const [insertProd] = await conn.query(
-      `INSERT INTO products (seller_id, category, title, description, price, location, attributes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [seller_id, category, title, description || '', price, location, attrsJson]
+      `INSERT INTO products (seller_id, category, title, description, price, location, lat, lng, attributes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [seller_id, category, title, description || '', price, location, lat || null, lng || null, attrsJson]
     )
     const productId = insertProd.insertId
 

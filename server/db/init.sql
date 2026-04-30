@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT         NOT NULL,
   price       DECIMAL(12,2) NOT NULL,
   location    VARCHAR(255) NOT NULL,
+  lat         DECIMAL(10,8) DEFAULT NULL,
+  lng         DECIMAL(11,8) DEFAULT NULL,
   status      ENUM('pending','approved','rejected','sold') NOT NULL DEFAULT 'pending',
   attributes  JSON         DEFAULT NULL,
   views       INT UNSIGNED NOT NULL DEFAULT 0,

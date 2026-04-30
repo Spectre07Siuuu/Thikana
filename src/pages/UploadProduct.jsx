@@ -3,12 +3,24 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
  ArrowLeft, Home as HomeIcon, ShoppingBag, Sofa,
  Package, Tv, MapPin, Tag, CheckCircle, Image as ImageIcon, X,
- Calendar as CalendarIcon, ChevronLeft, ChevronRight
+ Calendar as CalendarIcon, ChevronLeft, ChevronRight, Navigation
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { uploadProduct } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { MapContainer, TileLayer, Marker, useMapEvents, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+import icon from 'leaflet/dist/images/marker-icon.png'
+import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const CATEGORIES = [
  { id: 'house_sell', label: 'House for Sale', icon: HomeIcon,  desc: 'Sell your property directly to verified buyers.' },
@@ -100,6 +112,106 @@ function GlassDatePicker({ value, onChange }) {
  )
 }
 
+function useLocationMap(locationText, onLocationChange) {
+  const [showMap, setShowMap] = useState(false);
+  const [position, setPosition] = useState([23.8103, 90.4125]);
+  const [loading, setLoading] = useState(false);
+  const mapRef = useRef(null);
+
+  const toggleMap = () => {
+    setShowMap(!showMap);
+    if (!showMap && locationText) geocodeText(locationText);
+  };
+
+  const geocodeText = (text) => {
+    if (!text.trim()) return;
+    setLoading(true);
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const newPos = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+          setPosition(newPos);
+          if (mapRef.current) mapRef.current.flyTo(newPos, 15);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  const handleBlur = () => {
+    if (showMap && locationText) geocodeText(locationText);
+  };
+
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const newPos = [pos.coords.latitude, pos.coords.longitude];
+          setPosition(newPos);
+          if (mapRef.current) mapRef.current.flyTo(newPos, 15);
+          
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${newPos[0]}&lon=${newPos[1]}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.address) {
+                let parts = [];
+                if (data.address.amenity) parts.push(data.address.amenity);
+                if (data.address.road) parts.push(data.address.road);
+                if (data.address.suburb) parts.push(data.address.suburb);
+                else if (data.address.neighbourhood) parts.push(data.address.neighbourhood);
+                if (data.address.city) parts.push(data.address.city);
+                
+                let preciseName = parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 3).join(', ');
+                onLocationChange(preciseName);
+              }
+              setLoading(false);
+            })
+            .catch(() => setLoading(false));
+        },
+        (err) => {
+          console.error(err);
+          setLoading(false);
+          alert("Could not get current location. Please check permissions.");
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
+
+  return { showMap, position, setPosition, loading, setLoading, mapRef, toggleMap, handleBlur, getCurrentLocation };
+}
+
+const MapClickEvents = ({ setPosition, setLoading, onLocationChange }) => {
+  useMapEvents({
+    click(e) {
+      const newPos = [e.latlng.lat, e.latlng.lng];
+      setPosition(newPos);
+      setLoading(true);
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${newPos[0]}&lon=${newPos[1]}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.address) {
+            let parts = [];
+            if (data.address.amenity) parts.push(data.address.amenity);
+            if (data.address.road) parts.push(data.address.road);
+            if (data.address.suburb) parts.push(data.address.suburb);
+            else if (data.address.neighbourhood) parts.push(data.address.neighbourhood);
+            if (data.address.city) parts.push(data.address.city);
+            
+            let preciseName = parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 3).join(', ');
+            onLocationChange(preciseName);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  });
+  return null;
+};
+
 export default function UploadProduct() {
  const { user, loading: authLoading } = useAuth()
  const navigate = useNavigate()
@@ -119,6 +231,8 @@ export default function UploadProduct() {
  const [loading, setLoading] = useState(false)
  const [error, setError] = useState('')
  const [success, setSuccess] = useState(false)
+
+ const { showMap, position, setPosition, loading: mapLoading, setLoading: setMapLoading, mapRef, toggleMap, handleBlur, getCurrentLocation } = useLocationMap(form.location, (loc) => setForm({...form, location: loc}));
 
  // If not logged in, redirect
  if (authLoading) return null
@@ -181,6 +295,8 @@ export default function UploadProduct() {
     description: form.description,
     price: parseFloat(form.price),
     location: form.location,
+    lat: position[0],
+    lng: position[1],
     attributes,
     images_base64: images
    })
@@ -276,20 +392,68 @@ export default function UploadProduct() {
             placeholder="e.g., Luxury Sofa Set / 3BHK Flat" className="input-field" />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-5">
-           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Price (BDT) <span className="text-red-500">*</span></label>
-            <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
-             placeholder="e.g., 15000" className="input-field" />
+           <div className="grid sm:grid-cols-2 gap-5 mb-5">
+            <div>
+             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Price (BDT) <span className="text-red-500">*</span></label>
+             <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
+              placeholder="e.g., 15000" className="input-field" />
+            </div>
+            <div>
+             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location <span className="text-red-500">*</span></label>
+             <div className="relative flex items-center">
+              <input 
+               type="text" 
+               value={form.location} 
+               onChange={e => setForm({...form, location: e.target.value})}
+               onBlur={handleBlur}
+               placeholder="e.g., United International University, Dhaka" 
+               className="input-field pr-12" 
+              />
+              <button 
+               type="button" 
+               onClick={toggleMap}
+               className={`absolute right-2 p-2 rounded-lg transition-colors ${showMap ? 'text-theme-primary bg-theme-primary/10' : 'text-theme-muted hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+               title="Pin on Map"
+              >
+               <MapPin size={18} />
+              </button>
+             </div>
+            </div>
            </div>
-           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location <span className="text-red-500">*</span></label>
-            <input type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})}
-             placeholder="e.g., Gulshan-2, Dhaka" className="input-field" />
-           </div>
-          </div>
 
-          <div>
+           {/* Full Width Map Rendering */}
+           {showMap && (
+            <div className="h-72 w-full rounded-2xl overflow-hidden border border-theme-border shadow-sm relative z-0 mb-5 animate-slide-up">
+             {mapLoading && (
+              <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-2xl">
+               <div className="w-8 h-8 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+             )}
+             <MapContainer center={position} zoom={15} ref={mapRef} style={{ height: '100%', width: '100%', zIndex: 0 }}>
+              <TileLayer
+               attribution='&copy; OpenStreetMap'
+               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MapClickEvents setPosition={setPosition} setLoading={setMapLoading} onLocationChange={(loc) => setForm({...form, location: loc})} />
+              <Marker position={position}>
+               <Popup>Selected Location</Popup>
+              </Marker>
+             </MapContainer>
+             
+             {/* Get Current Location Button */}
+             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000]">
+              <button 
+               type="button" 
+               onClick={getCurrentLocation}
+               className="btn-primary shadow-xl scale-95 hover:scale-100 transition-transform py-2 px-4 rounded-xl text-sm whitespace-nowrap"
+              >
+               <Navigation size={16} /> Use My Current Location
+              </button>
+             </div>
+            </div>
+           )}
+
+           <div>
            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
             rows={4} placeholder="Describe your item in detail..." className="input-field resize-none" />
