@@ -55,6 +55,8 @@ async function migrate() {
   // ── products: add 'sold' to status ENUM + views column ───
   await run('products.status sold', `ALTER TABLE products MODIFY COLUMN status ENUM('pending','approved','rejected','sold') NOT NULL DEFAULT 'pending'`)
   await run('products.views',       `ALTER TABLE products ADD COLUMN views INT UNSIGNED NOT NULL DEFAULT 0 AFTER attributes`)
+  await run('products.lat',         `ALTER TABLE products ADD COLUMN lat DECIMAL(10,8) DEFAULT NULL AFTER location`)
+  await run('products.lng',         `ALTER TABLE products ADD COLUMN lng DECIMAL(11,8) DEFAULT NULL AFTER lat`)
 
   // ── favourites table ─────────────────────────────────────
   await run('favourites table', `
