@@ -228,11 +228,13 @@ export default function Home() {
           {/* Content */}
           <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center animate-slide-up mt-10">
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white leading-[1.1] mb-6 drop-shadow-2xl">
-              Find the home that <br className="hidden sm:block" />
-              <span className="italic text-[#D4AF37] relative inline-block mx-2">loves
+              <span className="inline-block animate-title-1">Find the home that</span> <br className="hidden sm:block" />
+              <span className="inline-block animate-title-2 relative mx-2">
+                <span className="italic text-gold-shimmer">loves</span>
                 {/* Subtle underline accent */}
                 <span className="absolute -bottom-2 left-0 right-0 h-1.5 bg-[#D4AF37]/50 rounded-full blur-[2px]"></span>
-              </span> you back.
+              </span> 
+              <span className="inline-block animate-title-3">you back.</span>
             </h1>
             <p className="text-gray-200 text-lg sm:text-xl font-medium leading-relaxed mb-10 max-w-2xl mx-auto drop-shadow-md">
               Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
