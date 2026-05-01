@@ -32,6 +32,7 @@ build/
 # Editor directories and files
 .vscode/
 .idea/
+.codex
 *.suo
 *.ntvs*
 *.njsproj
