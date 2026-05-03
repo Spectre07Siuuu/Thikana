@@ -252,7 +252,7 @@ export default function Home() {
                 {/* Headline — serif font for editorial feel */}
                 <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.1] text-theme-text">
                   Find the home that{' '}
-                  <em className="italic text-theme-primary not-italic" style={{ fontStyle: 'italic' }}>loves</em>{' '}
+                  <em className="italic text-theme-primary">loves</em>{' '}
                   you back.
                 </h1>
 
