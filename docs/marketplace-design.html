@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thikana - Find the home that loves you back</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts for Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#E11D48',
+              navy: '#1E293B',
+              soft: '#F8FAFC'
+            }
+          },
+          fontFamily: {
+            serif: ['DM Serif Display', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-layout">
+    body {
+      background-color: #ffffff;
+      color: #334155;
+    }
+    .page-section {
+      min-height: 100vh;
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+    .hero-image-clip {
+      border-radius: 40px;
+      overflow: hidden;
+    }
+    .property-card:hover .arrow-icon {
+      transform: translateX(4px);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100" data-purpose="site-header">
+<nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<svg class="w-8 h-8 text-brand-red" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+</svg>
+<span class="text-2xl font-bold font-serif text-slate-800">Thikana</span>
+</div>
+<div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+<a class="hover:text-brand-red transition-colors" href="#">Home</a>
+<a class="hover:text-brand-red transition-colors" href="#">Category</a>
+<a class="hover:text-brand-red transition-colors" href="#">About Us</a>
+<a class="hover:text-brand-red transition-colors" href="#">Contact</a>
+</div>
+<div class="flex items-center gap-5 text-slate-700">
+<button class="p-2 hover:bg-slate-100 rounded-full"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="p-2 hover:bg-slate-100 rounded-full"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="p-2 hover:bg-slate-100 rounded-full"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</nav>
+</header>
+<main>
+<section class="page-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-8 lg:gap-12" data-purpose="hero">
+<div class="flex-1 space-y-6 lg:space-y-8">
+<div class="inline-flex items-center gap-2 bg-rose-50 px-3 py-1 rounded-full text-[10px] font-bold text-brand-red uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-brand-red animate-pulse"></span>
+          New Listings Available
+        </div>
+<h1 class="text-5xl lg:text-6xl font-serif leading-[1.05] text-slate-800">
+          Find the home that <i class="text-brand-red">loves</i> you back.
+        </h1>
+<p class="text-slate-500 text-base lg:text-lg max-w-md">
+          Discover your perfect space or the essentials to make it feel like home. Buy, rent, and furnish with confidence.
+        </p>
+<div class="max-w-lg relative">
+<div class="flex items-center bg-white border border-slate-200 rounded-full p-2 shadow-sm focus-within:shadow-md transition-shadow">
+<div class="flex-1 flex items-center px-4 gap-3">
+<svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<input class="w-full border-none focus:ring-0 text-sm py-2" placeholder="Search by location, furniture..." type="text"/>
+</div>
+<button class="bg-brand-red text-white px-8 py-2.5 rounded-full font-medium hover:bg-rose-600 transition-colors">Search</button>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-3">
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJMN7Ghd1bjXjvKbZ6Ee2IpIr5BZan3umavonH16SeVbL3LByL6I1RD-4rjZCD0uS5IEnE6hYhEsN72VqUZykgXVY_KD8jwk-r3rsinErECmlDwQ-ZnyVjn6ybPPHFd9EUvoPJUcFx16hNwt-r0kzV0r9lw5IbWcXuE8BCVqWD8I-WBpTxWdD-Z-ERW3MQ3fZ0qhKkwvYiBWTiplaUDX9TTCPXT1H3llIxiZQMw_Ez5FHDCIlLivY6U5Qh6u8wonbMQh16pAziMno"/>
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjWSaCA2CWDzZbVbLu0tVdgM6Naad1utM-t3fnZ-HbJpa0VGKewwMwwDnZbMkmnazowXCCbQgC_zSJ_CS3S5QDLninaiD3hSDNj-21n_J7RtkRNdQT_svHorvS17DheEtXIxZ004jHQmCZYOM8sOw9vU_D_q10HM94iva0vBg2qZDt6Fy3P01IyDaHCi7b-TP3tT0pX36Jk6PIn0fbwJf3KzWoyL6N014IraL9e2RDRkbd4Lz8EbpUxwkGTxVHob2wZcQ89nU4cL0"/>
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD22IVIW26RI6sKzXQ8swF0-P9kjQn1_G5IxpXyO7SOR624kGipP0QqJDWvPUbhsF30G1eOqQnhGiHGggSImllFoQmJde7zQq_lfp2-zTlf9Upl0mh2ahlqhiYj2Ji9iT0QnpS8tLf_QOU03POUrd0B0ufLeP5R-GgX0I9oXfveLpyQP1N6gLO-5oSCebGl1EmJCcC87v3zr5yJAnNcQt_baBGELBn7irp9x5_Hi4jziBvnDqIAcTir72fVo-6-oY0qj7wFvHZvlC4"/>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold">+2k</div>
+</div>
+<span class="text-slate-400 text-xs font-medium">Happy customers this month</span>
+</div>
+</div>
+<div class="flex-1 relative">
+<div class="hero-image-clip w-full aspect-[4/5] lg:aspect-[1/1] relative max-h-[560px]">
+<img alt="Modern Interior" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO6yk5-26T3LNqa31X6w4aRoTnxjazSSOOblJ5DXwT2m6n0IH5SjVCoC52ebWzzBSiTqxbcVNFW4J6c3BW8sngcDBkoV4u3PMU03Ac4kppnlJr-rd871fQ8pZgaj5FxRRI4RzhqXGrpPIv_o7bCfirhsv4mQd02vVVLDN3MBFllL9wGNqbOSCcHwT-7lxQBTU4TQFoUTguepNpGm6Itk02xR7zUJd8-E689UNBHXAI4ggnuUB70WBCi4tRvY3mlxUtV7DQyn1zGR0"/>
+<div class="absolute bottom-8 left-8 right-8 bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl flex items-center gap-4">
+<div class="bg-green-100 p-2.5 rounded-xl">
+<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-800">Premium Listing</p>
+<p class="text-[11px] text-slate-500">Verified properties with 360° virtual tours.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center" data-purpose="sell-properties">
+<div class="flex items-end justify-between mb-8 lg:mb-10">
+<div>
+<h2 class="text-3xl font-serif text-slate-800">Sell Properties</h2>
+<p class="text-slate-400 text-sm mt-1">Exclusive homes ready for new owners.</p>
+</div>
+<a class="text-brand-red text-sm font-semibold flex items-center gap-1 hover:underline" href="#">
+          View All <svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
+<div class="md:col-span-8 group cursor-pointer relative rounded-3xl overflow-hidden h-[280px] lg:h-[300px]">
+<img alt="TST Prestige" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS3kRCEwGynBG5iLCwYQmeM0nJ5eNNvpzldpbBDu9s8HW1untoEh1Z1BRnJLTH5hs7aeDHXEAJ8i-PjazVsQoMB3HpK3AVt9umeuY4AAIbxdDzRQ2PFETVe58GIS8PDOQN41-0m2ySchw5dDWRUObtBuR4wdyWAot6CTjX93WibEahQkjPTd-SDlGsIDBbkt66qJMhwVDRiU9LKpCGWfODknR9ZBlyNVUaUJsOS6iFuiZVJfOJ2OEe9wY0GCRPCv6W-vaOVbqM4A0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-white">
+<span class="bg-brand-red text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest mb-2 inline-block">Premium</span>
+<h3 class="text-2xl font-serif">TST Prestige</h3>
+<p class="text-sm text-slate-300">Madani Ave, Gulshan 2</p>
+<div class="flex gap-4 mt-4 text-[11px] uppercase tracking-wider text-slate-200">
+<span class="flex items-center gap-1"><i class="opacity-70">🛏</i> 4 Beds</span>
+<span class="flex items-center gap-1"><i class="opacity-70">🛁</i> 3 Baths</span>
+<span class="flex items-center gap-1"><i class="opacity-70">📐</i> 2,400 sqft</span>
+</div>
+</div>
+</div>
+<div class="md:col-span-4 flex flex-col gap-4 lg:gap-5">
+<div class="bg-slate-50 rounded-3xl p-4 lg:p-5 group cursor-pointer border border-transparent hover:border-slate-200 transition-all flex flex-col justify-between min-h-[140px] lg:min-h-[150px]">
+<div>
+<div class="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-2 relative">
+<img alt="TST Prime" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCq-nu5nb--365bJkJc-u8edY-aQW4g-yd2dEgvOR3SN6mLw-ROzfCi6hcnfAIZ_3ZoRXKYKI5ZC68ugoblpwVuRNmt5KjuZs1v0yKm_wQmc_hBQ1C1CzdJARFN60tUojnn4etgZ1Kb8dZe0Z_Z23h_AVjoSpDwht_asfZ7-pPVjHGC7tAseh53HaaYWXO6BRsHknd6RG4rZ3yn3lw6pjfv6Eo3aQOv5-zxRhHWA1DisnKvYrzYhpXfDYOlPacR8LkWae0LjE7JLPc"/>
+<span class="absolute top-2 right-2 bg-emerald-400 text-white text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="w-1 h-1 bg-white rounded-full"></span> Active
+                </span>
+</div>
+<h3 class="font-bold text-slate-800">TST Prime</h3>
+<p class="text-xs text-slate-400">Sector 10, Jolshiri Abashon, Purbachal</p>
+</div>
+<div class="flex items-center justify-between mt-4">
+<span class="text-brand-red font-bold">$450,000</span>
+<div class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 arrow-icon transition-transform">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 rounded-3xl p-4 lg:p-5 group cursor-pointer border border-transparent hover:border-slate-200 transition-all flex flex-col justify-between min-h-[140px] lg:min-h-[150px]">
+<div>
+<div class="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-2 relative">
+<img alt="Sunnydale Estate" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbyEyqocWDl-93mIayEBOA-PkPOiErGnvG7RYlD9Uqhc-5lzxHCNgx7pWgaq0VvD4gI3X4OWSbBtO_397SgcARk1rCrPgaofe35IYMi4TvYjGW_kthS24UJtPqcEPx1hflMMzfGqwzZhjdFTW5r3FQZ1W1H0KbaGrVuitVAxvlra7hGKHNYpQMOnY3UmMl0_q5c_9GpO9kpJnQMwSh2q9Z6BxU4sXolG6MNvursUACgvAad9Ny2qkEPSb_pk63-7fuAS1KsSh8zWI"/>
+</div>
+<h3 class="font-bold text-slate-800">Sunnydale Estate</h3>
+<p class="text-xs text-slate-400">Sector 11, Jolshiri Abashon</p>
+</div>
+<div class="flex items-center justify-between mt-4">
+<span class="text-brand-red font-bold">$320,000</span>
+<div class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 arrow-icon transition-transform">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page-section bg-slate-50 flex flex-col justify-center" data-purpose="rent-apartments">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-end justify-between mb-8 lg:mb-10">
+<div>
+<h2 class="text-3xl font-serif text-slate-800">Rent Apartments</h2>
+<p class="text-slate-400 text-sm mt-1">Flexible living spaces in prime locations.</p>
+</div>
+<a class="text-brand-red text-sm font-semibold flex items-center gap-1 hover:underline" href="#">
+            View All <svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+<div class="bg-white rounded-[28px] overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-slate-100">
+<div class="h-40 lg:h-44 relative">
+<img alt="Royal Richmond" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB742nlDnxux2IYJ7dhndgY5-7LMeWqmQPnz-upxXslU9Ha8dcNX52BjCJdj9QFYdXtzt24uytyomX8gXt4DbU3XR_2WbfmsMvQFMeIvEmd1VoHVbAzwJx8sFSD77ylgRRoGdj3gdk6DXMgIgh0L6WAtDAfncActJLo1_8CwYY3vf3z7vsfYpSZovPSXhCptAQaggvlUKDtrqDQ9dsRUsUiKIyI1L0y3ARRHNFlsE6pww-0O0Xhzz8zk3icjNDEUvHcKnK1FNDaTqE"/>
+<span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-[10px] px-3 py-1 rounded-full font-bold uppercase text-slate-600">Apartment</span>
+</div>
+<div class="p-4 lg:p-5">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-slate-800">Royal Richmond</h3>
+<div class="text-right">
+<span class="text-brand-red font-bold text-xl">$1,200</span>
+<p class="text-[10px] text-slate-400">/month</p>
+</div>
+</div>
+<p class="text-sm text-slate-400 mb-6">Sector 3, Uttara, Dhaka</p>
+<div class="pt-6 border-t border-slate-50 flex justify-between text-[11px] font-medium text-slate-500 uppercase tracking-widest">
+<span>🛏 3 Bd</span>
+<span>🛁 2 Ba</span>
+<span>📐 1,500 ft²</span>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-[28px] overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-slate-100">
+<div class="h-40 lg:h-44 relative">
+<img alt="Urban Heights" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOqUHkDe41CKARzm4p_gthplE9SpA8NGa-Hz7CNieGpCaP-H1aYavpP74EKFHTKoFiV8_pqD7Cf43UQJSK3nsI47zAO2MjkLLOOdoOgztTeu6ep8ZA62mHD_H_8QjngMWHPfNHvLkCDMxkYG9yRNTR3FUjsDAUx13ephIVQ9d0pqOK9xctAgHTph3lRReg4kVSgvwBHt7vIVoxGl08XyfiWDKlsxKY6amzminHuPBjWa0PCknmSjXxGnN4bDdkrn6t2zGA2UVF2cs"/>
+<span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-[10px] px-3 py-1 rounded-full font-bold uppercase text-slate-600">Studio</span>
+</div>
+<div class="p-4 lg:p-5">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-slate-800">Urban Heights</h3>
+<div class="text-right">
+<span class="text-brand-red font-bold text-xl">$850</span>
+<p class="text-[10px] text-slate-400">/month</p>
+</div>
+</div>
+<p class="text-sm text-slate-400 mb-6">Banani, Dhaka</p>
+<div class="pt-6 border-t border-slate-50 flex justify-between text-[11px] font-medium text-slate-500 uppercase tracking-widest">
+<span>🛏 1 Bd</span>
+<span>🛁 1 Ba</span>
+<span>📐 850 ft²</span>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-[28px] overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-slate-100">
+<div class="h-40 lg:h-44 relative">
+<img alt="Lakeside View" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwtID77akf1TK_z2lW4nRH9EVP-mbVQK53h1RXgcaN9Uh7-oqXOMI47f-mWCdLZvkC6FiXW6p0mNI4r-_iRE1RIqEQ8SutPmsmfoEvekRkXjYiFEn_H1nkNY5Y24BBhh0Jvrv_RyrkiWG2zm0ji-PW4iZ3ORhpKfCQwCYSHRji6-KWk8a3r0yogkKvosbEoKTPNaynbbrbkAxZDELdxEObI45pSM5oktJCLh_fL-IBuAHFY_H-4Uniz5RBXN7BIqRiDKFB6yMCRB8"/>
+<span class="absolute top-4 left-4 bg-white/90 backdrop-blur text-[10px] px-3 py-1 rounded-full font-bold uppercase text-slate-600">Condo</span>
+</div>
+<div class="p-4 lg:p-5">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-slate-800">Lakeside View</h3>
+<div class="text-right">
+<span class="text-brand-red font-bold text-xl">$2,100</span>
+<p class="text-[10px] text-slate-400">/month</p>
+</div>
+</div>
+<p class="text-sm text-slate-400 mb-4">Gulshan 1, Dhaka</p>
+<div class="pt-4 border-t border-slate-50 flex justify-between text-[11px] font-medium text-slate-500 uppercase tracking-widest">
+<span>🛏 3 Bd</span>
+<span>🛁 3 Ba</span>
+<span>📐 2,100 ft²</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="page-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center" data-purpose="home-appliances">
+<div class="flex items-center justify-between mb-8 lg:mb-10">
+<div>
+<h2 class="text-3xl font-serif text-slate-800">Home Appliances</h2>
+<p class="text-slate-400 text-sm mt-1">Upgrade your daily life.</p>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</div>
+<div class="flex gap-5 overflow-x-auto custom-scroll pb-4">
+<div class="min-w-[200px] bg-slate-50 rounded-3xl p-4 group cursor-pointer hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+<div class="w-full aspect-square bg-white rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+<img alt="LG Smart Cooling" class="w-32 h-auto object-contain transition-transform group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcsNrn3b-AqarL2qjaI5jnIKQb0_aJRveGzGomnch2rGKNi4jSZLZIXDE3Je_1P8znAQtIIyget79Cu5JYlihT8YeHrxNklADYcv7-I7TKizD2N3OO6SBO-8u2ATi9ne-Gqs0bEY6Lpo-XJT-VTgvb_1cjNo0AUglupuqwHiFwxMatxCp9m6YPuVnBGgzhH3kEuNC4sZHI-EZh5J6L47PIRIzlxQZF8wmCrCtJOLVS3t3iXtLW7Vg1twfO7PBBOZkeHtG6JkPqoj8"/>
+</div>
+<h4 class="font-bold text-slate-800">LG Smart Cooling</h4>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">5 years warranty</p>
+<p class="text-brand-red font-bold mt-4">$1,299</p>
+</div>
+<div class="min-w-[200px] bg-slate-50 rounded-3xl p-4 group cursor-pointer hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+<div class="w-full aspect-square bg-white rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+<img alt="Konka Rice Cooker" class="w-32 h-auto object-contain transition-transform group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI_ODkEEBswNy4XURhhIlqshmjK_e2iKDlaYZLWXk-5F-zc1j3-IpkCqus1jF1t_3hMkq6ZNWrmpdjcwEoPUwFzK3nBBGlymbPCxV29ypiYVynPgquKs1FTHYmFg68WWev5killCSIxQBDklOzhZXQFVQy5J6cqDrl9mNDsmSkfFZcFndnCyrmmuMqksZ3UknEK8rUmlrW9dsA_iRCohhkziS1EJkuwo_-Dds4T62IcsONPBjFw_WPvzgEt9Xccv2UFDDr1exjWB8"/>
+</div>
+<h4 class="font-bold text-slate-800">Konka Rice Cooker</h4>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Non-stick pot</p>
+<p class="text-brand-red font-bold mt-4">$45</p>
+</div>
+<div class="min-w-[200px] bg-slate-50 rounded-3xl p-4 group cursor-pointer hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+<div class="w-full aspect-square bg-white rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+<img alt="Singer Washer" class="w-32 h-auto object-contain transition-transform group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwzzohKIP5d-eCqR8ha6CEhFlgGUHxmhqaIakzdysDSHaAgyOnxowghagJpBGJQ4EIfx2FkV_p7OgUI1wny3BV4VQnwvzYsccAecAJVW7OIHUuaDrUFJ2QylFLrV5yNSG_p7h0mCLEgIIE2yoA287cmKNKp-V6yXBhcHnvvAGc_Yh7elWGbYbHgzzpBSL6fuXR2q-s9XLLbIiyNI6ECMRjJHdpS28rriCzG_rNPJtHZjGLzZ_dIhI0rphCmyzNaNl8bKMiWv7c4FM"/>
+</div>
+<h4 class="font-bold text-slate-800">Singer Washer</h4>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Front loading</p>
+<p class="text-brand-red font-bold mt-4">$650</p>
+</div>
+<div class="min-w-[200px] bg-slate-50 rounded-3xl p-4 group cursor-pointer hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+<div class="w-full aspect-square bg-white rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+<img alt="Instant Heater" class="w-32 h-auto object-contain transition-transform group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaKnSYFfzqlI6peQUa7qNKicWYFx-k-V2cpL7RehDjBHVUsV7LucV2jHttHn2MtVfE1b8jm0oljC5R1DM75o25fTsFblfU_XRMWJEcBSlhfaC9jf4S7LdA9L25nBLYN_CRwAMSmp85wmmuVTbt-4ruR4Ox1fjFoy79Fl5hwAXl-UewOWSOiRKaYd6CtJwKZ682BXBnV9_rQvXDs5Q1mVO0WkZ68pjbLHGgZ32we9u5z6v6ybIpKoisPSzKs2BqfPbojV0W8SJWdA4"/>
+</div>
+<h4 class="font-bold text-slate-800">Instant Heater</h4>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Energy efficient</p>
+<p class="text-brand-red font-bold mt-4">$35</p>
+</div>
+</div>
+</section>
+<section class="page-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center border-t border-slate-100" data-purpose="premium-furniture">
+<div class="text-center mb-8 lg:mb-10">
+<h2 class="text-3xl lg:text-4xl font-serif text-slate-800">Premium Furniture</h2>
+<p class="text-slate-500 text-sm mt-3 max-w-2xl mx-auto">
+          Curated pieces to transform your house into a home. Browse our collection of modern, classic, and eclectic styles.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 grid-rows-2 gap-4 lg:gap-5 h-[540px] lg:h-[580px]">
+<div class="md:col-span-5 md:row-span-2 relative rounded-[28px] overflow-hidden group cursor-pointer">
+<img alt="Luxury Sofa Sets" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6SKQrEbTFy_7HSl9mlBwFIY0nU5mShaMEvZXw1MgfCE1kWVdADRPNuxxZyBTA10WnEYSRJwmyFA1C2pKFu2OD82KHmlUhhmPEIkIkEbLFcKd-p7bMpLnWccMDs7p_R_Y5_TsQMlZAo4vKBz_KiaMZ9OwYcE2XQOfWYpBjkWZQJLyOWcSFcp3CgVVhqSPlgU_AYQfrlf-_fWa6o-F5BXC4LC1N0u3QF9znudsRzZiFoK73lKfJ4d-zKILo0e8RWtKawctqJDyLCCU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-white">
+<h3 class="text-2xl font-serif mb-2">Luxury Sofa Sets</h3>
+<p class="text-sm text-slate-200 mb-6">Italian leather &amp; velvet options</p>
+<button class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-8 py-3 rounded-full text-sm font-semibold hover:bg-white hover:text-slate-900 transition-all">Explore Collection</button>
+</div>
+</div>
+<div class="md:col-span-7 relative rounded-[28px] overflow-hidden group cursor-pointer">
+<img alt="Modern Workspaces" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPeob6k-qJrAr2iM1UItScVYEgS4_C93NcBUXwkeUyEe_2kH96WUhA4wzxqRM9XqoLG2bJO7TBYvCHo-76Eg3FZGVNFNuV3eBHtGJRrlh8IuSd1SKwL2PHUOXBzfu5oiwO8MtajlKgCpzZccKJgERFLp7Y8Emg5u61pIDdDSOTvzkC0Jmjt_hnegpMJ5RfEfqbIRhcXHP3FhoAR44IUzhfl2byT9lieT3wK2kpTJFOKEHMi6yWZI8YCXTAHfa6OnXY1vtrjIup234"/>
+<div class="absolute inset-0 bg-black/20 flex flex-col items-center justify-center">
+<h3 class="text-2xl font-serif text-white mb-4">Modern Workspaces</h3>
+<button class="bg-white text-slate-900 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-slate-100 transition-colors">Shop Tables</button>
+</div>
+</div>
+<div class="md:col-span-3 relative rounded-[28px] overflow-hidden group cursor-pointer">
+<img alt="Bedroom Sets" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOzXGW87zQRPI3ee9x0LNK4TGlMd0GBk1U2gI3AcwJQEG-33rKOC8iZXOzjgiRtF-6GLF-7MYRLa7ZboR1leNkxf9gF7hrzUnPu-J9iAplErWO1FcjaFWxds_gbGKGegK5aMkdY7LpcCMjDHDWsG7ng1u_h37z9c5fw77eiXimv1o-PBVoA3IqyUTAdYrtwwuovDfEwTpEJJTS-peG2j5cq6jB00fbH1FwaRoDwTo-s_pyRqMejUwmR4kDvvT0CQs1is2FPPt9d7A"/>
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-4 py-1.5 rounded-full text-[10px] font-bold uppercase text-slate-700">Bedroom Sets</div>
+</div>
+<div class="md:col-span-4 relative rounded-[28px] overflow-hidden group cursor-pointer">
+<img alt="Accent Chairs" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOcX6glYa9XyubxBk1ue9AfnIMPt5UfDptxCHJd_8Nqrbr_eRbnd-H3rBrjLQWEer_J_fCg9gxVdChyTZA45Hj6uqFLfNQVUeiF4equ4FQy5IYtR1i4hElCT6HVB7KufBXpf2tPArGnbYQcW3omZ4XrPfqsj31MhMEGmTDxBFhxNdeZ_Y7IlM15LL8QeYlKiyuxSwO0dhRdiNO7sJHASVonGzgUbvOBqgTy99UwmcIDsAEgmUVm75DkANIRB0qWejghujvdDdrT2A"/>
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-4 py-1.5 rounded-full text-[10px] font-bold uppercase text-slate-700">Accent Chairs</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-slate-50 pt-20 pb-10 mt-20" data-purpose="site-footer">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
+<div class="space-y-6">
+<div class="flex items-center gap-2">
+<svg class="w-6 h-6 text-brand-red" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+</svg>
+<span class="text-xl font-bold font-serif text-slate-800">Thikana</span>
+</div>
+<p class="text-sm text-slate-400 leading-relaxed">
+            Helping you find the right home and the essentials that make it complete. Your trusted partner in real estate.
+          </p>
+<div class="flex gap-4">
+<a class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-brand-red shadow-sm transition-colors text-xs font-bold" href="#">IG</a>
+<a class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-brand-red shadow-sm transition-colors text-xs font-bold" href="#">FB</a>
+<a class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-brand-red shadow-sm transition-colors text-xs font-bold" href="#">YT</a>
+</div>
+</div>
+<div class="md:pl-12">
+<h4 class="font-bold text-slate-800 mb-6">Quick Links</h4>
+<ul class="space-y-4 text-sm text-slate-500">
+<li><a class="hover:text-brand-red transition-colors" href="#">Find Property</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Area Guide</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Appliances</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Furniture</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-slate-800 mb-6">Company</h4>
+<ul class="space-y-4 text-sm text-slate-500">
+<li><a class="hover:text-brand-red transition-colors" href="#">About Us</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Contact</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-brand-red transition-colors" href="#">Privacy Policy</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-slate-800 mb-6">Newsletter</h4>
+<p class="text-xs text-slate-400 mb-6">Subscribe to get the latest listings and offers.</p>
+<div class="space-y-3">
+<input class="w-full bg-white border-none rounded-xl text-sm py-3 px-4 focus:ring-1 focus:ring-slate-200" placeholder="Your email address" type="email"/>
+<button class="w-full bg-slate-800 text-white py-3 rounded-xl text-sm font-semibold hover:bg-slate-900 transition-colors">Subscribe</button>
+</div>
+</div>
+</div>
+<div class="pt-8 border-t border-slate-200 text-center text-[11px] text-slate-400 font-medium">
+        © 2024 Thikana. All Rights Reserved.
+      </div>
+</div>
+</footer>
+</body></html>
+        }
