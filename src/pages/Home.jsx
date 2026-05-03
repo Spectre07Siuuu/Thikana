@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Search, MapPin, Home as HomeIcon, ShoppingBag, Bed,
-  Bath, Square, CalendarDays, ShieldCheck, Tag, LayoutGrid, UserCheck, Handshake, CheckCircle2,
-  SlidersHorizontal, ChevronDown, X, ChevronLeft, ChevronRight, Heart, ArrowUpRight,
+  Search, MapPin, ShoppingBag,
+  ShieldCheck, UserCheck, Handshake, CheckCircle2,
+  SlidersHorizontal, ChevronDown, X, ChevronLeft, ChevronRight, Heart, ArrowUpRight, ArrowRight,
   Building2, KeyRound, Sofa, Tv,
 } from 'lucide-react'
 import { useRef } from 'react'
@@ -20,6 +20,13 @@ const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low → High' },
   { value: 'price_desc', label: 'Price: High → Low' },
 ]
+
+const CAT_SUBTITLES = {
+  house_sell: 'Exclusive homes and properties ready for new owners.',
+  house_rent: 'Flexible living spaces in prime locations across Bangladesh.',
+  furniture: 'Curated pieces to transform your house into a home.',
+  appliance: 'Upgrade your daily life with trusted brands.',
+}
 
 function SmallProductCard({ product }) {
   const { id, title, location, price, category, main_image, attributes, seller_verified, status } = product
@@ -56,38 +63,40 @@ function SmallProductCard({ product }) {
   }
 
   return (
-    <Link to={`/product/${id}`} className="group bg-theme-card rounded-2xl overflow-hidden border border-theme-border
-    hover:shadow-[0_20px_60px_-12px_rgba(204,71,52,0.15)] dark:hover:shadow-[0_20px_60px_-12px_rgba(255,96,68,0.12)]
-    hover:border-theme-primary/30 hover:-translate-y-1
-    transition-all duration-500 ease-out flex flex-row relative w-full h-[220px]">
-      {/* Image Section */}
-      <div className="bg-theme-bg relative overflow-hidden flex-shrink-0 w-2/5 md:w-[45%] h-full">
+    <Link to={`/product/${id}`}
+      className="group bg-theme-card rounded-[28px] overflow-hidden border border-theme-border
+        hover:shadow-xl hover:shadow-theme-primary/10 dark:hover:shadow-theme-primary/8
+        hover:border-theme-primary/25 hover:-translate-y-1
+        transition-all duration-500 ease-out flex flex-col">
+
+      {/* Image */}
+      <div className="relative overflow-hidden h-48 flex-shrink-0 bg-theme-bg">
         {main_image ? (
-          <img src={main_image} alt={title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+          <img src={main_image} alt={title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
         ) : (
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center text-theme-muted">
-            <ShoppingBag size={28} className="opacity-50" />
+          <div className="absolute inset-0 flex items-center justify-center text-theme-muted">
+            <ShoppingBag size={32} className="opacity-30" />
           </div>
         )}
-        {/* Subtle gradient overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        {/* Glassmorphism badges */}
+        {/* Category + sold badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          <span className="bg-black/40 backdrop-blur-xl text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full w-fit border border-white/10 shadow-lg">
+          <span className="bg-white/90 dark:bg-black/50 backdrop-blur text-theme-text dark:text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full w-fit border border-theme-border/50 shadow-sm">
             {category.replaceAll('_', ' ')}
           </span>
           {status === 'sold' && (
-            <span className="bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-full shadow-lg w-fit border border-rose-400/30">SOLD OUT</span>
+            <span className="bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-full shadow w-fit border border-rose-400/30">SOLD</span>
           )}
         </div>
 
-        {/* Hover-reveal Heart icon */}
+        {/* Heart button */}
         <button
           onClick={handleToggle}
           className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center
-      transition-all duration-300 backdrop-blur-xl border
-      ${isLiked
+            transition-all duration-300 backdrop-blur-xl border
+            ${isLiked
               ? 'bg-rose-500/90 border-rose-400/30 text-white scale-100 opacity-100'
               : 'bg-black/30 border-white/10 text-white opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 hover:bg-rose-500/80'}`}
           aria-label="Save listing"
@@ -96,37 +105,38 @@ function SmallProductCard({ product }) {
         </button>
       </div>
 
-      {/* Info Section */}
-      <div className="p-4 flex flex-col flex-1 w-3/5 md:w-[55%]">
-        <div className="flex items-start justify-between gap-1 mb-1">
-          <h3 className="font-bold text-theme-text text-sm leading-snug mb-1 line-clamp-2 min-h-[2.5rem] group-hover:text-theme-primary transition-colors duration-300">{title}</h3>
+      {/* Content */}
+      <div className="p-4 lg:p-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-bold text-theme-text text-sm leading-snug line-clamp-2 group-hover:text-theme-primary transition-colors duration-300">{title}</h3>
           {seller_verified === 1 && (
             <span className="flex-shrink-0 mt-0.5 bg-emerald-50 dark:bg-emerald-950/50 p-1 rounded-full" title="Verified Seller">
               <ShieldCheck size={12} className="text-emerald-500" />
             </span>
           )}
         </div>
-        <p className="text-[11px] text-theme-muted mb-2 flex items-center gap-1">
-          <MapPin size={10} className="text-theme-primary flex-shrink-0" /><span className="truncate">{location}</span>
+
+        <p className="text-[11px] text-theme-muted mb-3 flex items-center gap-1">
+          <MapPin size={10} className="text-theme-primary flex-shrink-0" />
+          <span className="truncate">{location}</span>
         </p>
+
         <div className="flex flex-wrap items-center gap-1.5 mb-auto text-[10px] font-medium text-theme-muted">
-          {attributes?.beds && <span className="bg-theme-bg/80 px-2 py-0.5 rounded-md border border-theme-border">{attributes.beds} Beds</span>}
-          {attributes?.baths && <span className="bg-theme-bg/80 px-2 py-0.5 rounded-md border border-theme-border">{attributes.baths} Baths</span>}
-          {attributes?.condition && <span className="bg-theme-bg/80 px-2 py-0.5 rounded-md border border-theme-border">{attributes.condition}</span>}
+          {attributes?.beds && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.beds} Beds</span>}
+          {attributes?.baths && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.baths} Baths</span>}
+          {attributes?.condition && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.condition}</span>}
         </div>
 
-        {/* Editorial price section */}
-        <div className="mt-2 pt-2 border-t border-theme-border/60">
-          <div className="flex items-baseline gap-1 mb-2">
-            <span className="text-xs font-medium text-theme-muted tracking-wide">৳</span>
-            <span className="font-black text-xl text-theme-primary leading-none tracking-tight">{formatPrice(price)}</span>
-            {isRent && <span className="text-[10px] font-semibold text-theme-muted uppercase ml-0.5">/ mo</span>}
+        {/* Price row */}
+        <div className="mt-4 pt-3 border-t border-theme-border/60 flex items-center justify-between">
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-xs font-medium text-theme-muted">৳</span>
+            <span className="font-black text-xl text-theme-primary leading-none">{formatPrice(price)}</span>
+            {isRent && <span className="text-[10px] font-semibold text-theme-muted uppercase ml-0.5">/mo</span>}
           </div>
-          <div className="w-full border-2 border-theme-border text-theme-text font-extrabold text-[11px] text-center py-2 rounded-lg 
-        group-hover:border-theme-primary group-hover:text-theme-primary-text group-hover:bg-theme-primary
-        transition-all duration-300 tracking-wider uppercase flex items-center justify-center gap-1.5">
-            View Details
-            <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="w-8 h-8 rounded-full border border-theme-border flex items-center justify-center text-theme-muted
+            group-hover:border-theme-primary group-hover:text-theme-primary group-hover:bg-theme-primary/10 transition-all duration-300">
+            <ArrowUpRight size={14} />
           </div>
         </div>
       </div>
@@ -220,80 +230,119 @@ export default function Home() {
       <Navbar />
       <div className="pt-16 min-h-screen bg-theme-bg transition-colors duration-200">
 
-        {/* HERO (Full Screen Immersive) */}
-        <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden border-b border-theme-border">
-          {/* Background Image & Overlay */}
-          <div className="absolute inset-0 z-0">
-            <img src="/hero_luxury.png" alt="Luxury Home" className="absolute inset-0 w-full h-full object-cover object-center scale-105" />
-            {/* Dark gradient overlay to ensure white text pops */}
-            <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-gray-900/60 to-black/30 dark:from-theme-bg dark:via-black/70 dark:to-black/40"></div>
+        {/* ── HERO ── */}
+        <section className="relative overflow-hidden border-b border-theme-border bg-theme-bg">
+          {/* Subtle decorative gradient blob (light mode) */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-theme-primary/5 dark:bg-theme-primary/8 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-blue-500/4 dark:bg-blue-500/6 blur-3xl" />
           </div>
 
-          {/* Content */}
-          <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center animate-slide-up mt-10">
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white leading-[1.1] mb-6 drop-shadow-2xl">
-              <span className="inline-block animate-title-1">Find the home that</span> <br className="hidden sm:block" />
-              <span className="inline-block animate-title-2 relative mx-2">
-                <span className="italic text-gold-shimmer">loves</span>
-                {/* Subtle underline accent */}
-                <span className="absolute -bottom-2 left-0 right-0 h-1.5 bg-[#D4AF37]/50 rounded-full blur-[2px]"></span>
-              </span> 
-              <span className="inline-block animate-title-3">you back.</span>
-            </h1>
-            <p className="text-gray-200 text-lg sm:text-xl font-medium leading-relaxed mb-10 max-w-2xl mx-auto drop-shadow-md">
-              Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
-            </p>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-            {/* Modern Centered Search Widget */}
-            <div className="bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-2 w-full max-w-3xl mx-auto flex items-center transition-all focus-within:bg-white/20 dark:focus-within:bg-black/40 hover:border-white/40">
-              <form onSubmit={handleSearch} className="flex gap-2 w-full">
-                <div className="relative flex-1">
-                  <Search size={24} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/80 pointer-events-none" />
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Search by location, keyword…"
-                    className="w-full bg-transparent border-none text-white placeholder-white/70 pl-14 pr-12 py-4 text-lg rounded-2xl focus:outline-none focus:ring-0" />
-                  {searchQuery && (
-                    <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1); }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
-                      aria-label="Clear search">
-                      <X size={20} />
+              {/* Left — copy & search */}
+              <div className="space-y-6 lg:space-y-7 animate-slide-up">
+                {/* Badge pill */}
+                <div className="inline-flex items-center gap-2 bg-rose-50 dark:bg-rose-950/30 px-3 py-1.5 rounded-full text-[10px] font-bold text-theme-primary uppercase tracking-wider border border-theme-primary/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse" />
+                  New Listings Available
+                </div>
+
+                {/* Headline — serif font for editorial feel */}
+                <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.1] text-theme-text">
+                  Find the home that{' '}
+                  <em className="italic text-theme-primary not-italic" style={{ fontStyle: 'italic' }}>loves</em>{' '}
+                  you back.
+                </h1>
+
+                <p className="text-theme-muted text-base lg:text-lg leading-relaxed max-w-md">
+                  Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
+                </p>
+
+                {/* Search bar */}
+                <div className="max-w-lg">
+                  <div className="flex items-center bg-theme-card border border-theme-border rounded-full p-1.5 shadow-sm focus-within:shadow-md focus-within:border-theme-primary/40 transition-all">
+                    <form onSubmit={handleSearch} className="flex gap-2 w-full items-center">
+                      <div className="relative flex-1 flex items-center gap-3 px-4">
+                        <Search size={18} className="text-theme-muted flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder="Search by location, keyword…"
+                          className="w-full border-none focus:ring-0 bg-transparent text-sm text-theme-text placeholder-theme-muted py-2 focus:outline-none"
+                        />
+                        {searchQuery && (
+                          <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1) }}
+                            className="text-theme-muted hover:text-theme-text p-1 rounded-full hover:bg-theme-bg transition-colors"
+                            aria-label="Clear search">
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <button type="submit"
+                        className="bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-text font-bold px-7 py-2.5 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 shadow-sm">
+                        Search
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Trending chips */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-theme-muted text-xs font-medium">Trending:</span>
+                  {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
+                    <button
+                      key={chip}
+                      onClick={() => { setSearchQuery(chip); fetchProducts(1) }}
+                      className="px-3 py-1.5 bg-theme-card hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/40
+                        text-theme-muted hover:text-theme-primary text-xs font-medium rounded-full
+                        transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                      {chip}
                     </button>
-                  )}
+                  ))}
                 </div>
-                <button type="submit" className="bg-[#D4AF37] hover:bg-[#c49f30] text-gray-900 font-extrabold px-8 md:px-10 text-lg rounded-2xl whitespace-nowrap transition-transform active:scale-95 shadow-xl disabled:opacity-50">
-                  Search
-                </button>
-              </form>
-            </div>
 
-            {/* Trending Searches / Quick Filters */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-white/50 text-xs font-medium mr-1">Trending:</span>
-              {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
-                <button
-                  key={chip}
-                  onClick={() => { setSearchQuery(chip); fetchProducts(1) }}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/15 hover:border-white/30
-          text-white/80 hover:text-white text-xs font-medium rounded-full
-          transition-all duration-300 hover:scale-105 active:scale-95"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-
-            {/* Floating stat chips for social proof */}
-            <div className="mt-6 flex items-center justify-center gap-4 sm:gap-6">
-              {[
-                { num: '100+', label: 'Verified Listings' },
-                { num: '0%', label: 'Brokerage Fee' },
-                { num: '24/7', label: 'Support' },
-              ].map(stat => (
-                <div key={stat.label} className="flex items-center gap-2 text-white/70">
-                  <span className="text-white font-black text-sm">{stat.num}</span>
-                  <span className="text-[11px] font-medium">{stat.label}</span>
+                {/* Stat chips */}
+                <div className="flex items-center gap-6 pt-1">
+                  {[
+                    { num: '100+', label: 'Verified Listings' },
+                    { num: '0%', label: 'Brokerage Fee' },
+                    { num: '24/7', label: 'Support' },
+                  ].map(stat => (
+                    <div key={stat.label} className="flex items-center gap-1.5">
+                      <span className="text-theme-text font-black text-sm">{stat.num}</span>
+                      <span className="text-[11px] font-medium text-theme-muted">{stat.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Right — hero image */}
+              <div className="relative hidden lg:block">
+                <div className="rounded-[40px] overflow-hidden relative max-h-[520px] aspect-[4/5]">
+                  <img
+                    src="/hero_luxury.png"
+                    alt="Luxury Home"
+                    className="w-full h-full object-cover object-center"
+                  />
+                  {/* Image gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent" />
+                </div>
+                {/* Floating badge overlay */}
+                <div className="absolute bottom-8 left-8 right-8 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl flex items-center gap-4 border border-white/20 dark:border-white/10">
+                  <div className="bg-emerald-100 dark:bg-emerald-950/50 p-2.5 rounded-xl flex-shrink-0">
+                    <ShieldCheck size={22} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-theme-text">Verified Listings</p>
+                    <p className="text-[11px] text-theme-muted">NID-verified sellers · Zero brokerage</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
@@ -399,30 +448,32 @@ export default function Home() {
                 {[1, 2].map(section => (
                   <div key={section}>
                     {/* Skeleton Section Header */}
-                    <div className="flex items-center justify-between mb-5 pb-3 border-b border-theme-border">
-                      <div className="h-7 w-48 bg-theme-border/60 rounded-lg animate-pulse" />
-                      <div className="h-6 w-24 bg-theme-border/40 rounded-full animate-pulse" />
+                    <div className="flex items-end justify-between mb-8">
+                      <div>
+                        <div className="h-7 w-48 bg-theme-border/60 rounded-lg animate-pulse mb-2" />
+                        <div className="h-4 w-64 bg-theme-border/40 rounded-md animate-pulse" />
+                      </div>
+                      <div className="h-5 w-20 bg-theme-border/30 rounded-full animate-pulse" />
                     </div>
-                    {/* Skeleton Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                    {/* Skeleton Cards Grid — vertical card shape */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
                       {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="bg-theme-card rounded-2xl overflow-hidden border border-theme-border flex flex-row w-full h-[220px]">
+                        <div key={i} className="bg-theme-card rounded-[28px] overflow-hidden border border-theme-border flex flex-col">
                           {/* Skeleton Image */}
-                          <div className="bg-theme-border/30 flex-shrink-0 w-2/5 md:w-[45%] h-full relative overflow-hidden">
+                          <div className="bg-theme-border/30 h-48 relative overflow-hidden">
                             <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                           </div>
                           {/* Skeleton Content */}
-                          <div className="p-4 flex flex-col flex-1 w-3/5 md:w-[55%]">
+                          <div className="p-4 flex flex-col flex-1">
                             <div className="h-4 w-4/5 bg-theme-border/50 rounded-md mb-2 animate-pulse" />
-                            <div className="h-3 w-3/5 bg-theme-border/30 rounded-md mb-1 animate-pulse" />
-                            <div className="h-3 w-2/5 bg-theme-border/30 rounded-md mb-3 animate-pulse" />
+                            <div className="h-3 w-3/5 bg-theme-border/30 rounded-md mb-3 animate-pulse" />
                             <div className="flex gap-1.5 mb-auto">
                               <div className="h-5 w-14 bg-theme-border/30 rounded-md animate-pulse" />
                               <div className="h-5 w-14 bg-theme-border/30 rounded-md animate-pulse" />
                             </div>
-                            <div className="mt-2 pt-2 border-t border-theme-border/40">
-                              <div className="h-6 w-32 bg-theme-primary/10 rounded-md mb-2 animate-pulse" />
-                              <div className="h-9 w-full bg-theme-border/30 rounded-lg animate-pulse" />
+                            <div className="mt-4 pt-3 border-t border-theme-border/40 flex items-center justify-between">
+                              <div className="h-7 w-28 bg-theme-primary/10 rounded-md animate-pulse" />
+                              <div className="h-8 w-8 bg-theme-border/30 rounded-full animate-pulse" />
                             </div>
                           </div>
                         </div>
@@ -449,20 +500,24 @@ export default function Home() {
 
                   return (
                     <section key={cat.id} id={cat.id} className="scroll-mt-24">
-                      <div className="flex items-center justify-between mb-5 border-b border-theme-border pb-3">
-                        <h2 className="text-2xl font-black text-theme-text">{cat.label}</h2>
+                      {/* Section header — inspiration style */}
+                      <div className="flex items-end justify-between mb-8">
+                        <div>
+                          <h2 className="text-2xl font-black text-theme-text">{cat.label}</h2>
+                          <p className="text-theme-muted text-sm mt-1">{CAT_SUBTITLES[cat.id]}</p>
+                        </div>
                         <div className="flex items-center gap-3">
                           {!isExpanded && catProducts.length > 6 && (
                             <button onClick={() => setCategoryPages(prev => ({ ...prev, [cat.id]: 1 }))}
-                              className="text-xs font-bold px-4 py-1.5 rounded-full border border-theme-border text-theme-muted hover:text-theme-primary hover:border-theme-primary transition-colors cursor-pointer bg-theme-bg">
-                              Explore More
+                              className="text-theme-primary text-sm font-semibold flex items-center gap-1 hover:underline transition-all">
+                              View All <ArrowRight size={14} />
                             </button>
                           )}
-                          <span className="text-xs font-bold text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40 px-3 py-1.5 rounded-full border border-theme-primary/20">{catProducts.length} LISTINGS</span>
+                          <span className="text-xs font-bold text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40 px-3 py-1.5 rounded-full border border-theme-primary/20">{catProducts.length} listings</span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
                         {visibleProducts.map((prod) => (
                           <div key={prod.id} className="col-span-1">
                             <SmallProductCard product={prod} />
@@ -483,7 +538,6 @@ export default function Home() {
 
                           {[...Array(totalPages)].map((_, i) => {
                             const p = i + 1;
-                            // Show current, first, last, and pages near current
                             if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
                               return (
                                 <button
@@ -539,14 +593,14 @@ export default function Home() {
         </section>
 
         {/* HOW IT WORKS */}
-        <section id="about" className="py-20 bg-theme-bg relative overflow-hidden">
+        <section id="about" className="py-20 bg-theme-card/50 border-t border-theme-border relative overflow-hidden">
           {/* Subtle background pattern */}
           <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
             style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-14">
               <p className="section-label text-theme-primary font-bold uppercase tracking-wider text-sm mb-2">Simple Process</p>
-              <h2 className="section-heading text-3xl font-black text-theme-text">How Thikana Works</h2>
+              <h2 className="font-serif text-3xl lg:text-4xl text-theme-text">How Thikana Works</h2>
               <p className="text-theme-muted text-sm mt-3 max-w-md mx-auto leading-relaxed">No brokers, no hidden costs — just trust and transparency.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
@@ -559,7 +613,7 @@ export default function Home() {
                 { icon: CheckCircle2, color: 'bg-purple-100 dark:bg-purple-950/50 text-purple-500', hoverColor: 'group-hover:bg-purple-500 group-hover:text-white', num: '04', title: 'Move In & Shop', desc: 'Finalize your home and furnish it — one trusted platform.' },
               ].map(({ icon: Icon, color, hoverColor, num, title, desc }, idx) => (
                 <div key={num}
-                  className="group relative z-10 p-6 rounded-2xl bg-theme-card border border-theme-border
+                  className="group relative z-10 p-6 rounded-[28px] bg-theme-card border border-theme-border
            hover:border-theme-primary/30 dark:hover:border-orange-900
            hover:shadow-xl hover:shadow-theme-primary/5 dark:hover:shadow-theme-primary/10
            transition-all duration-500 hover:-translate-y-1"
