@@ -18,6 +18,7 @@ export default {
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        serif: ['"DM Serif Display"', 'Georgia', 'serif'],
       },
       animation: {
         'fade-in':  'fadeIn 0.3s ease-out',
