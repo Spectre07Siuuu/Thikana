@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thikana - Modern E-Commerce Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            color: #333;
+        }
+
+        /* ==================== NAVBAR ==================== */
+        .navbar {
+            background: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.8rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            transition: color 0.3s;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #ff6b35;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-right button {
+            padding: 0.7rem 1.8rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-login {
+            background: transparent;
+            color: #555;
+        }
+
+        .btn-login:hover {
+            color: #ff6b35;
+        }
+
+        .btn-signup {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .btn-signup:hover {
+            background: #ff5520;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero {
+            background: linear-gradient(135deg, #d4e4f7 0%, #e8f0f8 50%, #f0f5fb 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem 3rem 0 3rem;
+            position: relative;
+        }
+
+        .hero-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-content h1 {
+            font-size: 4.5rem;
+            font-weight: 900;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-content p {
+            font-size: 1.3rem;
+            color: #555;
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.8;
+            animation: fadeIn 0.8s ease-out 0.2s backwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .highlight {
+            color: #ff6b35;
+            font-weight: 800;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 0.8s ease-out 0.4s backwards;
+        }
+
+        .btn-primary {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            background: #1a1a1a;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(26, 26, 26, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #ff6b35;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            border: 2.5px solid #ddd;
+            border-radius: 50px;
+            background: white;
+            color: #1a1a1a;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: #ff6b35;
+            color: #ff6b35;
+            background: rgba(255, 107, 53, 0.05);
+            transform: translateY(-3px);
+        }
+
+        .hero-illustration {
+            width: 100%;
+            height: 350px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border-radius: 40px 40px 0 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-showcase {
+            display: flex;
+            gap: 2.5rem;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 2rem;
+            animation: slideInUp 0.8s ease-out 0.6s backwards;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            text-align: center;
+            width: 220px;
+            transform: rotate(-5deg) scale(0.95);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .product-card:nth-child(2) {
+            transform: rotate(0deg) scale(1);
+            z-index: 10;
+        }
+
+        .product-card:nth-child(3) {
+            transform: rotate(5deg) scale(0.95);
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px) scale(1) !important;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-icon {
+            font-size: 3rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .product-label {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            color: #1a1a1a;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        /* ==================== FEATURES SECTION ==================== */
+        .features {
+            padding: 5rem 3rem;
+            background: #ffffff;
+        }
+
+        .features-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .features-header h2 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        .features-header p {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .feature-item:hover {
+            background: #f8f8f8;
+            transform: translateY(-5px);
+        }
+
+        .feature-icon-large {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .feature-item h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            color: #1a1a1a;
+        }
+
+        .feature-item p {
+            color: #666;
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        /* ==================== TRUST SECTION ==================== */
+        .trust {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 4rem 3rem;
+            color: white;
+            text-align: center;
+        }
+
+        .trust h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 3rem;
+        }
+
+        .trust-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #ff6b35;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* ==================== CTA SECTION ==================== */
+        .cta-section {
+            padding: 4rem 3rem;
+            text-align: center;
+            background: #f8f8f8;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-section .btn-primary {
+            margin: 0 auto;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .footer p {
+            opacity: 0.7;
+            margin-bottom: 1rem;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .hero-content h1 {
+                font-size: 3.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1.1rem;
+            }
+
+            .product-card {
+                width: 180px;
+            }
+
+            .product-showcase {
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .nav-links {
+                gap: 1.5rem;
+                font-size: 0.85rem;
+                order: 3;
+                width: 100%;
+                margin-top: 1rem;
+            }
+
+            .nav-right {
+                gap: 1rem;
+            }
+
+            .nav-right button {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .hero {
+                padding: 1.5rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                padding: 0.9rem 1.5rem;
+            }
+
+            .hero-illustration {
+                height: 250px;
+                border-radius: 20px 20px 0 0;
+            }
+
+            .product-card {
+                width: 150px;
+                padding: 1.5rem 1rem;
+            }
+
+            .product-showcase {
+                gap: 1rem;
+                padding-bottom: 1rem;
+            }
+
+            .features {
+                padding: 3rem 1.5rem;
+            }
+
+            .features-header h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                gap: 1.5rem;
+            }
+
+            .feature-item {
+                padding: 1.5rem;
+            }
+
+            .trust {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .trust h2 {
+                font-size: 1.8rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .cta-section {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .cta-section h2 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 1.8rem;
+            }
+
+            .hero-content p {
+                font-size: 0.9rem;
+            }
+
+            .product-showcase {
+                flex-wrap: wrap;
+            }
+
+            .product-card {
+                width: 140px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .trust-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">🛍️ Thikana</div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#trust">Why Us</a>
+            <a href="#cta">Get Started</a>
+            <a href="#">Contact</a>
+        </div>
+        <div class="nav-right">
+            <button class="btn-login">Login</button>
+            <button class="btn-signup">Sign up</button>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Shop Smart,<br>Not Stressful</h1>
+            <p>Buy and sell with confidence. Enjoy <span class="highlight">100% verified sellers</span> and <span class="highlight">buyer protection</span>. Your trusted marketplace for everything.</p>
+            
+            <div class="hero-buttons">
+                <button class="btn-primary">Start Shopping</button>
+                <button class="btn-secondary">Learn More</button>
+            </div>
+        </div>
+
+        <div class="hero-illustration">
+            <div class="product-showcase">
+                <div class="product-card">
+                    <div class="product-label">Electronics</div>
+                    <div class="product-icon">📱</div>
+                    <div class="product-title">Premium Gadgets</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-label">Featured</div>
+                    <div class="product-icon">⭐</div>
+                    <div class="product-title">Best Sellers</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-label">Fashion</div>
+                    <div class="product-icon">👗</div>
+                    <div class="product-title">Latest Trends</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features" id="features">
+        <div class="features-header">
+            <h2>Why Choose Thikana?</h2>
+            <p>Everything you need for a great shopping experience</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon-large">🔒</div>
+                <h3>100% Secure</h3>
+                <p>Your data is encrypted and protected. Shop with complete peace of mind.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon-large">⚡</div>
+                <h3>Fast Delivery</h3>
+                <p>Get your orders quickly. Most items ship within 24 hours.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon-large">✓</div>
+                <h3>Verified Sellers</h3>
+                <p>All sellers are verified. Buy from trusted merchants only.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon-large">💬</div>
+                <h3>24/7 Support</h3>
+                <p>Questions? We're here to help anytime, anywhere.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon-large">🎁</div>
+                <h3>Great Deals</h3>
+                <p>Find amazing discounts and exclusive offers daily.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon-large">🚀</div>
+                <h3>Easy to Use</h3>
+                <p>Simple interface. Find what you need in seconds.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TRUST SECTION -->
+    <section class="trust" id="trust">
+        <h2>Trusted by Thousands</h2>
+        
+        <div class="trust-stats">
+            <div class="stat-card">
+                <div class="stat-number">50K+</div>
+                <div class="stat-label">Active Sellers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">1M+</div>
+                <div class="stat-label">Happy Customers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.8%</div>
+                <div class="stat-label">Satisfaction Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">10M+</div>
+                <div class="stat-label">Products Listed</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="cta-section" id="cta">
+        <h2>Ready to Start?</h2>
+        <p>Join thousands of happy buyers and sellers on Thikana today. Sign up now and get exclusive welcome offers!</p>
+        <button class="btn-primary">Get Started Now</button>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>&copy; 2026 Thikana. All rights reserved.</p>
+        <p>Your trusted e-commerce marketplace</p>
+    </footer>
+</body>
+</html>
+
+        /* ==================== HERO 1: Animated Gradient ==================== */
+        #hero1 {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 25%, #1a252f 50%, #2c3e50 75%, #34495e 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        #hero1::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(100, 150, 200, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .hero1-content {
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero1-content h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero1-content p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            background: #ff6b35;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ==================== HERO 2: Split Design ==================== */
+        #hero2 {
+            background: white;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .hero2-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .hero2-left h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .hero2-left p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        .hero2-left .cta-button {
+            background: white;
+            color: #667eea;
+            width: fit-content;
+        }
+
+        .hero2-right {
+            flex: 1;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-card {
+            width: 300px;
+            height: 300px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .floating-card .icon {
+            font-size: 4rem;
+        }
+
+        .floating-card p {
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* ==================== HERO 3: Minimal Bold Typography ==================== */
+        #hero3 {
+            background: #ffffff;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            padding: 4rem 2rem;
+            gap: 2rem;
+        }
+
+        .hero3-content h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            color: #1a1a1a;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+        }
+
+        .hero3-content .highlight {
+            color: #ff6b35;
+        }
+
+        .hero3-content p {
+            font-size: 1.3rem;
+            color: #666;
+            max-width: 600px;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .hero3-stats {
+            display: flex;
+            gap: 4rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ff6b35;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.5rem;
+        }
+
+        /* ==================== HERO 4: Feature Cards ==================== */
+        #hero4 {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .hero4-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .hero4-header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 900;
+        }
+
+        .hero4-header p {
+            font-size: 1.2rem;
+            color: #aaa;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        /* ==================== HERO 5: Parallax + Search ==================== */
+        #hero5 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .parallax-bg {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -100px;
+            right: -100px;
+        }
+
+        .parallax-bg:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            left: 10%;
+            right: auto;
+        }
+
+        .hero5-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 700px;
+        }
+
+        .hero5-content h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero5-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 50px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .search-box input::placeholder {
+            color: #999;
+        }
+
+        .search-box button {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .search-box button:hover {
+            background: #ff5520;
+            transform: scale(1.1);
+        }
+
+        /* ==================== HERO 6: Soft Gradient (Letters Style) ==================== */
+        #hero6 {
+            background: linear-gradient(135deg, #d4e4f7 0%, #e8f0f8 50%, #f0f5fb 100%);
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 2rem 2rem 0 2rem;
+            color: #1a1a1a;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .hero6-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .hero6-logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .hero6-navbar-links {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .hero6-navbar-links a {
+            text-decoration: none;
+            color: #555;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .hero6-navbar-links a:hover {
+            color: #ff6b35;
+        }
+
+        .hero6-navbar-right {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .hero6-navbar-right button {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .hero6-login {
+            background: transparent;
+            color: #555;
+        }
+
+        .hero6-signup {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .hero6-signup:hover {
+            background: #ff5520;
+        }
+
+        .hero6-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .hero6-content h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        .hero6-content p {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+
+        .hero6-highlight {
+            color: #ff6b35;
+            font-weight: 700;
+        }
+
+        .hero6-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .btn-primary {
+            padding: 0.9rem 2.2rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            background: #1a1a1a;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b35;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 0.9rem 2.2rem;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 50px;
+            background: white;
+            color: #1a1a1a;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: #ff6b35;
+            color: #ff6b35;
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .hero6-illustration {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-top: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-cards {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 200px;
+            transform: rotate(-5deg);
+            transition: all 0.3s;
+        }
+
+        .product-card:nth-child(2) {
+            transform: rotate(0deg) scale(1.1);
+            z-index: 2;
+        }
+
+        .product-card:nth-child(3) {
+            transform: rotate(5deg);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px) rotate(0deg) !important;
+        }
+
+        .product-card-label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-card-content {
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        /* ==================== Responsive ==================== */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                padding: 0.5rem;
+            }
+
+            .nav-tabs button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            #hero2 {
+                flex-direction: column;
+            }
+
+            .hero2-left {
+                padding: 2rem;
+            }
+
+            .hero2-left h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero1-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero3-content h1 {
+                font-size: 3rem;
+            }
+
+            .hero3-stats {
+                gap: 2rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .hero4-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero5-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero6-navbar {
+                flex-direction: column;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .hero6-navbar-links {
+                gap: 1rem;
+                font-size: 0.85rem;
+            }
+
+            .hero6-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero6-content p {
+                font-size: 1rem;
+            }
+
+            .product-card {
+                width: 150px;
+            }
+
+            .product-cards {
+                gap: 1rem;
+            }
+        }
+
+        /* Info Section */
+        .info-box {
+            background: #f0f0f0;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-btn active" onclick="switchHero(1)">1. Animated Gradient</button>
+        <button class="nav-btn" onclick="switchHero(2)">2. Split Design</button>
+        <button class="nav-btn" onclick="switchHero(3)">3. Minimal Bold</button>
+        <button class="nav-btn" onclick="switchHero(4)">4. Feature Cards</button>
+        <button class="nav-btn" onclick="switchHero(5)">5. Parallax + Search</button>
+        <button class="nav-btn" onclick="switchHero(6)">6. Soft Gradient (Letters Style)</button>
+    </div>
+
+    <!-- Hero Sections -->
+    <div class="hero-container">
+        <!-- HERO 1: Animated Gradient -->
+        <div id="hero1" class="hero-section active">
+            <div class="hero1-content">
+                <h1>Welcome to Thikana</h1>
+                <p>Discover amazing products from verified sellers, all in one place</p>
+                <button class="cta-button">Start Shopping</button>
+            </div>
+        </div>
+
+        <!-- HERO 2: Split Design -->
+        <div id="hero2" class="hero-section">
+            <div class="hero2-left">
+                <h1>Shop Smart, Shop Local</h1>
+                <p>Connect with trusted sellers and find the best deals on everything you need. Fast shipping, secure payment, verified sellers.</p>
+                <button class="cta-button">Explore Now</button>
+            </div>
+            <div class="hero2-right">
+                <div class="floating-card">
+                    <div class="icon">🛍️</div>
+                    <p>100% Verified Sellers</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HERO 3: Minimal Bold Typography -->
+        <div id="hero3" class="hero-section">
+            <div class="hero3-content">
+                <h1>The Marketplace <span class="highlight">You Can Trust</span></h1>
+                <p>Buy and sell with confidence. Secure payments, buyer protection, and verified sellers make Thikana the safest way to shop online.</p>
+                <button class="cta-button">Get Started</button>
+
+                <div class="hero3-stats">
+                    <div class="stat">
+                        <div class="stat-number">50K+</div>
+                        <div class="stat-label">Active Sellers</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">1M+</div>
+                        <div class="stat-label">Happy Customers</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">99.8%</div>
+                        <div class="stat-label">Satisfaction</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HERO 4: Feature Cards -->
+        <div id="hero4" class="hero-section">
+            <div class="hero4-header">
+                <h1>Why Choose Thikana?</h1>
+                <p>Everything you need for a great shopping experience</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>100% Secure</h3>
+                    <p>Your data is encrypted and protected. Shop with complete peace of mind.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Delivery</h3>
+                    <p>Get your orders quickly. Most items ship within 24 hours.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✓</div>
+                    <h3>Verified Sellers</h3>
+                    <p>All sellers are verified. Buy from trusted merchants only.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>24/7 Support</h3>
+                    <p>Questions? We're here to help anytime, anywhere.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎁</div>
+                    <h3>Great Deals</h3>
+                    <p>Find amazing discounts and exclusive offers daily.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Easy to Use</h3>
+                    <p>Simple interface. Find what you need in seconds.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HERO 5: Parallax + Search -->
+        <div id="hero5" class="hero-section">
+            <div class="parallax-bg"></div>
+            <div class="parallax-bg"></div>
+            
+            <div class="hero5-content">
+                <h1>Find Everything Here</h1>
+                <p>Search from thousands of products from verified sellers</p>
+                
+                <div class="search-box">
+                    <input type="text" placeholder="Search for products...">
+                    <button>🔍</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HERO 6: Soft Gradient (Letters Style) -->
+        <div id="hero6" class="hero-section">
+            <div class="hero6-navbar">
+                <div class="hero6-logo">🛍️ Thikana</div>
+                <div class="hero6-navbar-links">
+                    <a href="#">Use Cases</a>
+                    <a href="#">Features</a>
+                    <a href="#">Pricing</a>
+                    <a href="#">About</a>
+                </div>
+                <div class="hero6-navbar-right">
+                    <button class="hero6-login">Login</button>
+                    <button class="hero6-signup">Sign up</button>
+                </div>
+            </div>
+
+            <div class="hero6-content">
+                <h1>Shop Smart,<br>Not Stressful</h1>
+                <p>Buy and sell with confidence. Enjoy <span class="hero6-highlight">100% verified sellers</span> and <span class="hero6-highlight">buyer protection</span>. Your trusted marketplace for everything.</p>
+                
+                <div class="hero6-buttons">
+                    <button class="btn-primary">Start Shopping</button>
+                    <button class="btn-secondary">Learn More</button>
+                </div>
+            </div>
+
+            <div class="hero6-illustration">
+                <div class="product-cards">
+                    <div class="product-card">
+                        <div class="product-card-label">Electronics</div>
+                        <div class="product-card-content">📱 Premium Gadgets</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-label">Featured</div>
+                        <div class="product-card-content">⭐ Best Sellers</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-label">Fashion</div>
+                        <div class="product-card-content">👗 Latest Trends</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchHero(heroNumber) {
+            // Hide all hero sections
+            const sections = document.querySelectorAll('.hero-section');
+            sections.forEach(section => section.classList.remove('active'));
+
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected hero
+            document.getElementById(`hero${heroNumber}`).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Parallax effect for hero5
+        window.addEventListener('mousemove', (e) => {
+            const hero5 = document.getElementById('hero5');
+            if (hero5.classList.contains('active')) {
+                const parallaxBgs = hero5.querySelectorAll('.parallax-bg');
+                const x = e.clientX / window.innerWidth;
+                const y = e.clientY / window.innerHeight;
+                
+                parallaxBgs.forEach((bg, index) => {
+                    const offset = (index + 1) * 20;
+                    bg.style.transform = `translate(${x * offset}px, ${y * offset}px)`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
