@@ -26,7 +26,7 @@ export default function Checkout() {
  useEffect(() => {
   if (!user) { navigate('/login'); return }
   if (user.is_admin || user.role !== 'buyer') { navigate('/'); return }
-  if (user.nid_verified !== 1) { navigate('/verify-nid'); return }
+  if (!user.nid_verified) { navigate('/verify-nid'); return }
   refreshCart().finally(() => setPageLoading(false))
  }, [user, navigate, refreshCart])
 
@@ -70,7 +70,7 @@ export default function Checkout() {
     <Navbar />
     <main className="min-h-screen bg-theme-bg pt-24 pb-16">
      <div className="max-w-lg mx-auto px-4 text-center animate-fade-in">
-      <div className="bg-theme-card rounded-3xl border border-theme-border p-10">
+      <div className="glass-modal p-10">
        <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-800 rounded-full flex items-center justify-center mx-auto mb-5">
         <CheckCircle2 size={40} className="text-emerald-500" />
        </div>
@@ -96,7 +96,7 @@ export default function Checkout() {
     <Navbar />
     <main className="min-h-screen bg-theme-bg pt-24 pb-16">
      <div className="max-w-lg mx-auto px-4 text-center">
-      <div className="bg-theme-card rounded-3xl border border-theme-border p-10">
+      <div className="glass-panel p-10">
        <ShoppingBag size={48} className="mx-auto text-gray-300 dark:text-gray-700 mb-4" />
        <h3 className="text-lg font-bold text-theme-text mb-2">Cart is empty</h3>
        <p className="text-theme-muted text-sm mb-4">Add some items before checking out.</p>
@@ -125,7 +125,7 @@ export default function Checkout() {
      <div className="grid lg:grid-cols-3 gap-6">
       {/* Shipping Form */}
       <div className="lg:col-span-2">
-       <form onSubmit={handleSubmit} className="bg-theme-card rounded-2xl border border-theme-border p-6">
+       <form onSubmit={handleSubmit} className="glass-panel p-6">
         <h3 className="text-base font-bold text-theme-text mb-5">Delivery Information</h3>
 
         {error && (
@@ -186,7 +186,7 @@ export default function Checkout() {
 
       {/* Items Summary */}
       <div className="lg:col-span-1">
-       <div className="bg-theme-card rounded-2xl border border-theme-border p-5 sticky top-24">
+       <div className="glass-panel p-5 sticky top-24">
         <h3 className="text-sm font-bold text-theme-text mb-4">
          Your Items ({cart.length})
         </h3>

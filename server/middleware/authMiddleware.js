@@ -24,8 +24,8 @@ async function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const [rows] = await pool.query(
-      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+    const { rows } = await pool.query(
+      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = $1 LIMIT 1',
       [decoded.id]
     )
     if (rows.length === 0) {
@@ -42,10 +42,11 @@ async function verifyToken(req, res, next) {
     }
     next()
   } catch (err) {
+    console.error('[verifyToken error]', err)
     const msg =
       err.name === 'TokenExpiredError'
         ? 'Session expired. Please log in again.'
-        : 'Invalid token.'
+        : `Invalid token: ${err.message}`
     return res.status(401).json({ success: false, message: msg })
   }
 }
@@ -58,8 +59,8 @@ async function optionalVerifyToken(req, _res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const [rows] = await pool.query(
-      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = ? LIMIT 1',
+    const { rows } = await pool.query(
+      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = $1 LIMIT 1',
       [decoded.id]
     )
     if (rows.length === 0) return next()

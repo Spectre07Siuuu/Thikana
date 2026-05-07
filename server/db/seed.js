@@ -55,6 +55,7 @@ const CATEGORIES = ['house_sell', 'house_rent', 'furniture', 'appliance'];
 
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const getRandInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const getRandRoundedInt = (min, max, roundTo) => Math.round((Math.floor(Math.random() * (max - min + 1)) + min) / roundTo) * roundTo;
 const buildUrl = (category, i) => `https://picsum.photos/seed/${category}-${i}/1200/800`;
 const buildPhone = (i) => `+88017${String(10000000 + i).slice(-8)}`;
 const buildAddress = () => getRandom(LOCATIONS);
@@ -69,22 +70,22 @@ function generateProductData(category, index) {
   if (category === 'house_sell') {
     title = `${adj} ${getRandom(PROPERTY_TYPES)} for Sale in ${loc.split(',')[0]}`;
     description = `An architectural masterpiece! This ${adj.toLowerCase()} home offers elite finishes, expansive living spaces, and top-tier security. Perfect for families looking for a permanent, luxurious address.`;
-    price = getRandInt(8500000, 75000000);
+    price = getRandRoundedInt(8500000, 75000000, 100000);
     attributes = { beds: getRandInt(3, 6), baths: getRandInt(2, 5), size_sqft: getRandInt(1500, 5000) };
   } else if (category === 'house_rent') {
     title = `${adj} ${getRandom(PROPERTY_TYPES)} available for Rent in ${loc.split(',')[0]}`;
     description = `Sophisticated urban living with panoramic views. Fully furnished with high-end designer pieces. Ideal for international standard living in a secure neighborhood.`;
-    price = getRandInt(30000, 350000);
-    attributes = { beds: getRandInt(1, 4), baths: getRandInt(1, 4), size_sqft: getRandInt(800, 3000) };
+    price = getRandRoundedInt(30000, 350000, 1000);
+    attributes = { beds: getRandInt(1, 4), baths: getRandInt(1, 4), size_sqft: getRandInt(800, 3000), available_for: getRandom(['Family', 'Bachelor', 'Any']), available_from: new Date(Date.now() + getRandInt(1, 30) * 86400000).toISOString().split('T')[0] };
   } else if (category === 'furniture') {
     title = `${adj} ${brand} Furniture Piece`;
     description = `Hand-crafted ${brand} edition furniture. Sustainable teak wood and premium upholstery. Barely used and fits perfectly with any modern interior.`;
-    price = getRandInt(5000, 150000);
+    price = getRandRoundedInt(5000, 150000, 500);
     attributes = { material: 'Solid Wood', condition: getRandom(['Brand New', 'Like New', 'Good']), brand };
   } else {
     title = `${adj} ${brand} Smart Home Appliance`;
     description = `Future-proof your home with AI-integrated high-efficiency tech from ${brand}. Includes full official warranty and energy-saving certification. Working perfectly.`;
-    price = getRandInt(8000, 450000);
+    price = getRandRoundedInt(8000, 450000, 500);
     attributes = { condition: 'Factory New', warranty: 'Official Support', brand };
   }
   return { title, description, price, location: loc, lat: LOCATION_COORDS[loc][0], lng: LOCATION_COORDS[loc][1], attributes };
@@ -99,8 +100,8 @@ async function seed() {
   console.log(`🚀 Starting ${isFresh ? 'FRESH' : 'REALISTIC'} seeding process...`);
 
   try {
-    const userPass = await bcrypt.hash('123456', 10);
-    const adminPass = await bcrypt.hash('223236', 10);
+    const userPass = await bcrypt.hash('12345678', 10);
+    const adminPass = await bcrypt.hash('22323678', 10);
 
     if (isFresh) {
       console.log('🗑️  Wiping all existing data (Users, Products, etc.)...');

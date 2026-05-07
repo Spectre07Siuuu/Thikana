@@ -244,7 +244,7 @@ export default function UploadProduct() {
   if (typeof window !== 'undefined') window.location.href = '/'
   return null
  }
- if (user.nid_verified !== 1) {
+ if (!user.nid_verified) {
   if (typeof window !== 'undefined') window.location.href = '/verify-nid'
   return null
  }

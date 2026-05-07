@@ -6,6 +6,7 @@ function normalizeRole(role) {
 
 function canUsersChat(sender, receiver) {
   if (!sender || !receiver) return { allowed: false, message: 'Chat participant not found.' }
+  if (sender.id === receiver.id) return { allowed: false, message: 'You cannot message yourself.' }
   if (sender.is_admin || receiver.is_admin) return { allowed: false, message: 'Admins cannot use direct chat.' }
   if (!sender.nid_verified) return { allowed: false, message: 'Complete NID verification to chat.' }
   if (sender.role === 'buyer') {
@@ -49,35 +50,39 @@ async function getConversations(req, res) {
         partner_id,
         u.full_name as partner_name, u.avatar_url as partner_avatar,
         u.role as partner_role, u.is_admin as partner_is_admin, u.nid_verified as partner_verified,
-        last_message, last_message_at, unread_count, product_id,
+        last_msg.content as last_message,
+        convos.last_message_at,
+        convos.unread_count,
+        last_msg.product_id,
         p.title as product_title
       FROM (
         SELECT
           CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END as partner_id,
-          (SELECT content FROM messages m2
-           WHERE (m2.sender_id = $1 AND m2.receiver_id = CASE WHEN messages.sender_id = $1 THEN messages.receiver_id ELSE messages.sender_id END)
-              OR (m2.receiver_id = $1 AND m2.sender_id = CASE WHEN messages.sender_id = $1 THEN messages.receiver_id ELSE messages.sender_id END)
-           ORDER BY m2.created_at DESC LIMIT 1
-          ) as last_message,
-          MAX(messages.created_at) as last_message_at,
-          SUM(CASE WHEN messages.receiver_id = $1 AND messages.is_read = false THEN 1 ELSE 0 END)::int as unread_count,
-          (SELECT m3.product_id FROM messages m3
-           WHERE ((m3.sender_id = $1 AND m3.receiver_id = CASE WHEN messages.sender_id = $1 THEN messages.receiver_id ELSE messages.sender_id END)
-              OR (m3.receiver_id = $1 AND m3.sender_id = CASE WHEN messages.sender_id = $1 THEN messages.receiver_id ELSE messages.sender_id END))
-             AND m3.product_id IS NOT NULL
-           ORDER BY m3.created_at DESC LIMIT 1
-          ) as product_id
+          MAX(created_at) as last_message_at,
+          SUM(CASE WHEN receiver_id = $1 AND is_read = false THEN 1 ELSE 0 END)::int as unread_count
         FROM messages
         WHERE sender_id = $1 OR receiver_id = $1
-        GROUP BY partner_id
+        GROUP BY CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END
       ) as convos
       JOIN users u ON u.id = convos.partner_id
-      LEFT JOIN products p ON p.id = convos.product_id
-      ORDER BY last_message_at DESC
+      LEFT JOIN LATERAL (
+        SELECT content, product_id
+        FROM messages m2
+        WHERE (m2.sender_id = $1 AND m2.receiver_id = convos.partner_id)
+           OR (m2.receiver_id = $1 AND m2.sender_id = convos.partner_id)
+        ORDER BY m2.created_at DESC LIMIT 1
+      ) last_msg ON true
+      LEFT JOIN products p ON p.id = last_msg.product_id
+      ORDER BY convos.last_message_at DESC
     `, [userId])
     const allowedConversations = rows.filter((row) => {
       const partner = { role: normalizeRole(row.partner_is_admin ? 'admin' : row.partner_role), is_admin: !!row.partner_is_admin, nid_verified: !!row.partner_verified }
-      return canUsersChat(req.user, partner).allowed
+      const canChat = canUsersChat(req.user, partner)
+      console.log('--- DEBUG getConversations ---')
+      console.log('req.user:', req.user)
+      console.log('partner:', partner)
+      console.log('canUsersChat:', canChat)
+      return canChat.allowed
     })
     return res.json({ success: true, conversations: allowedConversations })
   } catch (err) {

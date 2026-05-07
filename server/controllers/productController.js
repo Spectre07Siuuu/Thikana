@@ -102,7 +102,7 @@ async function getProducts(req, res) {
       ORDER BY ${orderBy}
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
 
-    const allParams = [...favouriteParams, ...params, pageSize, offset]
+const allParams = [...params, ...favouriteParams, pageSize, offset]
     const { rows } = await pool.query(baseQuery, allParams)
 
     // Count query uses only filter params (no favourite, no limit/offset)

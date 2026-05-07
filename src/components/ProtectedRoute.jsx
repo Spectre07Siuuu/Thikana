@@ -35,7 +35,7 @@ export default function ProtectedRoute({
   if (user.is_admin && !isAllowedAdmin && !roles.includes('admin')) return <Navigate to="/" replace />
  }
 
- if (requireVerifiedNid && !user.is_admin && user.nid_verified !== 1) {
+ if (requireVerifiedNid && !user.is_admin && !user.nid_verified) {
   return <Navigate to="/verify-nid" replace />
  }
 

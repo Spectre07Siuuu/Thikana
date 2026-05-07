@@ -1,11 +1,27 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Moon, Sun, Bell, Shield, LogOut, Trash2, Eye, EyeOff, Lock, CheckCircle, ChevronDown, User, Phone, MapPin, Camera, Save } from 'lucide-react'
+import { ArrowLeft, Moon, Sun, Bell, Shield, LogOut, Trash2, Eye, EyeOff, Lock, CheckCircle, ChevronDown, User, Phone, MapPin, Camera, Save, Check, X as XIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { changePassword, updateProfile, uploadAvatar } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+
+const PASSWORD_RULES = [
+  { key: 'length',    label: 'At least 8 characters',       test: p => p.length >= 8 },
+  { key: 'uppercase', label: 'One uppercase letter (A–Z)',   test: p => /[A-Z]/.test(p) },
+  { key: 'number',    label: 'One number (0–9)',             test: p => /[0-9]/.test(p) },
+]
+
+function getStrength(p) {
+  if (!p) return { level: 0, label: '', color: '' }
+  const passed = PASSWORD_RULES.filter(r => r.test(p)).length
+  return [
+    { level: 1, label: 'Weak',   color: 'bg-red-400' },
+    { level: 2, label: 'Fair',   color: 'bg-yellow-400' },
+    { level: 3, label: 'Strong', color: 'bg-emerald-400' },
+  ][Math.min(passed, 3) - 1] || { level: 0, label: '', color: '' }
+}
 
 export default function Settings() {
  const navigate = useNavigate()
@@ -18,6 +34,11 @@ export default function Settings() {
  const [pwError, setPwError] = useState('')
  const [pwSuccess, setPwSuccess] = useState(false)
  const [showPwForm, setShowPwForm] = useState(false)
+
+ const strength = getStrength(pwForm.newPassword)
+ const pwdRulesMet = pwForm.newPassword
+     ? PASSWORD_RULES.map(r => ({ ...r, met: r.test(pwForm.newPassword) }))
+     : null
 
  // Profile Form State
  const [showProfForm, setShowProfForm] = useState(false)
@@ -101,7 +122,9 @@ const AVATAR_GRADIENT = {
  const handlePwChange = async (e) => {
   e.preventDefault()
   if (!pwForm.currentPassword) { setPwError('Current password is required.'); return }
-  if (!pwForm.newPassword || pwForm.newPassword.length < 6) { setPwError('New password must be at least 6 characters.'); return }
+  if (!pwForm.newPassword || pwForm.newPassword.length < 8) { setPwError('New password must be at least 8 characters.'); return }
+  if (!/[A-Z]/.test(pwForm.newPassword)) { setPwError('New password needs at least one uppercase letter.'); return }
+  if (!/[0-9]/.test(pwForm.newPassword)) { setPwError('New password needs at least one number.'); return }
   if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('Passwords do not match.'); return }
 
   setPwLoading(true)
@@ -255,7 +278,29 @@ const AVATAR_GRADIENT = {
          {pwSuccess && <div className="mb-3 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-600 text-xs flex items-center gap-1.5"><CheckCircle size={13} /> Password updated!</div>}
          <form onSubmit={handlePwChange} className="space-y-3">
           <PwInput label="Current Password" id="cur-pw" showPw={showPw} value={pwForm.currentPassword} onChange={v => setPwForm(p => ({ ...p, currentPassword: v }))} placeholder="Your current password" />
-          <PwInput label="New Password" id="new-pw" showPw={showPw} value={pwForm.newPassword} onChange={v => setPwForm(p => ({ ...p, newPassword: v }))} placeholder="At least 6 characters" />
+          <PwInput label="New Password" id="new-pw" showPw={showPw} value={pwForm.newPassword} onChange={v => setPwForm(p => ({ ...p, newPassword: v }))} placeholder="At least 8 characters" />
+          
+          {/* Strength bar */}
+          {pwForm.newPassword && (
+           <div className="mt-1 mb-3">
+            <div className="flex gap-1 mb-1.5">
+             {[1,2,3].map(i => (
+              <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= strength.level ? strength.color : 'bg-gray-200 dark:bg-gray-700'}`} />
+             ))}
+            </div>
+            <div className="space-y-1">
+             {pwdRulesMet?.map(rule => (
+              <div key={rule.key} className="flex items-center gap-1.5">
+               {rule.met ? <Check size={11} className="text-emerald-500" /> : <XIcon size={11} className="text-gray-400" />}
+               <span className={`text-[11px] ${rule.met ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`}>
+                {rule.label}
+               </span>
+              </div>
+             ))}
+            </div>
+           </div>
+          )}
+
           <PwInput label="Confirm New Password" id="confirm-pw" showPw={showPw} value={pwForm.confirmPassword} onChange={v => setPwForm(p => ({ ...p, confirmPassword: v }))} placeholder="Repeat password" />
           <div className="flex items-center justify-between">
            <label className="flex items-center gap-1.5 text-xs text-theme-muted cursor-pointer">
@@ -317,7 +362,7 @@ const AVATAR_GRADIENT = {
 
 function Section({ title, children }) {
  return (
-  <div className="bg-theme-card border border-theme-border rounded-2xl shadow-sm overflow-hidden">
+  <div className="glass-panel overflow-hidden">
    <h2 className="px-5 py-3 text-xs font-bold uppercase tracking-widest text-theme-muted border-b border-theme-border bg-theme-bg/50 dark:bg-gray-800/30">
     {title}
    </h2>

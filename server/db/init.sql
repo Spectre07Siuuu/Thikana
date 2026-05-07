@@ -172,6 +172,11 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 CREATE INDEX IF NOT EXISTS idx_oi_seller_order ON order_items(seller_id, order_id);
 
+-- Add indexes for stats queries
+CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_favourites_user ON favourites(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_buyer ON reviews(buyer_id);
+
 -- ─── Reviews ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS reviews (
   id            SERIAL PRIMARY KEY,

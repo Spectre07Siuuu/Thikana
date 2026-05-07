@@ -57,7 +57,7 @@ export default function Cart() {
      </div>
 
      {cart.length === 0 ? (
-      <div className="text-center py-20 bg-theme-card rounded-3xl border border-theme-border">
+      <div className="text-center py-20 glass-panel">
        <ShoppingBag size={56} className="mx-auto text-gray-300 dark:text-gray-700 mb-4" />
        <h3 className="text-xl font-bold text-theme-text mb-2">Your cart is empty</h3>
        <p className="text-theme-muted text-sm mb-6 max-w-sm mx-auto">
@@ -71,7 +71,7 @@ export default function Cart() {
        <div className="lg:col-span-2 space-y-3">
         {cart.map(item => (
          <div key={item.cart_item_id}
-          className={`bg-theme-card rounded-2xl border border-theme-border p-4 flex gap-4 transition-all duration-200
+          className={`glass-card p-4 flex gap-4 transition-all duration-200
            ${item.status !== 'approved' ? 'opacity-60' : ''} ${removing === item.cart_item_id ? 'scale-95 opacity-50' : ''}`}>
           <Link to={`/product/${item.product_id}`} className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
            {item.main_image
@@ -114,7 +114,7 @@ export default function Cart() {
 
        {/* Order Summary */}
        <div className="lg:col-span-1">
-        <div className="bg-theme-card rounded-2xl border border-theme-border p-6 sticky top-24">
+        <div className="glass-panel p-6 sticky top-24">
          <h3 className="text-base font-bold text-theme-text mb-4">Order Summary</h3>
          <div className="space-y-3 mb-5 text-sm">
           <div className="flex justify-between text-theme-muted">

@@ -113,10 +113,11 @@ export default function Profile() {
      setFavourites(favData.favourites || [])
      setInquiries(inqData.inquiries || [])
    })
-   .catch((err) => {
-    console.error(err)
-    navigate('/login')
-   })
+  .catch((err) => {
+   console.error(err)
+   // Only redirect to login on authentication errors (401).
+   if (err && err.status === 401) navigate('/login')
+  })
    .finally(() => setLoading(false))
  }, [user, navigate, authLoading])
 
@@ -204,8 +205,7 @@ export default function Profile() {
      </div>
 
      {/* ── Profile Card ──────────────────────── */}
-     <div className="bg-theme-card border border-theme-border
-      rounded-2xl shadow-sm p-6 sm:p-8 mb-6 animate-slide-up">
+     <div className="glass-card p-6 sm:p-8 mb-6 animate-slide-up">
 
       {/* Avatar + Info */}
       <div className="flex flex-col items-center text-center">
@@ -349,38 +349,8 @@ function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId 
   )
  }
 
- return (
-  <div className="space-y-2 animate-slide-up" style={{ animationDelay: '120ms' }}>
-   {BUYER_MENU.map(({ icon: Icon, label }) => {
-    const count = label === 'Saved Listings' ? favourites.length : null
-    return (
-     <button key={label} className="menu-item w-full"
-      onClick={() => {
-       if (label === 'My Orders') { setView('orders'); return }
-       if (label === 'Saved Listings') { setView('saved'); return }
-       if (label === 'Notifications') { navigate('/notifications'); return }
-       if (label === 'Settings') { navigate('/settings'); return }
-      }}>
-      <span className="w-9 h-9 rounded-lg bg-theme-bg dark:bg-gray-800 flex items-center justify-center text-theme-muted flex-shrink-0">
-       <Icon size={16} />
-      </span>
-      <span className="flex-1 text-left">{label}</span>
-      {count !== null && count > 0 && (
-       <span className="text-[10px] font-bold bg-theme-primary text-white px-1.5 py-0.5 rounded-full">{count}</span>
-      )}
-      <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
-     </button>
-    )
-   })}
-   <button onClick={onLogout} className="menu-item-danger w-full mt-2">
-    <span className="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-400 flex-shrink-0">
-     <LogOut size={16} />
-    </span>
-    <span className="flex-1 text-left">Logout</span>
-    <ChevronRight size={16} className="text-red-200 dark:text-red-900" />
-   </button>
-  </div>
- )
+ // All other views are handled via navigation, not menu list
+ return null
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -390,8 +360,7 @@ function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inq
  return (
   <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
    {/* Tab bar */}
-   <div className="bg-theme-card border border-theme-border
-    rounded-2xl shadow-sm mb-4">
+   <div className="glass-panel mb-4">
     <div className="flex items-center border-b border-theme-border px-2">
      {SELLER_TABS.map(({ key, icon: Icon, label }) => (
       <button key={key} onClick={() => setActiveTab(key)}
@@ -632,11 +601,10 @@ function EditProfileModal({ profile, onClose, onSaved }) {
   <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
    onClick={onClose}>
    {/* Backdrop */}
-   <div className="absolute inset-0 bg-black/40 dark:bg-black/60 animate-fade-in" />
+   <div className="fixed inset-0 glass-overlay animate-fade-in" />
 
    {/* Modal */}
-   <div className="relative w-full max-w-lg bg-theme-card
-    rounded-t-2xl sm:rounded-2xl shadow-2xl border border-theme-border
+   <div className="glass-modal relative w-full max-w-lg
     animate-modal-in max-h-[90vh] overflow-y-auto"
     onClick={e => e.stopPropagation()}>
 
@@ -791,11 +759,10 @@ function EditProductModal({ product, onClose, onSuccess }) {
  }, [])
 
  return (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-   <div className="absolute inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-overlay">
+   <div className="absolute inset-0 transition-opacity" onClick={onClose} />
 
-   <div className="relative w-full max-w-md bg-theme-card rounded-3xl shadow-2xl
-    border border-theme-border flex flex-col max-h-[90vh] animate-slide-up">
+   <div className="glass-modal w-full max-w-md flex flex-col max-h-[90vh] animate-slide-up relative z-10">
     
     {/* Header */}
     <div className="flex items-center justify-between p-5 border-b border-theme-border">

@@ -161,7 +161,7 @@ export default function ProductDetails() {
   const handleAddToCart = async () => {
     if (!user) { navigate('/login'); return }
     if (user.is_admin || user.role !== 'buyer') { return }
-    if (user.nid_verified !== 1) { navigate('/verify-nid?reason=cart'); return }
+    if (!user.nid_verified) { navigate('/verify-nid?reason=cart'); return }
     setAddingToCart(true)
     try {
       await addToCart(parseInt(id))
@@ -176,7 +176,7 @@ export default function ProductDetails() {
   const handleBuyNow = async () => {
     if (!user) { navigate('/login'); return }
     if (user.is_admin || user.role !== 'buyer') { return }
-    if (user.nid_verified !== 1) { navigate('/verify-nid?reason=buy'); return }
+    if (!user.nid_verified) { navigate('/verify-nid?reason=buy'); return }
     setAddingToCart(true)
     try {
       await addToCart(parseInt(id))
@@ -190,8 +190,9 @@ export default function ProductDetails() {
 
   const handleMessage = () => {
     if (!user) { navigate('/login'); return }
+    if (user.id === product.seller_id) return
     if (user.is_admin || !['buyer', 'seller'].includes(user.role)) return
-    if (user.nid_verified !== 1) { navigate('/verify-nid?reason=chat'); return }
+    if (!user.nid_verified) { navigate('/verify-nid?reason=chat'); return }
     navigate(`/messages?user=${product.seller_id}&product=${id}`)
   }
 
@@ -308,8 +309,8 @@ export default function ProductDetails() {
 
         {/* ── Booking Modal ── */}
         {showBooking && (
-          <div role="dialog" aria-modal="true" aria-label="Booking modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)} onKeyDown={e => e.key === 'Escape' && setShowBooking(false)}>
-            <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} role="document">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 glass-overlay animate-fade-in" onClick={() => setShowBooking(false)} onKeyDown={e => e.key === 'Escape' && setShowBooking(false)}>
+            <div className="glass-modal w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} role="document">
               <button onClick={() => setShowBooking(false)} className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
                 <X size={18} />
               </button>
@@ -513,11 +514,6 @@ export default function ProductDetails() {
                       <ShoppingCart size={16} /> Add to Cart
                     </button>
                   )}
-                  <button onClick={handleToggleFavourite}
-                    className={`flex items-center gap-2 py-3 px-4 rounded-xl border font-semibold text-sm transition-all
-           ${saved ? 'border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/30' : 'border-theme-border text-gray-600 dark:text-gray-300 hover:border-rose-300'}`}>
-                    <Heart size={16} className={saved ? 'fill-current' : ''} />
-                  </button>
                 </div>
               )}
 
@@ -538,7 +534,7 @@ export default function ProductDetails() {
                   <h3 className="text-base font-bold text-theme-text mb-3">Specifications</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {Object.entries(attributes).map(([key, value]) => !value ? null : (
-                      <div key={key} className="p-3 rounded-xl bg-gray-100/70 dark:bg-gray-800/70 flex flex-col">
+                      <div key={key} className="p-3 rounded-xl glass-tag !rounded-xl flex flex-col !px-3 !py-3 !text-[10px]" style={{ backdropFilter: 'blur(8px)' }}>
                         <span className="text-[10px] text-theme-muted font-semibold uppercase tracking-wider">{key.replaceAll('_', ' ')}</span>
                         <span className="text-sm font-bold text-theme-text capitalize mt-0.5">{key === 'available_from' ? formatDate(value) : value}</span>
                       </div>
@@ -556,7 +552,7 @@ export default function ProductDetails() {
               </div>
 
               {/* Seller Card */}
-              <div className="mt-auto p-5 rounded-3xl bg-gradient-to-br from-orange-50 to-rose-50 dark:from-orange-950/20 dark:to-rose-950/20 border border-orange-100 dark:border-orange-900/30">
+              <div className="mt-auto p-5 rounded-3xl glass-panel border-theme-primary/15" style={{ background: 'rgb(var(--theme-primary) / 0.06)', borderColor: 'rgb(var(--theme-primary) / 0.15)' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900 border border-orange-100 dark:border-orange-900/30 flex items-center justify-center overflow-hidden">
@@ -571,14 +567,22 @@ export default function ProductDetails() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {seller_phone && (
-                      <a href={`tel:${seller_phone}`} className="p-2.5 rounded-xl bg-white dark:bg-gray-900 text-theme-muted hover:text-theme-primary transition-all border border-orange-100 dark:border-orange-900/20">
-                        <Phone size={18} />
-                      </a>
+                    {isSeller ? (
+                      <span className="px-4 py-2 bg-theme-primary/10 text-theme-primary border border-theme-primary/25 rounded-xl text-xs font-black tracking-tight uppercase">
+                        Your Listing
+                      </span>
+                    ) : (
+                      <>
+                        {seller_phone && (
+                          <a href={`tel:${seller_phone}`} className="p-2.5 rounded-xl bg-white dark:bg-gray-900 text-theme-muted hover:text-theme-primary transition-all border border-orange-100 dark:border-orange-900/20">
+                            <Phone size={18} />
+                          </a>
+                        )}
+                        <button onClick={handleMessage} className="px-4 py-2 bg-theme-primary text-white rounded-xl text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+                          Message
+                        </button>
+                      </>
                     )}
-                    <button onClick={handleMessage} className="px-4 py-2 bg-theme-primary text-white rounded-xl text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
-                      Message
-                    </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -625,7 +629,7 @@ export default function ProductDetails() {
             ) : (
               <div className="space-y-4">
                 {reviews.map(review => (
-                  <div key={review.id} className="bg-theme-card p-5 rounded-2xl border border-theme-border shadow-sm">
+                  <div key={review.id} className="glass-panel p-5">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
@@ -656,7 +660,7 @@ export default function ProductDetails() {
           {/* ── Related Listings ── */}
           {related && related.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-lg font-bold text-theme-text mb-4">More from this seller</h2>
+              <h2 className="text-lg font-bold text-theme-text mb-4">Similar listings</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {related.map(r => (
                   <Link key={r.id} to={`/product/${r.id}`} className="card p-3 group">
@@ -678,8 +682,8 @@ export default function ProductDetails() {
 
       {/* ── Booking Modal ── */}
       {showBooking && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowBooking(false)}>
-          <div className="bg-theme-card rounded-3xl border border-theme-border shadow-2xl w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-overlay animate-fade-in" onClick={() => setShowBooking(false)}>
+          <div className="glass-modal w-full max-w-md p-6 sm:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowBooking(false)} className="absolute top-4 right-4 p-2 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
               <X size={18} />
             </button>

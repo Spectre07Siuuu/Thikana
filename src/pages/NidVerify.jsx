@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle, Info } from 'lucide-react'
+import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle, Info, AlertCircle, Check, X } from 'lucide-react'
 import { submitNid } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -24,10 +24,12 @@ export default function NidVerify() {
  
  const [loading, setLoading] = useState(false)
  const [error, setError] = useState('')
+ const [showDialog, setShowDialog] = useState(false)
+ const [dialogType, setDialogType] = useState('') // 'success' or 'error'
 
  useEffect(() => {
   if (!user) { navigate('/login'); return }
-  if (user.nid_verified === 1) { navigate('/profile'); return }
+  if (user.nid_verified) { navigate('/profile'); return }
  }, [user, navigate])
 
  const handleImageChange = (e, setPreview, setBase64) => {
@@ -57,8 +59,11 @@ export default function NidVerify() {
     nid_selfie_base64: selfieBase64
    })
    await refreshUser()
-   navigate('/profile', { replace: true })
+   setDialogType('success')
+   setShowDialog(true)
   } catch (err) {
+   setDialogType('error')
+   setShowDialog(true)
    setError(err.message || 'Failed to submit NID. Please try again.')
   } finally {
    setLoading(false)
@@ -189,6 +194,38 @@ export default function NidVerify() {
       </form>
      </div>
     </div>
+
+    {showDialog && (
+     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-theme-card rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-theme-border animate-scale-in">
+       {dialogType === 'success' ? (
+        <>
+         <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center animate-bounce">
+           <Check size={32} className="text-emerald-500" />
+          </div>
+         </div>
+         <h3 className="text-center text-xl font-bold text-theme-text mb-2">Request Submitted Successfully!</h3>
+         <p className="text-center text-sm text-theme-muted mb-4">Your NID verification request has been submitted. Our team will review it within 24 hours.</p>
+         <p className="text-center text-xs text-emerald-600 dark:text-emerald-400 mb-6 font-medium">✓ Secure and Confidential</p>
+         <button onClick={() => { setShowDialog(false); navigate('/profile', { replace: true }) }} className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95">Back to Profile</button>
+        </>
+       ) : (
+        <>
+         <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center"><AlertCircle size={32} className="text-red-500" /></div>
+         </div>
+         <h3 className="text-center text-xl font-bold text-theme-text mb-2">Submission Failed</h3>
+         <p className="text-center text-sm text-theme-muted mb-4">{error || 'Try again.'}</p>
+         <div className="space-y-2 flex flex-col gap-2">
+          <button onClick={() => setShowDialog(false)} className="w-full py-3 rounded-xl bg-theme-primary hover:bg-orange-600 text-white font-bold transition-all active:scale-95">Try Again</button>
+          <button onClick={() => { setShowDialog(false); navigate('/profile', { replace: true }) }} className="w-full py-3 rounded-xl border border-theme-border text-theme-text hover:bg-theme-bg transition-all active:scale-95">Back to Profile</button>
+         </div>
+        </>
+       )}
+      </div>
+     </div>
+    )}
    </main>
    <Footer />
   </>

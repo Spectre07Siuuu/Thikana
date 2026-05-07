@@ -20,6 +20,13 @@ export function AuthProvider({ children }) {
    .finally(() => setLoading(false))
  }, [])
 
+ // Listen for global auth errors
+ useEffect(() => {
+   const handleAuthError = () => setUser(null)
+   window.addEventListener('auth_error', handleAuthError)
+   return () => window.removeEventListener('auth_error', handleAuthError)
+ }, [])
+
  /** Call this after a successful login/signup API response */
  const login = useCallback((userData) => {
   setUser(userData)

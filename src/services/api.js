@@ -3,7 +3,8 @@
  */
 
 const BASE_URL = '/api'
-let accessToken = null
+// Persist access token in localStorage so it survives reloads.
+let accessToken = localStorage.getItem('thikana_token') || null
 let refreshPromise = null
 
 export function getAccessToken() {
@@ -12,7 +13,11 @@ export function getAccessToken() {
 
 export function setAccessToken(token) {
  accessToken = token || null
- localStorage.removeItem('thikana_token')
+ if (token) {
+  try { localStorage.setItem('thikana_token', token) } catch (e) { /* ignore */ }
+ } else {
+  try { localStorage.removeItem('thikana_token') } catch (e) { /* ignore */ }
+ }
 }
 
 async function refreshAccessToken() {
@@ -41,11 +46,14 @@ async function request(endpoint, { method = 'GET', body, token, skipAuth = false
  })
 
  if (res.status === 401 && !skipRefresh) {
+  console.debug('[api] 401 received for', endpoint, 'attempting refresh')
   try {
    await refreshAccessToken()
    return request(endpoint, { method, body, token, skipAuth, skipRefresh: true })
-  } catch {
+  } catch (err) {
+   console.warn('[api] refresh failed', err)
    setAccessToken(null)
+   window.dispatchEvent(new Event('auth_error'))
   }
  }
 

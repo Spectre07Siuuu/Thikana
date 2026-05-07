@@ -83,7 +83,7 @@ export default function Messages() {
  useEffect(() => {
   if (!user) { navigate('/login'); return }
   if (user.is_admin || !['buyer', 'seller'].includes(user.role)) { navigate('/'); return }
-  if (user.nid_verified !== 1) { navigate('/verify-nid') }
+  if (!user.nid_verified) { navigate('/verify-nid') }
  }, [user, navigate])
 
  // Load conversations
@@ -409,7 +409,7 @@ export default function Messages() {
           <div className="min-w-0">
            <h3 className="font-semibold text-sm text-theme-text truncate flex items-center gap-1">
             {partner?.full_name || 'Loading…'}
-            {partner?.nid_verified === 1 && <ShieldCheck size={12} className="text-emerald-500" />}
+            {partner?.nid_verified && <ShieldCheck size={12} className="text-emerald-500" />}
            </h3>
            <p className="text-[11px] mt-0.5 flex items-center gap-1.5">
             {typingUser === activePartnerId
@@ -647,7 +647,7 @@ export default function Messages() {
             </div>
             <h3 className="text-lg font-bold text-theme-text flex items-center justify-center gap-1.5">
              {partner.full_name}
-             {partner.nid_verified === 1 && <ShieldCheck size={14} className="text-emerald-500" />}
+             {partner.nid_verified && <ShieldCheck size={14} className="text-emerald-500" />}
             </h3>
             <p className="text-xs font-semibold uppercase tracking-wider mt-1.5 flex items-center justify-center gap-1.5">
              {onlineUsers.has(activePartnerId)

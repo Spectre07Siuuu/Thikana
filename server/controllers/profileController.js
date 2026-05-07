@@ -25,33 +25,37 @@ async function getProfile(req, res) {
     const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
 
-    const [ordersRes, favoritesRes, listingsRes, sellerOrdersRes, totalSalesRes, reviewsRes] = await Promise.all([
-      pool.query("SELECT COUNT(*) as orders FROM orders WHERE buyer_id = $1 AND status != 'cancelled'", [req.user.id]),
-      pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = $1', [req.user.id]),
-      pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = $1 AND status = 'approved'", [req.user.id]),
-      pool.query(`
-        SELECT COUNT(DISTINCT oi.order_id) as seller_orders
-        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-        WHERE oi.seller_id = $1 AND o.status != 'cancelled'
-      `, [req.user.id]),
-      pool.query(`
-        SELECT SUM(oi.price * oi.quantity) as total_sales
-        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-        WHERE oi.seller_id = $1 AND o.status != 'cancelled'
-      `, [req.user.id]),
-      pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = $1', [req.user.id]),
+    // Combine buyer stats (orders, favorites, reviews) into one query
+    const buyerStatsQuery = `
+      SELECT
+        (SELECT COUNT(*) FROM orders WHERE buyer_id = $1 AND status != 'cancelled') as orders,
+        (SELECT COUNT(*) FROM favourites WHERE user_id = $1) as favorites,
+        (SELECT COUNT(*) FROM reviews WHERE buyer_id = $1) as reviews
+    `
+
+    // Combine seller stats (active_listings, seller_orders, total_sales) into one query
+    const sellerStatsQuery = `
+      SELECT
+        (SELECT COUNT(*) FROM products WHERE seller_id = $1 AND status = 'approved') as active_listings,
+        (SELECT COUNT(DISTINCT oi.order_id) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE oi.seller_id = $1 AND o.status != 'cancelled') as seller_orders,
+        (SELECT COALESCE(SUM(oi.price * oi.quantity), 0) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE oi.seller_id = $1 AND o.status != 'cancelled') as total_sales
+    `
+
+    const [buyerStats, sellerStats] = await Promise.all([
+      pool.query(buyerStatsQuery, [req.user.id]),
+      pool.query(sellerStatsQuery, [req.user.id])
     ])
 
     return res.json({
       success: true,
       user: safeUser(rows[0]),
       stats: {
-        orders: parseInt(ordersRes.rows[0].orders) || 0,
-        seller_orders: parseInt(sellerOrdersRes.rows[0].seller_orders) || 0,
-        favorites: parseInt(favoritesRes.rows[0].favorites) || 0,
-        active_listings: parseInt(listingsRes.rows[0].active_listings) || 0,
-        total_sales: parseFloat(totalSalesRes.rows[0].total_sales) || 0,
-        reviews: parseInt(reviewsRes.rows[0].reviews) || 0,
+        orders: parseInt(buyerStats.rows[0].orders) || 0,
+        seller_orders: parseInt(sellerStats.rows[0].seller_orders) || 0,
+        favorites: parseInt(buyerStats.rows[0].favorites) || 0,
+        active_listings: parseInt(sellerStats.rows[0].active_listings) || 0,
+        total_sales: parseFloat(sellerStats.rows[0].total_sales) || 0,
+        reviews: parseInt(buyerStats.rows[0].reviews) || 0,
         points: rows[0].points || 0
       }
     })

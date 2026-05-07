@@ -143,10 +143,10 @@ function SmallProductCard({ product }) {
           <span className="truncate">{location}</span>
         </p>
 
-        <div className="flex flex-wrap items-center gap-1.5 mb-auto text-[10px] font-medium text-theme-muted">
-          {attributes?.beds && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.beds} Beds</span>}
-          {attributes?.baths && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.baths} Baths</span>}
-          {attributes?.condition && <span className="bg-theme-bg px-2 py-0.5 rounded-md border border-theme-border">{attributes.condition}</span>}
+        <div className="flex flex-wrap items-center gap-1.5 mb-auto text-[10px] font-medium">
+          {attributes?.beds && <span className="glass-tag">{attributes.beds} Beds</span>}
+          {attributes?.baths && <span className="glass-tag">{attributes.baths} Baths</span>}
+          {attributes?.condition && <span className="glass-tag">{attributes.condition}</span>}
         </div>
 
         {/* Price row */}
@@ -506,7 +506,7 @@ export default function Home() {
                 )}
                 <div className="relative">
                   <select value={sort} onChange={e => setSort(e.target.value)}
-                    className="text-sm border border-theme-border rounded-xl px-3 py-2 bg-theme-card text-gray-700 dark:text-gray-300 focus:outline-none appearance-none pr-8">
+                    className="text-sm border border-theme-border rounded-xl px-3 py-2 glass-panel text-theme-text focus:outline-none appearance-none pr-8 cursor-pointer">
                     {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                   <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-muted pointer-events-none" />
@@ -516,7 +516,7 @@ export default function Home() {
 
             {/* Expanded Filter Panel */}
             {showFilters && (
-              <div className="bg-theme-card border border-theme-border rounded-2xl p-5 mb-6 animate-slide-up shadow-sm">
+              <div className="glass-panel p-5 mb-6 animate-slide-up">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <label htmlFor="filter-min-price" className="block text-xs font-semibold text-theme-muted mb-1.5">Min Price (৳)</label>
