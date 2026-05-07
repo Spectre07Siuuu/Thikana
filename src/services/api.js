@@ -137,6 +137,10 @@ export async function getProducts(params = {}) {
  return request(`/products${query ? '?' + query : ''}`)
 }
 
+export async function getPublicStats() {
+ return request('/products/stats', { skipAuth: true })
+}
+
 export async function uploadProduct(payload) {
  return request('/products', { method: 'POST', body: payload })
 }

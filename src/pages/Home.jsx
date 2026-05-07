@@ -2,15 +2,37 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search, MapPin, ShoppingBag,
-  ShieldCheck, UserCheck, Handshake, CheckCircle2,
+  ShieldCheck, Handshake, PackageCheck,
+  UserCheck, CheckCircle2,
   SlidersHorizontal, ChevronDown, X, ChevronLeft, ChevronRight, Heart, ArrowUpRight, ArrowRight,
   Building2, KeyRound, Sofa, Tv,
 } from 'lucide-react'
 import { useRef } from 'react'
+import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getProducts, toggleFavourite, getFavouriteStatus } from '../services/api'
+import { getProducts, toggleFavourite, getFavouriteStatus, getPublicStats } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+
+function BlurText({ text, className }) {
+  const words = text.split(' ')
+  return (
+    <p className={`flex flex-wrap ${className}`} style={{ rowGap: '0.1em' }}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ filter: 'blur(10px)', opacity: 0, y: 50 }}
+          whileInView={{ filter: ['blur(10px)', 'blur(5px)', 'blur(0px)'], opacity: [0, 0.5, 1], y: [50, -5, 0] }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 0.7, times: [0, 0.5, 1], ease: 'easeOut', delay: (i * 100) / 1000 }}
+          style={{ display: 'inline-block', marginRight: '0.28em' }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </p>
+  )
+}
 
 const formatPrice = (price) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)
 
@@ -42,7 +64,7 @@ function SmallProductCard({ product }) {
     if (user && user.role === 'buyer') {
       getFavouriteStatus(id)
         .then(res => { if (res.success) setIsLiked(res.saved) })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [id, product.is_favourited, user])
 
@@ -155,7 +177,7 @@ export default function Home() {
   const [beds, setBeds] = useState('')
   const [condition, setCondition] = useState('')
   const [products, setProducts] = useState([])
-  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 })
+  const [publicStats, setPublicStats] = useState({ verified_sellers: '--', total_products: '--' })
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState(null)
   const categoryRefs = useRef({})
@@ -184,7 +206,6 @@ export default function Home() {
 
       const res = await getProducts(params)
       setProducts(res.products || [])
-      setPagination(res.pagination || { total: 0, page: 1, pages: 1 })
     } catch (err) {
       console.error(err)
     } finally {
@@ -193,6 +214,12 @@ export default function Home() {
   }, [searchQuery, sort, minPrice, maxPrice, beds, condition])
 
   useEffect(() => { fetchProducts(1) }, [fetchProducts])
+
+  useEffect(() => {
+    getPublicStats().then(res => {
+      if (res.success) setPublicStats(res)
+    }).catch(() => {})
+  }, [])
 
   // IntersectionObserver to auto-highlight the active category as user scrolls
   useEffect(() => {
@@ -228,124 +255,198 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <div className="pt-16 min-h-screen bg-theme-bg transition-colors duration-200">
+      <div className="bg-theme-bg transition-colors duration-200">
 
         {/* ── HERO ── */}
-        <section className="relative overflow-hidden border-b border-theme-border bg-theme-bg">
-          {/* Subtle decorative gradient blob (light mode) */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-theme-primary/5 dark:bg-theme-primary/8 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-blue-500/4 dark:bg-blue-500/6 blur-3xl" />
+        <section className="relative w-full min-h-screen flex flex-col overflow-hidden">
+          {/* Gradient base */}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              background: 'linear-gradient(135deg, rgb(var(--hero-grad-from)) 0%, rgb(var(--hero-grad-mid)) 50%, rgb(var(--hero-grad-to)) 100%)'
+            }}
+          />
+
+          {/* Decorative liquid-glass blobs */}
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            {/* Large soft blob top-right */}
+            <div
+              style={{
+                position: 'absolute', width: '55vw', height: '55vw',
+                top: '-18%', right: '-15%',
+                borderRadius: '40% 60% 55% 45% / 50% 45% 55% 50%',
+                background: 'rgb(var(--glass-blob-1) / 0.22)',
+                filter: 'blur(60px)',
+              }}
+            />
+            {/* Medium blob bottom-left */}
+            <div
+              style={{
+                position: 'absolute', width: '38vw', height: '38vw',
+                bottom: '-12%', left: '-8%',
+                borderRadius: '60% 40% 45% 55% / 45% 60% 40% 55%',
+                background: 'rgb(var(--glass-blob-2) / 0.28)',
+                filter: 'blur(50px)',
+              }}
+            />
+            {/* Small accent blob center */}
+            <div
+              style={{
+                position: 'absolute', width: '22vw', height: '22vw',
+                top: '30%', left: '40%',
+                borderRadius: '50% 50% 40% 60% / 60% 40% 60% 40%',
+                background: 'rgb(var(--glass-blob-1) / 0.12)',
+                filter: 'blur(40px)',
+              }}
+            />
+            {/* Glass grid overlay */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)',
+                backgroundSize: '40px 40px',
+              }}
+            />
           </div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
-            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center justify-center flex-1" style={{ paddingTop: 'calc(64px + 2.5rem)', paddingBottom: '2.5rem' }}>
+            <div className="flex flex-col items-center text-center w-full">
 
-              {/* Left — copy & search */}
-              <div className="space-y-6 lg:space-y-7 animate-slide-up">
-                {/* Badge pill */}
-                <div className="inline-flex items-center gap-2 bg-rose-50 dark:bg-rose-950/30 px-3 py-1.5 rounded-full text-[10px] font-bold text-theme-primary uppercase tracking-wider border border-theme-primary/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse" />
-                  New Listings Available
-                </div>
+              {/* Headline */}
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45, ease: [0.16, 1, 0.3, 1], duration: 0.9 }}
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-heading leading-[0.9] text-white max-w-4xl tracking-[-2px] sm:tracking-[-4px] mb-6"
+              >
+                Find the home that{' '}
+                <em
+                  className="not-italic"
+                  style={{
+                    color: 'rgb(var(--theme-primary))',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  loves
+                </em>{' '}
+                you back.
+              </motion.h1>
 
-                {/* Headline — serif font for editorial feel */}
-                <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.1] text-theme-text">
-                  Find the home that{' '}
-                  <em className="italic text-theme-primary">loves</em>{' '}
-                  you back.
-                </h1>
+              {/* Subheading */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65, ease: 'easeOut' }}
+                className="text-white/75 text-base md:text-lg font-body font-light leading-relaxed max-w-xl mx-auto mb-8"
+              >
+                Bangladesh’s most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
+              </motion.p>
 
-                <p className="text-theme-muted text-base lg:text-lg leading-relaxed max-w-md">
-                  Bangladesh's most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
-                </p>
-
-                {/* Search bar */}
-                <div className="max-w-lg">
-                  <div className="flex items-center bg-theme-card border border-theme-border rounded-full p-1.5 shadow-sm focus-within:shadow-md focus-within:border-theme-primary/40 transition-all">
-                    <form onSubmit={handleSearch} className="flex gap-2 w-full items-center">
-                      <div className="relative flex-1 flex items-center gap-3 px-4">
-                        <Search size={18} className="text-theme-muted flex-shrink-0" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                          placeholder="Search by location, keyword…"
-                          className="w-full border-none focus:ring-0 bg-transparent text-sm text-theme-text placeholder-theme-muted py-2 focus:outline-none"
-                        />
-                        {searchQuery && (
-                          <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1) }}
-                            className="text-theme-muted hover:text-theme-text p-1 rounded-full hover:bg-theme-bg transition-colors"
-                            aria-label="Clear search">
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
-                      <button type="submit"
-                        className="bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-text font-bold px-7 py-2.5 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 shadow-sm">
-                        Search
-                      </button>
-                    </form>
-                  </div>
-                </div>
-
-                {/* Trending chips */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-theme-muted text-xs font-medium">Trending:</span>
-                  {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
-                    <button
-                      key={chip}
-                      onClick={() => { setSearchQuery(chip); fetchProducts(1) }}
-                      className="px-3 py-1.5 bg-theme-card hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/40
-                        text-theme-muted hover:text-theme-primary text-xs font-medium rounded-full
-                        transition-all duration-200 hover:scale-105 active:scale-95"
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Stat chips */}
-                <div className="flex items-center gap-6 pt-1">
-                  {[
-                    { num: '100+', label: 'Verified Listings' },
-                    { num: '0%', label: 'Brokerage Fee' },
-                    { num: '24/7', label: 'Support' },
-                  ].map(stat => (
-                    <div key={stat.label} className="flex items-center gap-1.5">
-                      <span className="text-theme-text font-black text-sm">{stat.num}</span>
-                      <span className="text-[11px] font-medium text-theme-muted">{stat.label}</span>
+              {/* Search Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.82, ease: 'easeOut' }}
+                className="w-full max-w-2xl mb-6"
+              >
+                <div className="liquid-glass rounded-full p-1.5 w-full flex items-center">
+                  <form onSubmit={handleSearch} className="flex gap-2 w-full items-center">
+                    <div className="flex-1 flex items-center gap-3 px-4">
+                      <Search size={18} className="text-white/60 flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Search by location, keyword…"
+                        className="w-full border-none focus:ring-0 bg-transparent text-base text-white placeholder-white/40 py-2.5 focus:outline-none font-body"
+                      />
+                      {searchQuery && (
+                        <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1) }}
+                          className="text-white/60 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                          aria-label="Clear search">
+                          <X size={15} />
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    <button type="submit"
+                      className="font-bold px-7 py-3 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 flex items-center gap-2"
+                      style={{ background: 'rgb(var(--theme-primary))', color: 'rgb(var(--theme-primary-text))' }}
+                    >
+                      Search <ArrowRight size={15} />
+                    </button>
+                  </form>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Right — hero image */}
-              <div className="relative hidden lg:block">
-                <div className="rounded-[40px] overflow-hidden relative max-h-[520px] aspect-[4/5]">
-                  <img
-                    src="/hero_luxury.png"
-                    alt="Luxury Home"
-                    className="w-full h-full object-cover object-center"
-                  />
-                  {/* Image gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent" />
-                </div>
-                {/* Floating badge overlay */}
-                <div className="absolute bottom-8 left-8 right-8 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl flex items-center gap-4 border border-white/20 dark:border-white/10">
-                  <div className="bg-emerald-100 dark:bg-emerald-950/50 p-2.5 rounded-xl flex-shrink-0">
-                    <ShieldCheck size={22} className="text-emerald-600" />
+              {/* Trending chips */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.0, duration: 0.8 }}
+                className="flex flex-wrap justify-center items-center gap-2 mb-5"
+              >
+                <span className="text-white/50 text-xs font-medium font-body mr-1">Trending:</span>
+                {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
+                  <button
+                    key={chip}
+                    onClick={() => { setSearchQuery(chip); fetchProducts(1) }}
+                    className="liquid-glass px-3 py-1.5 hover:bg-white/15 text-white/80 hover:text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 active:scale-95 font-body"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </motion.div>
+
+              {/* Stats row — INLINE, no overlap */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.15, ease: 'easeOut' }}
+                className="flex flex-wrap justify-center items-stretch gap-3 w-full max-w-2xl"
+              >
+                {/* Verified Sellers */}
+                <div
+                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
+                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
+                >
+                  <ShieldCheck className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div className="text-left">
+                    <div className="font-heading font-bold text-white text-2xl leading-none">{publicStats.verified_sellers}</div>
+                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Verified Sellers</div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-theme-text">Verified Listings</p>
-                    <p className="text-[11px] text-theme-muted">NID-verified sellers · Zero brokerage</p>
+                </div>
+
+                {/* Live Listings */}
+                <div
+                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
+                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
+                >
+                  <PackageCheck className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div className="text-left">
+                    <div className="font-heading font-bold text-white text-2xl leading-none">{publicStats.total_products}</div>
+                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Live Listings</div>
                   </div>
                 </div>
-              </div>
+
+                {/* Brokerage Fee */}
+                <div
+                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
+                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
+                >
+                  <Handshake className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div className="text-left">
+                    <div className="font-heading font-bold text-white text-2xl leading-none">0 BDT</div>
+                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Brokerage Fee</div>
+                  </div>
+                </div>
+              </motion.div>
 
             </div>
           </div>
         </section>
+
+
+
 
         {/* STICKY CATEGORY QUICK-NAV */}
         <nav className="sticky top-16 z-30 bg-theme-bg/80 backdrop-blur-xl border-b border-theme-border">
@@ -400,8 +501,8 @@ export default function Home() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {pagination.total > 0 && (
-                  <span className="text-xs text-theme-muted">{pagination.total.toLocaleString()} listings</span>
+                {products.length > 0 && (
+                  <span className="text-xs text-theme-muted">{products.length.toLocaleString()} listings</span>
                 )}
                 <div className="relative">
                   <select value={sort} onChange={e => setSort(e.target.value)}

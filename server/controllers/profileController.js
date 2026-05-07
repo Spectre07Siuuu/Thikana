@@ -22,45 +22,36 @@ function safeUser(row) {
 ───────────────────────────────────────────────────────── */
 async function getProfile(req, res) {
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id])
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
 
-    const [
-      [[{ orders }]],
-      [[{ favorites }]],
-      [[{ active_listings }]],
-      [[{ seller_orders }]],
-      [[{ total_sales }]],
-      [[{ reviews }]],
-    ] = await Promise.all([
-      pool.query("SELECT COUNT(*) as orders FROM orders WHERE buyer_id = ? AND status != 'cancelled'", [req.user.id]),
-      pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = ?', [req.user.id]),
-      pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = ? AND status = 'approved'", [req.user.id]),
+    const [ordersRes, favoritesRes, listingsRes, sellerOrdersRes, totalSalesRes, reviewsRes] = await Promise.all([
+      pool.query("SELECT COUNT(*) as orders FROM orders WHERE buyer_id = $1 AND status != 'cancelled'", [req.user.id]),
+      pool.query('SELECT COUNT(*) as favorites FROM favourites WHERE user_id = $1', [req.user.id]),
+      pool.query("SELECT COUNT(*) as active_listings FROM products WHERE seller_id = $1 AND status = 'approved'", [req.user.id]),
       pool.query(`
         SELECT COUNT(DISTINCT oi.order_id) as seller_orders
-        FROM order_items oi
-        JOIN orders o ON o.id = oi.order_id
-        WHERE oi.seller_id = ? AND o.status != 'cancelled'
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE oi.seller_id = $1 AND o.status != 'cancelled'
       `, [req.user.id]),
       pool.query(`
         SELECT SUM(oi.price * oi.quantity) as total_sales
-        FROM order_items oi
-        JOIN orders o ON o.id = oi.order_id
-        WHERE oi.seller_id = ? AND o.status != 'cancelled'
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE oi.seller_id = $1 AND o.status != 'cancelled'
       `, [req.user.id]),
-      pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = ?', [req.user.id]),
+      pool.query('SELECT COUNT(*) as reviews FROM reviews WHERE buyer_id = $1', [req.user.id]),
     ])
 
     return res.json({
       success: true,
       user: safeUser(rows[0]),
       stats: {
-        orders: parseInt(orders) || 0,
-        seller_orders: parseInt(seller_orders) || 0,
-        favorites: parseInt(favorites) || 0,
-        active_listings: parseInt(active_listings) || 0,
-        total_sales: parseFloat(total_sales) || 0,
-        reviews: parseInt(reviews) || 0,
+        orders: parseInt(ordersRes.rows[0].orders) || 0,
+        seller_orders: parseInt(sellerOrdersRes.rows[0].seller_orders) || 0,
+        favorites: parseInt(favoritesRes.rows[0].favorites) || 0,
+        active_listings: parseInt(listingsRes.rows[0].active_listings) || 0,
+        total_sales: parseFloat(totalSalesRes.rows[0].total_sales) || 0,
+        reviews: parseInt(reviewsRes.rows[0].reviews) || 0,
         points: rows[0].points || 0
       }
     })
@@ -77,44 +68,21 @@ async function getProfile(req, res) {
 ───────────────────────────────────────────────────────── */
 async function updateProfile(req, res) {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array(),
-    })
-  }
-
+  if (!errors.isEmpty()) return res.status(422).json({ success: false, message: 'Validation failed', errors: errors.array() })
   const { fullName, phone, address, bio } = req.body
-
   try {
-    // Build dynamic SET clause — only update fields that were sent
     const fields = []
     const values = []
-
-    if (fullName !== undefined) { fields.push('full_name = ?'); values.push(fullName.trim()) }
-    if (phone !== undefined) { fields.push('phone = ?'); values.push(phone.trim() || null) }
-    if (address !== undefined) { fields.push('address = ?'); values.push(address.trim() || null) }
-    if (bio !== undefined) { fields.push('bio = ?'); values.push(bio.trim() || null) }
-
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update.' })
-    }
-
+    let pi = 1
+    if (fullName !== undefined) { fields.push(`full_name = $${pi++}`); values.push(fullName.trim()) }
+    if (phone !== undefined) { fields.push(`phone = $${pi++}`); values.push(phone.trim() || null) }
+    if (address !== undefined) { fields.push(`address = $${pi++}`); values.push(address.trim() || null) }
+    if (bio !== undefined) { fields.push(`bio = $${pi++}`); values.push(bio.trim() || null) }
+    if (fields.length === 0) return res.status(400).json({ success: false, message: 'No fields to update.' })
     values.push(req.user.id)
-
-    await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    )
-
-    // Return updated user
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id])
-    return res.json({
-      success: true,
-      message: 'Profile updated successfully!',
-      user: safeUser(rows[0]),
-    })
+    await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${pi}`, values)
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id])
+    return res.json({ success: true, message: 'Profile updated successfully!', user: safeUser(rows[0]) })
   } catch (err) {
     console.error('[updateProfile error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })
@@ -128,31 +96,15 @@ async function updateProfile(req, res) {
 ───────────────────────────────────────────────────────── */
 async function uploadAvatar(req, res) {
   const { avatar_base64 } = req.body
-
-  if (!avatar_base64) {
-    return res.status(400).json({ success: false, message: 'No image provided.' })
-  }
-
+  if (!avatar_base64) return res.status(400).json({ success: false, message: 'No image provided.' })
   try {
-    // Generate a file and get the URL
     const avatarUrl = saveBase64Image(avatar_base64, 'avatars', `user-${req.user.id}`)
-
-    // Update database
-    await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [avatarUrl, req.user.id])
-
-    // Get updated user
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id])
-
-    return res.json({
-      success: true,
-      message: 'Profile picture updated!',
-      user: safeUser(rows[0]),
-    })
+    await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.user.id])
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id])
+    return res.json({ success: true, message: 'Profile picture updated!', user: safeUser(rows[0]) })
   } catch (err) {
     console.error('[uploadAvatar error]', err)
-    if (err.message.includes('Invalid') || err.message.includes('Unsupported')) {
-      return res.status(400).json({ success: false, message: err.message })
-    }
+    if (err.message.includes('Invalid') || err.message.includes('Unsupported')) return res.status(400).json({ success: false, message: err.message })
     return res.status(500).json({ success: false, message: 'Server error while uploading image.' })
   }
 }

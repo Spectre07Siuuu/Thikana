@@ -49,9 +49,8 @@ async function createRefreshSession(res, userId) {
   const rawToken = crypto.randomBytes(64).toString('hex')
   const tokenHash = hashRefreshToken(rawToken)
   const expiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000)
-
   await pool.query(
-    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
     [userId, tokenHash, expiresAt]
   )
   res.cookie(REFRESH_COOKIE, rawToken, refreshCookieOptions())
@@ -93,24 +92,19 @@ function resetEmailHtml(resetUrl) {
 async function signup(req, res) {
   const errors = validationResult(req)
   if (!errors.isEmpty()) return res.status(422).json({ success: false, message: 'Validation failed', errors: errors.array() })
-
   const { fullName, email, password, role } = req.body
   try {
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()])
+    const { rows: existing } = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()])
     if (existing.length > 0) return res.status(409).json({ success: false, message: 'An account with this email already exists.' })
-
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
     const otp = generateOtp()
     const otpExpires = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000)
-
     await pool.query(
-      `INSERT INTO users (full_name, email, password, role, is_verified, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, 0, ?, ?)`,
+      'INSERT INTO users (full_name, email, password, role, is_verified, otp_code, otp_expires_at) VALUES ($1, $2, $3, $4, false, $5, $6)',
       [fullName.trim(), email.toLowerCase(), hashedPassword, role, otp, otpExpires]
     )
-
     sendMail({ to: email, subject: 'Verify your Thikana account', html: otpEmailHtml(otp), text: `Your Thikana verification code is: ${otp}` })
       .catch(err => console.error('[mail error]', err))
-
     return res.status(201).json({ success: true, message: 'Account created! Please verify your email.', requiresVerification: true, email: email.toLowerCase() })
   } catch (err) {
     console.error('[signup error]', err)
@@ -121,24 +115,19 @@ async function signup(req, res) {
 async function verifyEmail(req, res) {
   const { email, otp } = req.body
   if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP are required.' })
-
   try {
-    const [rows] = await pool.query(
-      `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = ?`,
+    const { rows } = await pool.query(
+      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1',
       [email.toLowerCase()]
     )
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'Account not found.' })
-
     const user = rows[0]
-    if (user.is_verified) {
-      return issueAuthResponse(res, user, 'Email already verified.')
-    }
+    if (user.is_verified) return issueAuthResponse(res, user, 'Email already verified.')
     if (!user.otp_code || user.otp_code !== String(otp).trim()) return res.status(400).json({ success: false, message: 'Invalid verification code.' })
     if (!user.otp_expires_at || new Date() > new Date(user.otp_expires_at)) return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' })
-
-    await pool.query('UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?', [user.id])
-    const [fresh] = await pool.query(
-      `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = ?`,
+    await pool.query('UPDATE users SET is_verified = true, otp_code = NULL, otp_expires_at = NULL WHERE id = $1', [user.id])
+    const { rows: fresh } = await pool.query(
+      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1',
       [user.id]
     )
     return issueAuthResponse(res, fresh[0], 'Email verified! Welcome to Thikana.')
@@ -152,17 +141,14 @@ async function resendOtp(req, res) {
   const { email } = req.body
   if (!email) return res.status(400).json({ success: false, message: 'Email is required.' })
   try {
-    const [rows] = await pool.query('SELECT id, is_verified FROM users WHERE email = ?', [email.toLowerCase()])
+    const { rows } = await pool.query('SELECT id, is_verified FROM users WHERE email = $1', [email.toLowerCase()])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'Account not found.' })
     if (rows[0].is_verified) return res.status(400).json({ success: false, message: 'Email is already verified.' })
-
     const otp = generateOtp()
     const otpExpires = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000)
-    await pool.query('UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?', [otp, otpExpires, rows[0].id])
-
+    await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpires, rows[0].id])
     sendMail({ to: email, subject: 'Your new Thikana verification code', html: otpEmailHtml(otp), text: `Your new code: ${otp}` })
       .catch(err => console.error('[mail error]', err))
-
     return res.json({ success: true, message: 'A new verification code has been sent to your email.' })
   } catch (err) {
     console.error('[resendOtp error]', err)
@@ -173,23 +159,17 @@ async function resendOtp(req, res) {
 async function login(req, res) {
   const errors = validationResult(req)
   if (!errors.isEmpty()) return res.status(422).json({ success: false, message: 'Validation failed', errors: errors.array() })
-
   const { email, password } = req.body
   try {
-    const [rows] = await pool.query(
-      `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = ?`,
+    const { rows } = await pool.query(
+      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1',
       [email.toLowerCase()]
     )
     if (rows.length === 0) return res.status(401).json({ success: false, message: 'Invalid email or password.' })
-
     const user = rows[0]
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid email or password.' })
-
-    if (!user.is_verified) {
-      return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', requiresVerification: true, email: user.email })
-    }
-
+    if (!user.is_verified) return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', requiresVerification: true, email: user.email })
     return issueAuthResponse(res, user, 'Login successful!')
   } catch (err) {
     console.error('[login error]', err)
@@ -199,8 +179,8 @@ async function login(req, res) {
 
 async function me(req, res) {
   try {
-    const [rows] = await pool.query(
-      `SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = ?`,
+    const { rows } = await pool.query(
+      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1',
       [req.user.id]
     )
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
@@ -215,31 +195,18 @@ async function refresh(req, res) {
   const cookies = parseCookies(req.headers.cookie)
   const rawToken = cookies[REFRESH_COOKIE]
   if (!rawToken) return res.status(401).json({ success: false, message: 'Session refresh required.' })
-
   const tokenHash = hashRefreshToken(rawToken)
   try {
-    const [rows] = await pool.query(
+    const { rows } = await pool.query(
       `SELECT rt.id AS refresh_id, rt.expires_at AS refresh_expires_at, u.*,
         (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status
-       FROM refresh_tokens rt
-       JOIN users u ON u.id = rt.user_id
-       WHERE rt.token = ?
-       LIMIT 1`,
+       FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id WHERE rt.token = $1 LIMIT 1`,
       [tokenHash]
     )
-
-    if (rows.length === 0) {
-      clearRefreshCookie(res)
-      return res.status(401).json({ success: false, message: 'Invalid session.' })
-    }
-
+    if (rows.length === 0) { clearRefreshCookie(res); return res.status(401).json({ success: false, message: 'Invalid session.' }) }
     const session = rows[0]
-    await pool.query('DELETE FROM refresh_tokens WHERE id = ? OR expires_at < NOW()', [session.refresh_id])
-    if (!session.refresh_expires_at || new Date() > new Date(session.refresh_expires_at)) {
-      clearRefreshCookie(res)
-      return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' })
-    }
-
+    await pool.query('DELETE FROM refresh_tokens WHERE id = $1 OR expires_at < NOW()', [session.refresh_id])
+    if (!session.refresh_expires_at || new Date() > new Date(session.refresh_expires_at)) { clearRefreshCookie(res); return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' }) }
     await createRefreshSession(res, session.id)
     const token = signAccessToken(session)
     return res.json({ success: true, token, user: safeUser(session) })
@@ -253,9 +220,7 @@ async function logout(req, res) {
   const cookies = parseCookies(req.headers.cookie)
   const rawToken = cookies[REFRESH_COOKIE]
   try {
-    if (rawToken) {
-      await pool.query('DELETE FROM refresh_tokens WHERE token = ?', [hashRefreshToken(rawToken)])
-    }
+    if (rawToken) await pool.query('DELETE FROM refresh_tokens WHERE token = $1', [hashRefreshToken(rawToken)])
     clearRefreshCookie(res)
     return res.json({ success: true, message: 'Logged out successfully.' })
   } catch (err) {
@@ -268,16 +233,15 @@ async function forgotPassword(req, res) {
   const { email } = req.body
   if (!email) return res.status(400).json({ success: false, message: 'Email is required.' })
   try {
-    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()])
+    const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()])
     if (rows.length > 0) {
       const token = crypto.randomBytes(32).toString('hex')
       const tokenHash = hashRefreshToken(token)
       const expires = new Date(Date.now() + RESET_TTL_HOURS * 60 * 60 * 1000)
-      await pool.query('UPDATE users SET reset_token = ?, reset_token_expires_at = ? WHERE id = ?', [tokenHash, expires, rows[0].id])
+      await pool.query('UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3', [tokenHash, expires, rows[0].id])
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
       const resetUrl = `${clientUrl}/reset-password?token=${token}&email=${encodeURIComponent(email.toLowerCase())}`
-      sendMail({ to: email, subject: 'Reset your Thikana password', html: resetEmailHtml(resetUrl), text: `Reset your password: ${resetUrl}` })
-        .catch(err => console.error('[mail error]', err))
+      sendMail({ to: email, subject: 'Reset your Thikana password', html: resetEmailHtml(resetUrl), text: `Reset your password: ${resetUrl}` }).catch(err => console.error('[mail error]', err))
     }
     return res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' })
   } catch (err) {
@@ -292,12 +256,11 @@ async function resetPassword(req, res) {
   if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' })
   try {
     const tokenHash = hashRefreshToken(String(token))
-    const [rows] = await pool.query('SELECT id, reset_token, reset_token_expires_at FROM users WHERE email = ?', [email.toLowerCase()])
+    const { rows } = await pool.query('SELECT id, reset_token, reset_token_expires_at FROM users WHERE email = $1', [email.toLowerCase()])
     if (rows.length === 0 || rows[0].reset_token !== tokenHash) return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' })
     if (!rows[0].reset_token_expires_at || new Date() > new Date(rows[0].reset_token_expires_at)) return res.status(400).json({ success: false, message: 'Reset link has expired. Please request a new one.' })
-
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS)
-    await pool.query('UPDATE users SET password = ?, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ?', [hashedPassword, rows[0].id])
+    await pool.query('UPDATE users SET password = $1, reset_token = NULL, reset_token_expires_at = NULL WHERE id = $2', [hashedPassword, rows[0].id])
     return res.json({ success: true, message: 'Password reset successfully. You can now log in.' })
   } catch (err) {
     console.error('[resetPassword error]', err)
@@ -305,21 +268,17 @@ async function resetPassword(req, res) {
   }
 }
 
-/* ─────────────────────────────────────────────────────────
-   POST /api/auth/change-password  (authenticated)
-   Body: { currentPassword, newPassword }
-───────────────────────────────────────────────────────── */
 async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body
   if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Both current and new passwords are required.' })
   if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'New password must be at least 8 characters.' })
   try {
-    const [rows] = await pool.query('SELECT id, password FROM users WHERE id = ?', [req.user.id])
+    const { rows } = await pool.query('SELECT id, password FROM users WHERE id = $1', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
     const isMatch = await bcrypt.compare(currentPassword, rows[0].password)
     if (!isMatch) return res.status(401).json({ success: false, message: 'Current password is incorrect.' })
     const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS)
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id])
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, req.user.id])
     return res.json({ success: true, message: 'Password changed successfully.' })
   } catch (err) {
     console.error('[changePassword error]', err)

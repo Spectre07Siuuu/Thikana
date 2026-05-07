@@ -1,6 +1,6 @@
 const express = require('express')
 const rateLimit = require('express-rate-limit')
-const { uploadProduct, getProducts, reviewProduct, getProductById, editProduct } = require('../controllers/productController')
+const { uploadProduct, getProducts, reviewProduct, getProductById, editProduct, getPublicStats } = require('../controllers/productController')
 const { verifyToken, optionalVerifyToken, requireAdmin, requireSeller, requireVerifiedNid } = require('../middleware/authMiddleware')
 
 const router = express.Router()
@@ -22,6 +22,9 @@ const readLimiter = rateLimit({
     legacyHeaders: false,
     message: { success: false, message: 'Too many requests. Please try again later.' },
 })
+
+// GET /api/products/stats  (public — no auth needed)
+router.get('/stats', readLimiter, getPublicStats)
 
 // GET /api/products
 // Fetch all products (supports ?status=...&category=...)

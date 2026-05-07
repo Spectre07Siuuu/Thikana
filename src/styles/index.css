@@ -5,26 +5,50 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── LIGHT MODE: Black & Gold Elegance ──────────────────
+     #FFFFFF  White      → bg / card
+     #E5E5E5  Light Grey → subtle borders / muted bg
+     #FCA311  Amber      → primary accent
+     #14213D  Navy       → main text / headings
+     #000000  Black      → (avoided as pure black; use navy)
+  ─────────────────────────────────────────────────────── */
   :root {
-    --theme-bg: 255 255 255;
-    --theme-card: 255 250 249;
-    --theme-text: 18 19 19;
-    --theme-text-muted: 97 102 107;
-    --theme-border: 233 236 239;
-    --theme-primary: 204 71 52;
-    --theme-primary-hover: 185 58 40;
-    --theme-primary-text: 255 255 255;
+    --theme-bg:              248 248 246;     /* near-white warm */
+    --theme-card:            255 255 255;     /* pure white card */
+    --theme-text:            20  33  61;      /* #14213D navy */
+    --theme-text-muted:      90  97 116;      /* muted navy-grey */
+    --theme-border:          229 229 229;     /* #E5E5E5 */
+    --theme-primary:         252 163  17;     /* #FCA311 amber */
+    --theme-primary-hover:   230 143   0;     /* amber darker */
+    --theme-primary-text:    20  33  61;      /* navy on amber */
+    --hero-grad-from:        20  33  61;      /* navy */
+    --hero-grad-mid:         14  20  40;      /* deeper navy */
+    --hero-grad-to:          8   10  24;      /* almost black-navy */
+    --glass-blob-1:          252 163  17;     /* amber blob */
+    --glass-blob-2:          20  33  61;      /* navy blob */
   }
 
+  /* ── DARK MODE: Deep Burgundy Elegance ─────────────────
+     #710912  Deep Burgundy  → primary accent
+     #0D0D0D  Midnight Black → bg
+     #C28D39  Antique Gold   → secondary accent / headings
+     #362822  Dark Espresso  → card surface
+     #EFE5D2  Warm Champagne → main text
+  ─────────────────────────────────────────────────────── */
   .dark {
-    --theme-bg: 18 19 19;
-    --theme-card: 28 30 30;
-    --theme-text: 245 246 246;
-    --theme-text-muted: 171 176 181;
-    --theme-border: 58 62 62;
-    --theme-primary: 255 96 68;
-    --theme-primary-hover: 255 123 102;
-    --theme-primary-text: 18 19 19;
+    --theme-bg:              13  13  13;      /* #0D0D0D midnight */
+    --theme-card:            54  40  34;      /* #362822 espresso */
+    --theme-text:            239 229 210;     /* #EFE5D2 champagne */
+    --theme-text-muted:      180 165 140;     /* warm muted champagne */
+    --theme-border:          70  52  42;      /* espresso-tinted border */
+    --theme-primary:         194 141  57;     /* #C28D39 antique gold */
+    --theme-primary-hover:   218 165  75;     /* gold lighter */
+    --theme-primary-text:    13  13  13;      /* midnight on gold */
+    --hero-grad-from:        113   9  18;     /* #710912 burgundy */
+    --hero-grad-mid:         54  40  34;      /* espresso */
+    --hero-grad-to:          13  13  13;      /* midnight */
+    --glass-blob-1:          113   9  18;     /* burgundy blob */
+    --glass-blob-2:          194 141  57;     /* gold blob */
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,6 +58,12 @@
     @apply bg-theme-bg text-theme-text;
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  /* Hide native browser password reveal eye (Edge / IE) */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none !important;
   }
   ::selection {
     background-color: rgb(var(--theme-primary) / 0.3);
@@ -78,7 +108,28 @@
       focus:bg-theme-card
       transition-all duration-200 text-sm;
   }
-  
+
+  /* Glass-style input for auth pages */
+  .glass-input {
+    width: 100%;
+    background: rgba(255,255,255,0.07);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    color: #ffffff;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .glass-input::placeholder { color: rgba(255,255,255,0.35); }
+  .glass-input:focus {
+    border-color: rgb(var(--theme-primary));
+    background: rgba(255,255,255,0.11);
+    box-shadow: 0 0 0 3px rgb(var(--theme-primary)/0.15);
+  }
+
   input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.6;
@@ -226,4 +277,86 @@
   .leaflet-bar {
     @apply !border-theme-border !shadow-sm overflow-hidden rounded-xl !important;
   }
+
+  /* ── Liquid Glass Utilities ──────────────────────────── */
+  .liquid-glass {
+    background: rgba(255,255,255,0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+    position: relative;
+    /* overflow: hidden; -- removing this so dropdowns can overflow if needed, or applying it per component */
+  }
+  .liquid-glass::before {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(180deg,
+    rgba(255,255,255,0.45) 0%,
+    rgba(255,255,255,0.15) 20%,
+    rgba(255,255,255,0) 40%,
+    rgba(255,255,255,0) 60%,
+    rgba(255,255,255,0.15) 80%,
+    rgba(255,255,255,0.45) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .liquid-glass-strong {
+    background: rgba(255,255,255,0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: none;
+    box-shadow: 4px 4px 4px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.15);
+    position: relative;
+  }
+  .liquid-glass-strong::before {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(180deg,
+    rgba(255,255,255,0.5) 0%,
+    rgba(255,255,255,0.2) 20%,
+    rgba(255,255,255,0) 40%,
+    rgba(255,255,255,0) 60%,
+    rgba(255,255,255,0.2) 80%,
+    rgba(255,255,255,0.5) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Inverted variants for light mode functionality where needed */
+  .dark .liquid-glass-invert {
+    /* Same as liquid-glass in dark mode */
+    background: rgba(255,255,255,0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+  }
+  .dark .liquid-glass-invert::before {
+    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+  }
+
+  html:not(.dark) .liquid-glass-invert {
+    /* Inverted for light mode */
+    background: rgba(0,0,0,0.01);
+    background-blend-mode: multiply;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.1);
+  }
+  html:not(.dark) .liquid-glass-invert::before {
+    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.05) 80%, rgba(0,0,0,0.2) 100%);
+  }
+
 }

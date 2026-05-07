@@ -1,5 +1,5 @@
 /**
- * seed.js - Unified Seeding Script for Thikana Marketplace
+ * seed.js - Unified Seeding Script for Thikana Marketplace (PostgreSQL / Supabase)
  * 
  * Usage:
  *   node seed.js --fresh       (Wipes everything, creates demo users + 100 premium products)
@@ -65,9 +65,7 @@ function generateProductData(category, index) {
   const loc = getRandom(LOCATIONS);
   const adj = getRandom(ADJECTIVES);
   const brand = getRandom(['Hatil', 'Otobi', 'IKEA', 'Navana', 'Samsung', 'LG', 'Sony', 'Dyson', 'Panasonic']);
-  
   let title, description, price, attributes;
-
   if (category === 'house_sell') {
     title = `${adj} ${getRandom(PROPERTY_TYPES)} for Sale in ${loc.split(',')[0]}`;
     description = `An architectural masterpiece! This ${adj.toLowerCase()} home offers elite finishes, expansive living spaces, and top-tier security. Perfect for families looking for a permanent, luxurious address.`;
@@ -89,13 +87,7 @@ function generateProductData(category, index) {
     price = getRandInt(8000, 450000);
     attributes = { condition: 'Factory New', warranty: 'Official Support', brand };
   }
-
-  return { 
-    title, description, price, location: loc, 
-    lat: LOCATION_COORDS[loc][0], 
-    lng: LOCATION_COORDS[loc][1], 
-    attributes 
-  };
+  return { title, description, price, location: loc, lat: LOCATION_COORDS[loc][0], lng: LOCATION_COORDS[loc][1], attributes };
 }
 
 // ─── MAIN SEED FUNCTION ────────────────────────────────────────────────
@@ -103,12 +95,7 @@ function generateProductData(category, index) {
 async function seed() {
   const isFresh = process.argv.includes('--fresh');
   const isRealistic = process.argv.includes('--realistic');
-
-  if (!isFresh && !isRealistic) {
-    console.log('Please specify mode: --fresh or --realistic');
-    process.exit(1);
-  }
-
+  if (!isFresh && !isRealistic) { console.log('Please specify mode: --fresh or --realistic'); process.exit(1); }
   console.log(`🚀 Starting ${isFresh ? 'FRESH' : 'REALISTIC'} seeding process...`);
 
   try {
@@ -117,46 +104,27 @@ async function seed() {
 
     if (isFresh) {
       console.log('🗑️  Wiping all existing data (Users, Products, etc.)...');
-      await pool.query('SET FOREIGN_KEY_CHECKS = 0');
-      await pool.query('TRUNCATE refresh_tokens');
-      await pool.query('TRUNCATE users');
-      await pool.query('TRUNCATE products');
-      await pool.query('TRUNCATE product_images');
-      await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+      await pool.query('TRUNCATE refresh_tokens, product_images, reviews, order_items, orders, cart_items, favourites, inquiries, messages, notifications, nid_submissions, products, users RESTART IDENTITY CASCADE');
 
       console.log('👑 Seeding Admin (Spoidormon)...');
       await pool.query(
-        `INSERT INTO users (full_name, email, password, role, is_admin, avatar_url, phone, address, is_verified, nid_verified) 
-         VALUES (?, ?, ?, 'admin', 1, ?, ?, ?, 1, 1)`,
+        `INSERT INTO users (full_name, email, password, role, is_admin, avatar_url, phone, address, is_verified, nid_verified) VALUES ($1, $2, $3, 'admin', true, $4, $5, $6, true, true)`,
         ['Spoidormon', 'admin@thikana.com', adminPass, 'https://i.pravatar.cc/300?u=admin', '+8801700000000', 'Admin HQ, Dhaka']
       );
 
       console.log('👥 Seeding Demo Users...');
       for (const [i, u] of USER_DATA.entries()) {
         await pool.query(
-          `INSERT INTO users (full_name, email, password, role, avatar_url, bio, phone, address, is_verified, nid_verified) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)`,
-          [
-            u.name,
-            u.email,
-            userPass,
-            u.role,
-            `https://i.pravatar.cc/300?u=${u.email}`,
-            u.bio,
-            buildPhone(i + 1),
-            buildAddress(),
-          ]
+          `INSERT INTO users (full_name, email, password, role, avatar_url, bio, phone, address, is_verified, nid_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, true)`,
+          [u.name, u.email, userPass, u.role, `https://i.pravatar.cc/300?u=${u.email}`, u.bio, buildPhone(i + 1), buildAddress()]
         );
       }
     } else {
       console.log('📦 Wiping existing products only...');
-      await pool.query('SET FOREIGN_KEY_CHECKS = 0');
-      await pool.query('TRUNCATE products');
-      await pool.query('TRUNCATE product_images');
-      await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+      await pool.query('TRUNCATE product_images, products RESTART IDENTITY CASCADE');
     }
 
-    const [sellers] = await pool.query("SELECT id FROM users WHERE role = 'seller'");
+    const { rows: sellers } = await pool.query("SELECT id FROM users WHERE role = 'seller'");
     if (sellers.length === 0) throw new Error('No sellers found in database. Run with --fresh first.');
 
     console.log('📦 Generating 100 Premium Products...');
@@ -164,20 +132,15 @@ async function seed() {
       const sellerId = getRandom(sellers).id;
       const category = getRandom(CATEGORIES);
       const data = generateProductData(category, i);
-
-      const [pResult] = await pool.query(
-        `INSERT INTO products (seller_id, category, title, description, price, location, lat, lng, status, attributes) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)`,
+      const { rows: pResult } = await pool.query(
+        `INSERT INTO products (seller_id, category, title, description, price, location, lat, lng, status, attributes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'approved', $9) RETURNING id`,
         [sellerId, category, data.title, data.description, data.price, data.location, data.lat, data.lng, JSON.stringify(data.attributes)]
       );
-
-      const productId = pResult.insertId;
-      await pool.query(`INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, 1)`, [productId, buildUrl(category, i)]);
-      
+      const productId = pResult[0].id;
+      await pool.query('INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, true)', [productId, buildUrl(category, i)]);
       if (Math.random() > 0.5) {
-        await pool.query(`INSERT INTO product_images (product_id, image_url, is_primary) VALUES (?, ?, 0)`, [productId, buildUrl('interior', i + 100)]);
+        await pool.query('INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, false)', [productId, buildUrl('interior', i + 100)]);
       }
-
       if (i % 25 === 0) console.log(`   ✓ ${i} products inserted...`);
     }
 

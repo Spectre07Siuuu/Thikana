@@ -5,6 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        white: '#FAFAFA', // Soft off-white
+        black: '#090A0B', // Rich soft black
         theme: {
           bg: 'rgb(var(--theme-bg) / <alpha-value>)',
           card: 'rgb(var(--theme-card) / <alpha-value>)',
@@ -19,6 +21,8 @@ export default {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         serif: ['"DM Serif Display"', 'Georgia', 'serif'],
+        heading: ['"Instrument Serif"', 'serif'],
+        body: ['"Barlow"', 'sans-serif'],
       },
       animation: {
         'fade-in':  'fadeIn 0.3s ease-out',
