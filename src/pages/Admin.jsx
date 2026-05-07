@@ -113,7 +113,7 @@ export default function Admin() {
      )}
 
      {/* Tabs */}
-     <div className="bg-theme-card border border-theme-border rounded-2xl shadow-sm mb-4">
+     <div className="glass-panel mb-4">
       <div className="flex items-center border-b border-theme-border px-2 gap-1">
        {TABS.map(({ key, label, icon: Icon }) => (
         <button key={key} onClick={() => setActiveTab(key)}
@@ -271,7 +271,7 @@ function StatsTab({ stats }) {
  return (
   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
    {items.map(({ label, value, color }) => (
-    <div key={label} className="text-center p-4 bg-theme-card border border-theme-border rounded-2xl">
+    <div key={label} className="text-center p-4 glass-card">
      <p className={`text-2xl font-black ${color.split(' ')[0]}`}>{value ?? '—'}</p>
      <p className="text-xs text-theme-muted mt-1">{label}</p>
     </div>

@@ -390,7 +390,7 @@ export default function Messages() {
       ) : (
        <>
         {/* ── Chat Header ── */}
-        <div className="px-4 py-3 bg-theme-card border-b border-theme-border flex items-center gap-3 shadow-sm">
+        <div className="px-4 py-3 border-b border-theme-border flex items-center gap-3 shadow-sm" style={{ background: 'rgb(var(--theme-card) / 0.7)', backdropFilter: 'blur(12px)' }}>
          <button onClick={() => setMobileShowChat(false)} className="md:hidden p-1.5 rounded-lg text-theme-muted hover:text-theme-primary transition-colors">
           <ArrowLeft size={18} />
          </button>
@@ -547,7 +547,7 @@ export default function Messages() {
           </div>
 
           {/* ── Input Bar ── */}
-          <div className="px-4 sm:px-6 py-3 bg-theme-card border-t border-theme-border">
+          <div className="px-4 sm:px-6 py-3 border-t border-theme-border" style={{ background: 'rgb(var(--theme-card) / 0.7)', backdropFilter: 'blur(12px)' }}>
            {/* Recording UI */}
            {recording ? (
             <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-3">
@@ -571,7 +571,7 @@ export default function Messages() {
                <Paperclip size={18} />
               </button>
               {showAttach && (
-               <div className="absolute bottom-14 left-0 bg-theme-card border border-theme-border rounded-2xl shadow-xl p-2 animate-fade-in z-20 w-40">
+               <div className="absolute bottom-14 left-0 glass-panel shadow-xl p-2 animate-fade-in z-20 w-40">
                 <button type="button" onClick={() => imgInputRef.current?.click()}
                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-theme-bg dark:hover:bg-gray-800 transition-colors font-medium">
                  <ImageIcon size={16} className="text-blue-500" /> Image
@@ -595,7 +595,7 @@ export default function Messages() {
                <Smile size={18} />
               </button>
               {showEmoji && (
-               <div className="absolute bottom-14 left-0 bg-theme-card border border-theme-border rounded-2xl shadow-xl p-3 animate-fade-in z-20 w-72">
+               <div className="absolute bottom-14 left-0 glass-panel shadow-xl p-3 animate-fade-in z-20 w-72">
                 <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
                  {EMOJI_LIST.map((emoji, i) => (
                   <button key={`emoji-${i}`} type="button" onClick={() => { setNewMsg(prev => prev + emoji) }}
@@ -636,9 +636,8 @@ export default function Messages() {
           </div>
          </div>
 
-         {/* ══════════════ Profile Sidebar ══════════════ */}
          {showProfile && partner && (
-          <div className="hidden lg:flex w-72 flex-shrink-0 border-l border-theme-border bg-theme-card flex-col animate-fade-in overflow-y-auto">
+          <div className="hidden lg:flex w-72 flex-shrink-0 border-l border-theme-border flex-col animate-fade-in overflow-y-auto" style={{ background: 'rgb(var(--theme-card) / 0.4)', backdropFilter: 'blur(20px)' }}>
            <div className="p-6 text-center">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden mx-auto shadow-lg mb-4">
              {partner.avatar_url

@@ -102,8 +102,7 @@ export default function NidVerify() {
        </div>
      )}
 
-     <div className="bg-theme-card border border-theme-border
-      rounded-2xl shadow-sm p-6 sm:p-8">
+     <div className="glass-panel p-6 sm:p-8">
       
       <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-theme-primary/10 dark:bg-orange-950/20 text-theme-primary-hover dark:text-orange-400 border border-theme-primary/30 dark:border-orange-900">
        <ShieldAlert size={24} className="flex-shrink-0" />

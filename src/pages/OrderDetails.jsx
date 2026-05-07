@@ -156,7 +156,7 @@ export default function OrderDetails() {
    <>
     <Navbar />
     <main className="min-h-screen pt-24 pb-12 bg-theme-bg px-4">
-     <div className="max-w-3xl mx-auto bg-theme-card border border-theme-border rounded-2xl p-6">
+     <div className="glass-card max-w-3xl mx-auto p-6">
       <p className="text-sm text-red-500">{error || 'Order not found.'}</p>
       <Link to="/profile" className="inline-block mt-3 text-sm text-theme-primary hover:underline">Go back</Link>
      </div>
@@ -180,7 +180,7 @@ export default function OrderDetails() {
       </span>
      </div>
 
-     <div className="bg-theme-card border border-theme-border rounded-2xl p-5">
+     <div className="glass-panel p-5">
       <div className="flex items-center gap-2">
        <h1 className="text-lg font-bold text-theme-text">Order #{order.id}</h1>
        {order.is_booking && (
@@ -272,8 +272,8 @@ export default function OrderDetails() {
     </div>
     </main>
     {showCancelDialog && (
-     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-theme-card border border-theme-border rounded-3xl shadow-xl p-6">
+     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-overlay animate-fade-in">
+      <div className="glass-modal w-full max-w-lg p-6">
        <h3 className="text-lg font-bold text-theme-text">Cancel Order #{order.id}</h3>
        <p className="text-xs text-theme-muted mt-1">Please complete the required details before cancellation.</p>
 

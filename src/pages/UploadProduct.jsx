@@ -314,9 +314,9 @@ export default function UploadProduct() {
   <>
    <Navbar />
    {success && (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" />
-     <div className="relative bg-theme-card rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-modal-in border border-emerald-100 dark:border-emerald-900/30">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-overlay">
+     <div className="absolute inset-0 animate-fade-in" />
+     <div className="glass-modal p-8 max-w-sm w-full text-center shadow-2xl animate-modal-in border border-emerald-100 dark:border-emerald-900/30 relative z-10">
       <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
        <CheckCircle size={40} className="text-emerald-500" />
       </div>
@@ -338,7 +338,7 @@ export default function UploadProduct() {
       <div className="text-sm font-medium text-theme-muted">Step {step} of 3</div>
      </div>
 
-     <div className="bg-theme-card border border-theme-border rounded-3xl shadow-sm overflow-visible relative">
+     <div className="glass-card overflow-visible relative">
       
       {/* Content Area */}
       <div className="p-6 sm:p-10">
@@ -425,7 +425,7 @@ export default function UploadProduct() {
            {showMap && (
             <div className="h-72 w-full rounded-2xl overflow-hidden border border-theme-border shadow-sm relative z-0 mb-5 animate-slide-up">
              {mapLoading && (
-              <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-2xl">
+              <div className="absolute inset-0 z-[1000] flex items-center justify-center glass-overlay rounded-2xl">
                <div className="w-8 h-8 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
               </div>
              )}
