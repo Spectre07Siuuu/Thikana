@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useCart } from '../context/CartContext'
 import { useNotifications } from '../context/NotificationContext'
 import { useSocket } from '../context/SocketContext'
+import { getNidStatus } from '../services/api'
 import Logo from './Logo'
 
 /* ─── Nav links ─── */
@@ -58,6 +59,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [nidSubmission, setNidSubmission] = useState(null)
   const profileRef = useRef(null)
 
   useEffect(() => {
@@ -78,6 +80,31 @@ export default function Navbar() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    if (!user || user.nid_verified || user.is_admin) {
+      setNidSubmission(null)
+      return
+    }
+
+    getNidStatus()
+      .then(data => setNidSubmission(data.submission || null))
+      .catch(() => {})
+  }, [user])
+
+  useEffect(() => {
+    if (!user || user.nid_verified || user.is_admin) return
+    const currentStatus = nidSubmission?.verification_status || nidSubmission?.status
+    if (!currentStatus || !['pending', 'processing', 'review'].includes(currentStatus)) return
+
+    const pollId = setInterval(() => {
+      getNidStatus()
+        .then(data => setNidSubmission(data.submission || null))
+        .catch(() => {})
+    }, 5000)
+
+    return () => clearInterval(pollId)
+  }, [user, nidSubmission?.status, nidSubmission?.verification_status])
 
   const handleLogout = () => { logout(); setProfileOpen(false); navigate('/') }
 
@@ -234,9 +261,14 @@ export default function Navbar() {
                       </span>
                       {user.nid_verified
                         ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full"><ShieldCheck size={10} /> NID Verified</span>
-                        : user.nid_status === 'pending'
+                        : ['pending', 'processing', 'review'].includes(nidSubmission?.verification_status || nidSubmission?.status)
                           ? <span className="inline-flex items-center gap-1 text-[10px] bg-theme-primary/10 dark:bg-orange-950/40 text-theme-primary border border-theme-primary/30 dark:border-orange-800 px-2 py-0.5 rounded-full">NID Pending</span>
-                          : <Link to="/verify-nid" onClick={() => setProfileOpen(false)} className="text-[10px] text-blue-500 hover:text-blue-600 font-medium hover:underline">Verify NID →</Link>
+                          : (nidSubmission?.verification_status || nidSubmission?.status) === 'rejected'
+                            ? <>
+                                <span className="inline-flex items-center gap-1 text-[10px] bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full">NID Rejected</span>
+                                <Link to="/verify-nid" onClick={() => setProfileOpen(false)} className="text-[10px] text-blue-500 hover:text-blue-600 font-medium hover:underline">Submit Again →</Link>
+                              </>
+                            : <Link to="/verify-nid" onClick={() => setProfileOpen(false)} className="text-[10px] text-blue-500 hover:text-blue-600 font-medium hover:underline">Verify NID →</Link>
                       }
                     </div>
                   </div>

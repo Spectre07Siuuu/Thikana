@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle, Info, AlertCircle, Check, X } from 'lucide-react'
-import { submitNid } from '../services/api'
+import { ShieldAlert, ArrowLeft, Image as ImageIcon, Camera, CheckCircle, Info, AlertCircle, Check, X, FileSearch, ScanFace, Gauge, LockKeyhole, RefreshCw } from 'lucide-react'
+import { getNidStatus, submitNid } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -15,7 +15,6 @@ export default function NidVerify() {
  const query = new URLSearchParams(location.search)
  const reason = query.get('reason')
 
- const [nidNumber, setNidNumber] = useState('')
  const [frontPreview, setFrontPreview] = useState('')
  const [selfiePreview, setSelfiePreview] = useState('')
  
@@ -23,6 +22,8 @@ export default function NidVerify() {
  const [selfieBase64, setSelfieBase64] = useState('')
  
  const [loading, setLoading] = useState(false)
+ const [uploadProgress, setUploadProgress] = useState(0)
+ const [submission, setSubmission] = useState(null)
  const [error, setError] = useState('')
  const [showDialog, setShowDialog] = useState(false)
  const [dialogType, setDialogType] = useState('') // 'success' or 'error'
@@ -32,32 +33,64 @@ export default function NidVerify() {
   if (user.nid_verified) { navigate('/profile'); return }
  }, [user, navigate])
 
+ useEffect(() => {
+  if (!user || user.nid_verified) return
+  getNidStatus()
+   .then(data => setSubmission(data.submission || null))
+   .catch(() => {})
+ }, [user])
+
+ // Poll for status updates while processing or pending admin review
+ useEffect(() => {
+  if (!submission || !['pending', 'processing', 'review'].includes(submission.status)) return
+
+  const pollInterval = setInterval(() => {
+   getNidStatus()
+    .then(data => setSubmission(data.submission || null))
+    .catch(() => {})
+  }, 5000) // Poll every 5 seconds
+
+  return () => clearInterval(pollInterval)
+ }, [submission?.status])
+
  const handleImageChange = (e, setPreview, setBase64) => {
   const file = e.target.files[0]
   if (!file) return
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+   setError('Only JPG, PNG, or WEBP images are supported.')
+   return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+   setError('Each image must be 5MB or smaller.')
+   return
+  }
   const reader = new FileReader()
+  reader.onprogress = ev => {
+   if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100))
+  }
   reader.onload = ev => {
    setPreview(ev.target.result)
    setBase64(ev.target.result)
+   setUploadProgress(100)
   }
   reader.readAsDataURL(file)
  }
 
  const handleSubmit = async e => {
   e.preventDefault()
-  if (!nidNumber.trim() || !frontBase64 || !selfieBase64) {
-   setError('Please fill in all fields and upload both required images.')
+  if (!frontBase64 || !selfieBase64) {
+   setError('Please upload both required images. The NID number will be extracted automatically.')
    return
   }
 
   setLoading(true)
   setError('')
   try {
-   await submitNid({
-    nid_number: nidNumber,
+   const data = await submitNid({
     nid_front_base64: frontBase64,
     nid_selfie_base64: selfieBase64
    })
+   setSubmission(data.submission || null)
    await refreshUser()
    setDialogType('success')
    setShowDialog(true)
@@ -88,17 +121,20 @@ export default function NidVerify() {
   <>
    <Navbar />
    <main className="min-h-screen bg-theme-bg pt-16 pb-12">
-    <div className="max-w-xl mx-auto px-4 sm:px-6 mt-8 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-8 animate-fade-in">
      
-     <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex items-center gap-3">
       <Link to="/profile"
        className="p-2 rounded-lg text-theme-muted hover:text-theme-primary
         hover:bg-white dark:hover:bg-gray-900 border border-transparent
         hover:border-theme-border dark:hover:border-gray-800 transition-all duration-200">
        <ArrowLeft size={18} />
       </Link>
-      <h1 className="text-xl font-bold text-theme-text">Verify Identity</h1>
-     </div>
+       <div>
+        <h1 className="text-2xl font-black text-theme-text">AI-assisted identity verification</h1>
+        <p className="text-xs text-theme-muted mt-1">Bangladesh NID OCR, face comparison, fraud checks, and admin fallback.</p>
+       </div>
+      </div>
 
      {reason && (
        <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 flex items-center gap-3 text-rose-600 dark:text-rose-400">
@@ -107,15 +143,75 @@ export default function NidVerify() {
        </div>
      )}
 
-     <div className="glass-panel p-6 sm:p-8">
+      <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-5 items-start">
+       <aside className="space-y-4">
+        <div className="glass-panel p-5">
+         <p className="text-xs uppercase font-black text-theme-primary mb-3">Automated checks</p>
+         <div className="space-y-3">
+          <CheckStep icon={<FileSearch size={16} />} title="Document OCR" text="Detects Bangladesh NID layout, readable text, NID number, name, and date of birth." />
+          <CheckStep icon={<ScanFace size={16} />} title="Face match" text="Compares the selfie with the face visible on the NID image." />
+            <CheckStep icon={<Gauge size={16} />} title="Confidence score" text=">70 can auto approve, 50-70 goes to admin review, under 50 is rejected." />
+          <CheckStep icon={<LockKeyhole size={16} />} title="Secure storage" text="Images are stored outside public uploads and reviewed through protected admin access." />
+         </div>
+        </div>
+
+        <div className="glass-panel p-5">
+         <p className="text-sm font-bold text-theme-text mb-3">Photo checklist</p>
+         <ul className="space-y-2 text-xs text-theme-muted">
+          <li>Use the original front side of a Bangladesh NID.</li>
+          <li>Keep the NID flat, uncropped, and readable.</li>
+          <li>Upload a clear selfie with one human face visible.</li>
+          <li>Avoid screenshots, edited images, memes, and blurred photos.</li>
+         </ul>
+        </div>
+       </aside>
+
+      <div className="glass-panel p-6 sm:p-8">
       
-      <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-theme-primary/10 dark:bg-orange-950/20 text-theme-primary-hover dark:text-orange-400 border border-theme-primary/30 dark:border-orange-900">
+       <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-theme-primary/10 dark:bg-orange-950/20 text-theme-primary-hover dark:text-orange-400 border border-theme-primary/30 dark:border-orange-900">
        <ShieldAlert size={24} className="flex-shrink-0" />
        <p className="text-sm">
         <strong>Why verify?</strong> Verified users get a badge, more trust from others, and access to premium features. 
-        Your information is kept secure and confidential.
-       </p>
-      </div>
+         Your submission is checked automatically first. Admins only step in when the confidence score needs review.
+        </p>
+       </div>
+
+      {submission && (
+       <div className="mb-6 rounded-xl border border-theme-border bg-theme-bg p-4">
+        <div className="flex items-center justify-between gap-3">
+         <div>
+          <p className="text-sm font-bold text-theme-text">Current verification status</p>
+          <p className="text-xs text-theme-muted mt-1">
+           {submission.status === 'approved'
+            ? 'Approved automatically or by admin.'
+            : submission.status === 'rejected'
+             ? (submission.review_note || 'Rejected by verification checks. You can retry with clearer images.')
+             : 'Automated checks are processing. Admin review starts if confidence is not high enough.'}
+          </p>
+         </div>
+         <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full border border-theme-border text-theme-muted">
+           {submission.verification_status || submission.status}
+          </span>
+          {['pending', 'processing', 'review'].includes(submission.status) && (
+           <RefreshCw size={14} className="animate-spin text-theme-primary opacity-75" />
+          )}
+         </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+         <Metric label="OCR" value={submission.ocr_confidence ?? 0} />
+         <Metric label="Face" value={submission.face_match_score ?? 0} />
+         <Metric label="Score" value={submission.confidence_score ?? 0} />
+        </div>
+        {!!submission.fraud_flags?.length && (
+         <div className="mt-3 flex flex-wrap gap-1.5">
+          {submission.fraud_flags.map(flag => (
+           <span key={flag} className="text-[10px] font-semibold rounded-full bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5">{flag.replaceAll('_', ' ')}</span>
+          ))}
+         </div>
+        )}
+       </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
        {error && (
@@ -125,24 +221,10 @@ export default function NidVerify() {
         </div>
        )}
 
-       {/* NID Number */}
-       <div>
-        <label className="block text-sm font-bold text-theme-text dark:text-gray-200 mb-2">
-         1. NID Number (10, 13, or 17 digits)
-        </label>
-        <input 
-         type="text" 
-         value={nidNumber}
-         onChange={e => setNidNumber(e.target.value)}
-         placeholder="e.g. 1990123456789"
-         className="w-full px-4 py-3 rounded-xl border border-theme-border bg-theme-card focus:ring-2 focus:ring-orange-500/20 focus:border-theme-primary outline-none text-theme-text transition-all font-mono"
-        />
-       </div>
-
        {/* NID Front Upload */}
        <div>
         <label className="block text-sm font-bold text-theme-text dark:text-gray-200 mb-2">
-         2. Clear photo of NID (Front side)
+         1. Clear photo of NID (Front side)
         </label>
         <UploadBox 
          id="nid-front"
@@ -150,20 +232,22 @@ export default function NidVerify() {
          onChange={e => handleImageChange(e, setFrontPreview, setFrontBase64)}
          icon={<ImageIcon size={32} />}
          label="Upload NID Front"
+         progress={uploadProgress}
         />
        </div>
 
        {/* Selfie Upload */}
        <div>
         <label className="block text-sm font-bold text-theme-text dark:text-gray-200 mb-2">
-         3. Selfie holding the NID
+         2. Selfie of the person
         </label>
         <UploadBox 
          id="nid-selfie"
          preview={selfiePreview}
          onChange={e => handleImageChange(e, setSelfiePreview, setSelfieBase64)}
          icon={<Camera size={32} />}
-         label="Upload Selfie with NID"
+         label="Upload Selfie"
+         progress={uploadProgress}
         />
        </div>
 
@@ -187,12 +271,13 @@ export default function NidVerify() {
         ) : (
          <>
           <CheckCircle size={18} />
-          Submit for Review
+          Start automated verification
          </>
         )}
        </button>
       </form>
      </div>
+    </div>
     </div>
 
     {showDialog && (
@@ -206,8 +291,8 @@ export default function NidVerify() {
           </div>
          </div>
          <h3 className="text-center text-xl font-bold text-theme-text mb-2">Request Submitted Successfully!</h3>
-         <p className="text-center text-sm text-theme-muted mb-4">Your NID verification request has been submitted. Our team will review it within 24 hours.</p>
-         <p className="text-center text-xs text-emerald-600 dark:text-emerald-400 mb-6 font-medium">✓ Secure and Confidential</p>
+         <p className="text-center text-sm text-theme-muted mb-4">Your verification is processing automatically. If confidence is not high enough, it will move to admin review.</p>
+         <p className="text-center text-xs text-emerald-600 dark:text-emerald-400 mb-6 font-medium">Secure and Confidential</p>
          <button onClick={() => { setShowDialog(false); navigate('/profile', { replace: true }) }} className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95">Back to Profile</button>
         </>
        ) : (
@@ -232,7 +317,28 @@ export default function NidVerify() {
  )
 }
 
-function UploadBox({ id, preview, onChange, icon, label }) {
+function CheckStep({ icon, title, text }) {
+ return (
+  <div className="flex gap-3 rounded-lg border border-theme-border bg-theme-bg p-3">
+   <div className="mt-0.5 text-theme-primary">{icon}</div>
+   <div>
+    <p className="text-sm font-bold text-theme-text">{title}</p>
+    <p className="text-xs leading-5 text-theme-muted mt-0.5">{text}</p>
+   </div>
+  </div>
+ )
+}
+
+function Metric({ label, value }) {
+ return (
+  <div className="rounded-lg border border-theme-border bg-theme-card p-2">
+   <p className="text-sm font-black text-theme-text">{Math.round(Number(value) || 0)}</p>
+   <p className="text-[10px] uppercase font-bold text-theme-muted">{label}</p>
+  </div>
+ )
+}
+
+function UploadBox({ id, preview, onChange, icon, label, progress }) {
  return (
   <label htmlFor={id} className={`w-full h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${
    preview 
@@ -250,7 +356,8 @@ function UploadBox({ id, preview, onChange, icon, label }) {
     <div className="text-theme-muted flex flex-col items-center">
      {icon}
      <p className="mt-2 font-medium text-sm">{label}</p>
-     <p className="text-xs mt-1 text-theme-muted">JPG, PNG, WEBP (Max 10MB)</p>
+     <p className="text-xs mt-1 text-theme-muted">JPG, PNG, WEBP (Max 5MB)</p>
+     {progress > 0 && progress < 100 && <p className="text-xs mt-1 text-theme-primary">{progress}%</p>}
     </div>
    )}
    <input 

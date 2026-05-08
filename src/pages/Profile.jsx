@@ -7,7 +7,7 @@ import {
  Package, MessageSquare, Plus,
  Bookmark, MapPin, Bell,
  Settings, LogOut, X, User, Phone, Home as HomeIcon,
- FileText, Camera,
+ FileText, Camera, RefreshCw,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, getSellerOrders, addReview, updateOrderStatus } from '../services/api'
@@ -97,27 +97,27 @@ export default function Profile() {
   if (user.is_admin) { navigate('/admin'); return }
 
   const isSeller = user.role === 'seller'
-  const isBuyer  = user.role === 'buyer'
+  const isBuyer = user.role === 'buyer'
 
   Promise.all([
    getProfile(),
    getNidStatus(),
    isSeller ? getProducts({ seller_id: user.id }).catch(() => ({ products: [] })) : Promise.resolve({ products: [] }),
-   isBuyer  ? getFavourites().catch(() => ({ favourites: [] }))                  : Promise.resolve({ favourites: [] }),
-   isSeller ? getSellerInquiries().catch(() => ({ inquiries: [] }))              : Promise.resolve({ inquiries: [] }),
-   ])
-    .then(([profData, nidData, prodData, favData, inqData]) => {
-     setProfile({ ...profData.user, stats: profData.stats || {} })
-     setNidSubmission(nidData.submission)
-     setProducts(prodData.products || [])
-     setFavourites(favData.favourites || [])
-     setInquiries(inqData.inquiries || [])
+   isBuyer ? getFavourites().catch(() => ({ favourites: [] })) : Promise.resolve({ favourites: [] }),
+   isSeller ? getSellerInquiries().catch(() => ({ inquiries: [] })) : Promise.resolve({ inquiries: [] }),
+  ])
+   .then(([profData, nidData, prodData, favData, inqData]) => {
+    setProfile({ ...profData.user, stats: profData.stats || {} })
+    setNidSubmission(nidData.submission)
+    setProducts(prodData.products || [])
+    setFavourites(favData.favourites || [])
+    setInquiries(inqData.inquiries || [])
    })
-  .catch((err) => {
-   console.error(err)
-   // Only redirect to login on authentication errors (401).
-   if (err && err.status === 401) navigate('/login')
-  })
+   .catch((err) => {
+    console.error(err)
+    // Only redirect to login on authentication errors (401).
+    if (err && err.status === 401) navigate('/login')
+   })
    .finally(() => setLoading(false))
  }, [user, navigate, authLoading])
 
@@ -132,6 +132,20 @@ export default function Profile() {
   }
  }, [profile, searchParams])
 
+ // Poll for NID status updates while processing or pending admin review
+ useEffect(() => {
+  const currentStatus = nidSubmission?.verification_status || nidSubmission?.status
+  if (!currentStatus || !['pending', 'processing', 'review'].includes(currentStatus)) return
+
+  const pollInterval = setInterval(() => {
+   getNidStatus()
+    .then(data => setNidSubmission(data.submission || null))
+    .catch(() => {})
+  }, 5000) // Poll every 5 seconds
+
+  return () => clearInterval(pollInterval)
+ }, [nidSubmission?.status, nidSubmission?.verification_status])
+
  const fetchSellerProducts = () => {
   if (!user) return
   getProducts({ seller_id: user.id })
@@ -142,6 +156,9 @@ export default function Profile() {
  const handleLogout = () => { logout(); navigate('/') }
 
  const isSeller = profile?.role === 'seller'
+ const nidStatus = nidSubmission?.verification_status || nidSubmission?.status
+ const isNidProcessing = ['pending', 'processing', 'review'].includes(nidStatus)
+ const isNidRejected = nidStatus === 'rejected'
 
  /* ── Loading state ── */
  if (authLoading || loading || !profile) {
@@ -250,11 +267,23 @@ export default function Profile() {
           px-3 py-1 rounded-full border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800">
           <ShieldCheck size={12} /> NID Verified
          </span>
-        ) : nidSubmission?.status === 'pending' ? (
+        ) : isNidProcessing ? (
          <span className="inline-flex items-center gap-1.5 text-xs font-medium
           px-3 py-1 rounded-full border bg-theme-primary/10 dark:bg-orange-950/20 text-theme-primary border-theme-primary/30 dark:border-orange-800/50">
-          NID Pending Review
+          <span>{nidStatus === 'review' ? 'NID In Admin Review' : 'NID Pending Review'}</span>
+          <RefreshCw size={12} className="animate-spin opacity-75" />
          </span>
+        ) : isNidRejected ? (
+         <>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold
+           px-3 py-1 rounded-full border bg-rose-50 dark:bg-rose-950/40 text-rose-600 border-rose-200 dark:border-rose-800">
+           NID Rejected
+          </span>
+          <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
+           px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">
+           Submit Again →
+          </Link>
+         </>
         ) : (
          <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
           px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">

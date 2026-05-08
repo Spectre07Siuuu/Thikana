@@ -4,6 +4,7 @@ const cors = require('cors')
 const path = require('path')
 const http = require('http')
 const { initSocket } = require('./socket')
+const { cleanupRejectedImages } = require('./services/identityVerificationService')
 
 const authRoutes = require('./routes/authRoutes')
 const profileRoutes = require('./routes/profileRoutes')
@@ -56,3 +57,7 @@ server.listen(PORT, () => {
   console.log(`📋 Health check: http://localhost:${PORT}/api/health`)
   console.log(`🔌 Socket.io enabled\n`)
 })
+
+setInterval(() => {
+  cleanupRejectedImages().catch(err => console.error('[identity cleanup]', err))
+}, 60 * 60 * 1000)

@@ -117,7 +117,7 @@ async function verifyEmail(req, res) {
   if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP are required.' })
   try {
     const { rows } = await pool.query(
-      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1',
+      `SELECT u.*, (SELECT CASE WHEN verification_status IN ('pending','processing','review') THEN 'pending' ELSE verification_status END FROM identity_verifications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1`,
       [email.toLowerCase()]
     )
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'Account not found.' })
@@ -127,7 +127,7 @@ async function verifyEmail(req, res) {
     if (!user.otp_expires_at || new Date() > new Date(user.otp_expires_at)) return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' })
     await pool.query('UPDATE users SET is_verified = true, otp_code = NULL, otp_expires_at = NULL WHERE id = $1', [user.id])
     const { rows: fresh } = await pool.query(
-      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1',
+      `SELECT u.*, (SELECT CASE WHEN verification_status IN ('pending','processing','review') THEN 'pending' ELSE verification_status END FROM identity_verifications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1`,
       [user.id]
     )
     return issueAuthResponse(res, fresh[0], 'Email verified! Welcome to Thikana.')
@@ -162,7 +162,7 @@ async function login(req, res) {
   const { email, password } = req.body
   try {
     const { rows } = await pool.query(
-      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1',
+      `SELECT u.*, (SELECT CASE WHEN verification_status IN ('pending','processing','review') THEN 'pending' ELSE verification_status END FROM identity_verifications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE email = $1`,
       [email.toLowerCase()]
     )
     if (rows.length === 0) return res.status(401).json({ success: false, message: 'Invalid email or password.' })
@@ -180,7 +180,7 @@ async function login(req, res) {
 async function me(req, res) {
   try {
     const { rows } = await pool.query(
-      'SELECT u.*, (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1',
+      `SELECT u.*, (SELECT CASE WHEN verification_status IN ('pending','processing','review') THEN 'pending' ELSE verification_status END FROM identity_verifications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status FROM users u WHERE u.id = $1`,
       [req.user.id]
     )
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
@@ -199,7 +199,7 @@ async function refresh(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT rt.id AS refresh_id, rt.expires_at AS refresh_expires_at, u.*,
-        (SELECT status FROM nid_submissions WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status
+        (SELECT CASE WHEN verification_status IN ('pending','processing','review') THEN 'pending' ELSE verification_status END FROM identity_verifications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as nid_status
        FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id WHERE rt.token = $1 LIMIT 1`,
       [tokenHash]
     )

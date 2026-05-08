@@ -325,3 +325,18 @@ export async function getAdminNid(params = {}) {
 export async function adminReviewNid(payload) {
  return request('/admin/nid/review', { method: 'POST', body: payload })
 }
+
+export async function adminBlockNid(payload) {
+ return request('/admin/nid/block', { method: 'POST', body: payload })
+}
+
+export async function getAdminNidImageUrl(submissionId, type) {
+ const authToken = accessToken
+ const res = await fetch(`${BASE_URL}/admin/nid/${submissionId}/image/${type}`, {
+  headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+  credentials: 'include',
+ })
+ if (!res.ok) throw new Error('Failed to load secure verification image.')
+ const blob = await res.blob()
+ return URL.createObjectURL(blob)
+}

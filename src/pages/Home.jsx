@@ -313,24 +313,13 @@ export default function Home() {
             <div className="flex flex-col items-center text-center w-full">
 
               {/* Headline */}
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, ease: [0.16, 1, 0.3, 1], duration: 0.9 }}
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-heading leading-[0.9] text-white max-w-4xl tracking-[-2px] sm:tracking-[-4px] mb-6"
-              >
-                Find the home that{' '}
-                <em
-                  className="not-italic"
-                  style={{
-                    color: 'rgb(var(--theme-primary))',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  loves
-                </em>{' '}
-                you back.
-              </motion.h1>
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-serif leading-[0.9] text-white max-w-4xl tracking-[-2px] sm:tracking-[-3px] mb-6">
+                <span className="block animate-title-1">Find the home that</span>
+                <span className="block animate-title-2 italic">
+                  <span className="text-gold-shimmer">loves</span>
+                  <span className="text-white"> you back.</span>
+                </span>
+              </h1>
 
               {/* Subheading */}
               <motion.p

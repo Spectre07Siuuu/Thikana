@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at             TIMESTAMP         NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS set_users_updated_at ON users;
 CREATE TRIGGER set_users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -50,6 +51,56 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_refresh_token ON refresh_tokens(token);
+
+-- Identity Verifications (AI-assisted KYC workflow)
+CREATE TABLE IF NOT EXISTS identity_verifications (
+  id                  SERIAL PRIMARY KEY,
+  user_id             INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  nid_number          TEXT         NOT NULL,
+  nid_number_hash     VARCHAR(64)  NOT NULL,
+  full_name           TEXT                  DEFAULT NULL,
+  dob                 DATE                  DEFAULT NULL,
+  nid_image_path      VARCHAR(700) NOT NULL,
+  selfie_image_path   VARCHAR(700) NOT NULL,
+  ocr_confidence      NUMERIC(5,2)          DEFAULT 0,
+  face_match_score    NUMERIC(5,2)          DEFAULT 0,
+  confidence_score    INTEGER      NOT NULL DEFAULT 0,
+  fraud_flags         JSONB        NOT NULL DEFAULT '[]'::jsonb,
+  verification_status VARCHAR(12)  NOT NULL DEFAULT 'pending'
+                      CHECK (verification_status IN ('pending','processing','review','approved','rejected')),
+  review_source       VARCHAR(10)  NOT NULL DEFAULT 'auto'
+                      CHECK (review_source IN ('auto','manual')),
+  reviewed_by         INTEGER               DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+  review_note         TEXT                  DEFAULT NULL,
+  ai_result           JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  processed_at        TIMESTAMP             DEFAULT NULL,
+  reviewed_at         TIMESTAMP             DEFAULT NULL,
+  purge_after         TIMESTAMP             DEFAULT NULL,
+  created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS set_identity_verifications_updated_at ON identity_verifications;
+CREATE TRIGGER set_identity_verifications_updated_at
+  BEFORE UPDATE ON identity_verifications
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_identity_user_created ON identity_verifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_identity_status_created ON identity_verifications(verification_status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_identity_nid_hash ON identity_verifications(nid_number_hash);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_active_nid_hash
+  ON identity_verifications(nid_number_hash)
+  WHERE verification_status IN ('pending','processing','review','approved');
+
+CREATE TABLE IF NOT EXISTS blocked_nids (
+  id              SERIAL PRIMARY KEY,
+  nid_number      TEXT        NOT NULL,
+  nid_number_hash VARCHAR(64) NOT NULL UNIQUE,
+  reason          TEXT                 DEFAULT NULL,
+  created_at      TIMESTAMP   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_blocked_nids_hash ON blocked_nids(nid_number_hash);
 
 -- ─── NID Submissions ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS nid_submissions (
@@ -84,6 +135,7 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at  TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS set_products_updated_at ON products;
 CREATE TRIGGER set_products_updated_at
   BEFORE UPDATE ON products
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -154,6 +206,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at          TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS set_orders_updated_at ON orders;
 CREATE TRIGGER set_orders_updated_at
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

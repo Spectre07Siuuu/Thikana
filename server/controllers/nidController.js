@@ -1,53 +1,54 @@
-const pool = require('../config/db')
-const { saveBase64Image } = require('../utils/fileUpload')
+const pool = require('../config/db');
+const { createVerification, sanitizeVerification } = require('../services/identityVerificationService');
+const { enqueueIdentityVerification } = require('../services/identityVerificationQueue');
 
 async function getNidStatus(req, res) {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nid_number, status, admin_note, created_at, reviewed_at FROM nid_submissions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      `SELECT id, nid_number, full_name, dob, ocr_confidence, face_match_score,
+              confidence_score, fraud_flags, verification_status, review_source,
+              review_note, created_at, updated_at, reviewed_at, processed_at
+       FROM identity_verifications
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 1`,
       [req.user.id]
-    )
-    return res.json({ success: true, submission: rows[0] || null })
+    );
+    return res.json({ success: true, submission: sanitizeVerification(rows[0]) });
   } catch (err) {
-    console.error('[getNidStatus error]', err)
-    return res.status(500).json({ success: false, message: 'Server error.' })
+    console.error('[getNidStatus error]', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
 
-/**
- * @roadmap
- * FUTURE IMPLEMENTATION: Automated NID Verification (OCR)
- * Currently, verification is a manual process where admins review uploaded images.
- * In a production environment, implement an OCR pipeline (e.g., Google Vision API 
- * or a specialized KYC provider) to validate NID numbers and extract data automatically.
- */
 async function submitNid(req, res) {
-  const { nid_number, nid_front_base64, nid_selfie_base64 } = req.body
-  if (!nid_number || !nid_front_base64 || !nid_selfie_base64) return res.status(400).json({ success: false, message: 'Missing required fields.' })
-  if (!/^\d{10}$|^\d{17}$/.test(String(nid_number).trim())) return res.status(400).json({ success: false, message: 'NID number must be 10 or 17 digits.' })
+  const { nid_front_base64, nid_selfie_base64 } = req.body;
+  if (!nid_front_base64 || !nid_selfie_base64) {
+    return res.status(400).json({ success: false, message: 'NID front image and selfie are required.' });
+  }
+
   try {
-    const { rows: existing } = await pool.query(
-      'SELECT id, status FROM nid_submissions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
-      [req.user.id]
-    )
-    if (existing.length > 0 && ['pending', 'approved'].includes(existing[0].status)) {
-      return res.status(400).json({
-        success: false,
-        message: existing[0].status === 'approved' ? 'Your identity is already verified.' : 'You already have a pending submission in review.',
-      })
-    }
-    const frontUrl = saveBase64Image(nid_front_base64, 'nid', `nid-front-${req.user.id}`)
-    const selfieUrl = saveBase64Image(nid_selfie_base64, 'nid', `nid-selfie-${req.user.id}`)
-    await pool.query(
-      'INSERT INTO nid_submissions (user_id, nid_number, nid_front_url, nid_selfie_url) VALUES ($1, $2, $3, $4)',
-      [req.user.id, nid_number, frontUrl, selfieUrl]
-    )
-    return res.json({ success: true, message: 'NID submitted successfully. An admin will review it shortly.' })
+    const { verification } = await createVerification({
+      userId: req.user.id,
+      nidFrontBase64: nid_front_base64,
+      selfieBase64: nid_selfie_base64,
+    });
+
+    enqueueIdentityVerification(verification.id);
+
+    return res.status(202).json({
+      success: true,
+      message: 'Identity verification submitted. Automated checks are processing now.',
+      submission: sanitizeVerification(verification),
+    });
   } catch (err) {
-    console.error('[submitNid error]', err)
-    if (err.message.includes('Invalid') || err.message.includes('Unsupported')) return res.status(400).json({ success: false, message: err.message })
-    return res.status(500).json({ success: false, message: 'Server error while uploading NID.' })
+    console.error('[submitNid error]', err);
+    const status = err.status || (err.message?.includes('Invalid') || err.message?.includes('Unsupported') ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      message: status === 500 ? 'Server error while uploading NID.' : err.message,
+    });
   }
 }
 
-module.exports = { getNidStatus, submitNid }
+module.exports = { getNidStatus, submitNid };

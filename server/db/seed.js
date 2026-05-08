@@ -105,7 +105,7 @@ async function seed() {
 
     if (isFresh) {
       console.log('🗑️  Wiping all existing data (Users, Products, etc.)...');
-      await pool.query('TRUNCATE refresh_tokens, product_images, reviews, order_items, orders, cart_items, favourites, inquiries, messages, notifications, nid_submissions, products, users RESTART IDENTITY CASCADE');
+      await pool.query('TRUNCATE refresh_tokens, product_images, reviews, order_items, orders, cart_items, favourites, inquiries, messages, notifications, identity_verifications, blocked_nids, nid_submissions, products, users RESTART IDENTITY CASCADE');
 
       console.log('👑 Seeding Admin (Spoidormon)...');
       await pool.query(
