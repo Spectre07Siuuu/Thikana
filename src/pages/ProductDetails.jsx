@@ -429,10 +429,10 @@ export default function ProductDetails() {
                     <img src={images[currentImageIndex]} alt={title} className="w-full h-full object-cover transition-transform duration-500" />
                     {images.length > 1 && (
                       <>
-                        <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 bg-theme-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-theme-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md">
+                        <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-theme-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-theme-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md">
                           <ChevronLeft size={20} />
                         </button>
-                        <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 bg-theme-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-theme-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md">
+                        <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-theme-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-theme-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md">
                           <ChevronRight size={20} />
                         </button>
                       </>
@@ -459,7 +459,7 @@ export default function ProductDetails() {
                 {isBuyer && (
                   <button onClick={handleToggleFavourite} disabled={savePending}
                     className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all
-            ${saved ? 'bg-rose-500 text-white' : 'bg-white/80 bg-theme-card/80 text-theme-muted hover:text-rose-500'}`}>
+            ${saved ? 'bg-rose-500 text-white' : 'bg-theme-card/80 text-theme-muted hover:text-rose-500'}`}>
                     <Heart size={18} className={saved ? 'fill-current' : ''} />
                   </button>
                 )}
@@ -534,7 +534,7 @@ export default function ProductDetails() {
                   <h3 className="text-base font-bold text-theme-text mb-3">Specifications</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {Object.entries(attributes).map(([key, value]) => !value ? null : (
-                      <div key={key} className="p-3 rounded-xl glass-tag !rounded-xl flex flex-col !px-3 !py-3 !text-[10px]" style={{ backdropFilter: 'blur(8px)' }}>
+                      <div key={key} className="p-3 glass-tag !rounded-xl flex flex-col !px-3 !py-3 !text-[10px]" style={{ backdropFilter: 'blur(8px)' }}>
                         <span className="text-[10px] text-theme-muted font-semibold uppercase tracking-wider">{key.replaceAll('_', ' ')}</span>
                         <span className="text-sm font-bold text-theme-text capitalize mt-0.5">{key === 'available_from' ? formatDate(value) : value}</span>
                       </div>

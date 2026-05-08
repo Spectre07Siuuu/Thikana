@@ -42,6 +42,8 @@ build/
 # User Uploads
 server/uploads/**/*
 !server/uploads/**/.gitkeep
+server/secure_uploads/**/*
+!server/secure_uploads/**/.gitkeep
 sample prompt.txt
 
 public/Color Palette _light.jpeg
