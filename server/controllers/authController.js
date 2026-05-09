@@ -170,7 +170,7 @@ async function login(req, res) {
     if (user.account_status === 'banned') {
       return res.status(403).json({ success: false, message: 'Your account has been banned. Contact support.' })
     }
-    if (user.account_status === 'suspended' && (!user.suspended_until || new Date(user.suspended_until) > new Date())) {
+    if (user.account_status === 'suspended' && (!user.suspended_until || new Date() < new Date(user.suspended_until))) {
       return res.status(403).json({ success: false, message: 'Your account is suspended. Please contact support.' })
     }
     const isMatch = await bcrypt.compare(password, user.password)

@@ -27,7 +27,7 @@ function isBlockedAccount(user) {
     return { blocked: true, message: 'Your account has been banned. Contact support for help.' }
   }
   if (user.account_status === 'suspended') {
-    if (!user.suspended_until || new Date(user.suspended_until) > new Date()) {
+    if (!user.suspended_until || new Date() < new Date(user.suspended_until)) {
       return { blocked: true, message: 'Your account is currently suspended.' }
     }
   }

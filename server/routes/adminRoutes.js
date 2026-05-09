@@ -1,4 +1,5 @@
 const express = require('express')
+const rateLimit = require('express-rate-limit')
 const {
   getDashboard,
   getStats,
@@ -17,9 +18,17 @@ const {
 const { verifyToken, requireAdmin } = require('../middleware/authMiddleware')
 
 const router = express.Router()
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many admin requests. Please retry shortly.' },
+})
 
 // All admin routes require a valid JWT + is_admin flag
 router.use(verifyToken, requireAdmin)
+router.use(adminLimiter)
 
 router.get('/dashboard', getDashboard)
 router.get('/stats', getStats)

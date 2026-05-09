@@ -455,6 +455,7 @@ async function getAdminUsers(req, res) {
     } = req.query
     const { parsedPage, parsedLimit, offset } = toSafePagination(page, limit)
     const searchTerm = `%${String(search || '').trim()}%`
+    const numericSearchId = /^\d+$/.test(String(search || '').trim()) ? parseInt(String(search).trim(), 10) : null
     const { by, dir } = parseSort({
       sortBy,
       sortDir,
@@ -463,9 +464,9 @@ async function getAdminUsers(req, res) {
     })
     const sortColumn = by === 'full_name' ? 'u.full_name' : by === 'email' ? 'u.email' : 'u.created_at'
 
-    const params = [searchTerm, req.user.id]
+    const params = [searchTerm, req.user.id, numericSearchId]
     const conditions = [
-      '($1 = \'%%\' OR u.full_name ILIKE $1 OR u.email ILIKE $1 OR CAST(u.id AS TEXT) ILIKE $1)',
+      '($1 = \'%%\' OR u.full_name ILIKE $1 OR u.email ILIKE $1 OR ($3 IS NOT NULL AND u.id = $3))',
       '(u.id <> $2 OR u.is_admin = false)',
     ]
     if (role !== 'all') {
@@ -481,7 +482,7 @@ async function getAdminUsers(req, res) {
     } else if (verification === 'unverified') {
       conditions.push('u.nid_verified = false')
     } else if (verification === 'pending') {
-      conditions.push(`latest_ver.verification_status IN ('pending','processing','review')`)
+      conditions.push(`(latest_ver.verification_status IN ('pending','processing','review') OR latest_ver.verification_status IS NULL)`)
     } else if (verification === 'rejected') {
       conditions.push(`latest_ver.verification_status = 'rejected'`)
     }
@@ -552,6 +553,9 @@ async function updateUserStatus(req, res) {
     if (!userId) return res.status(400).json({ success: false, message: 'Invalid user id.' })
     if (!['active', 'suspended', 'banned'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status.' })
+    }
+    if (status !== 'suspended' && suspend_until) {
+      return res.status(400).json({ success: false, message: 'suspend_until is only allowed for suspended status.' })
     }
     if (userId === req.user.id) {
       return res.status(400).json({ success: false, message: 'You cannot change your own account status.' })
