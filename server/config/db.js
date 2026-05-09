@@ -20,4 +20,10 @@ pool.query('SELECT NOW()')
     process.exit(1)
   })
 
+// Prevent unhandled client errors from crashing the process
+pool.on('error', (err, client) => {
+  console.error('[pg pool] unexpected client error', err && err.message ? err.message : err)
+  // Do not exit here; log and allow the pool to manage reconnections.
+})
+
 module.exports = pool

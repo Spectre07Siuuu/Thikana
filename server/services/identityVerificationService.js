@@ -9,6 +9,7 @@ const { collectFraudFlags, isHardReject } = require('./identityFraudService');
 const { calculateConfidence, decide, isValidNidFormat } = require('./confidenceService');
 const { encryptText, decryptText, hashNid, normalizeNid, maskNid } = require('../utils/kycCrypto');
 const { saveSecureBase64Image } = require('../utils/fileUpload');
+const { withRetry } = require('../utils/queryRetry');
 
 function publicStatus(status) {
   return ['pending', 'processing', 'review'].includes(status) ? 'pending' : status;
@@ -176,43 +177,51 @@ async function processVerification(verificationId) {
       ? 'Rejected by automated verification checks.'
       : 'Approved by automated verification checks.';
 
-  const updated = await pool.query(
-    `UPDATE identity_verifications
-     SET nid_number = $1,
-         nid_number_hash = $2,
-         full_name = $3,
-         dob = $4,
-         ocr_confidence = $5,
-         face_match_score = $6,
-         confidence_score = $7,
-         fraud_flags = $8::jsonb,
-         verification_status = $9::varchar,
-         review_source = 'auto',
-         review_note = $10,
-         ai_result = $11,
-         processed_at = NOW(),
-         reviewed_at = CASE WHEN $9::text IN ('approved','rejected') THEN NOW() ELSE reviewed_at END,
-         purge_after = $12
-     WHERE id = $13
-     RETURNING *`,
-    [
-      encryptText(extractedNid || submittedNid),
-      nidHash,
-      fullName,
-      dob,
-      ocrResult.confidence,
-      faceResult.score,
-      confidence.score,
-      JSON.stringify(fraudFlags),
-      status,
-      reviewNote,
-      JSON.stringify({ ...aiResult, ocr: ocrResult, face: faceResult, confidence }),
-      purgeAfter,
-      verificationId,
-    ]
+  const updated = await withRetry(
+    () => pool.query(
+      `UPDATE identity_verifications
+       SET nid_number = $1,
+           nid_number_hash = $2,
+           full_name = $3,
+           dob = $4,
+           ocr_confidence = $5,
+           face_match_score = $6,
+           confidence_score = $7,
+           fraud_flags = $8::jsonb,
+           verification_status = $9::varchar,
+           review_source = 'auto',
+           review_note = $10,
+           ai_result = $11,
+           processed_at = NOW(),
+          reviewed_at = CASE WHEN $9::varchar IN ('approved','rejected') THEN NOW() ELSE reviewed_at END,
+           purge_after = $12
+       WHERE id = $13
+       RETURNING *`,
+      [
+        encryptText(extractedNid || submittedNid),
+        nidHash,
+        fullName,
+        dob,
+        ocrResult.confidence,
+        faceResult.score,
+        confidence.score,
+        JSON.stringify(fraudFlags),
+        status,
+        reviewNote,
+        JSON.stringify({ ...aiResult, ocr: ocrResult, face: faceResult, confidence }),
+        purgeAfter,
+        verificationId,
+      ]
+    ),
+    `processVerification UPDATE for verification #${verificationId}`,
+    3
   );
 
-  await pool.query('UPDATE users SET nid_verified = $1 WHERE id = $2', [status === 'approved', verification.user_id]);
+  await withRetry(
+    () => pool.query('UPDATE users SET nid_verified = $1 WHERE id = $2', [status === 'approved', verification.user_id]),
+    `Update user nid_verified for user #${verification.user_id}`,
+    3
+  );
 
   const notificationType = status === 'approved' ? 'nid_approved' : status === 'rejected' ? 'nid_rejected' : 'nid_review';
   const title = status === 'approved'
@@ -238,20 +247,28 @@ async function manualReview({ verificationId, status, adminId, note }) {
     ? new Date(Date.now() + config.rejectedImageRetentionDays * 24 * 60 * 60 * 1000)
     : null;
 
-  const updated = await pool.query(
-    `UPDATE identity_verifications
-     SET verification_status = $1,
-         review_source = 'manual',
-         reviewed_by = $2,
-         review_note = $3,
-         reviewed_at = NOW(),
-         purge_after = $4
-     WHERE id = $5
-     RETURNING *`,
-    [status, adminId, note || null, purgeAfter, verificationId]
+  const updated = await withRetry(
+    () => pool.query(
+      `UPDATE identity_verifications
+       SET verification_status = $1,
+           review_source = 'manual',
+           reviewed_by = $2,
+           review_note = $3,
+           reviewed_at = NOW(),
+           purge_after = $4
+       WHERE id = $5
+       RETURNING *`,
+      [status, adminId, note || null, purgeAfter, verificationId]
+    ),
+    `manualReview UPDATE for verification #${verificationId}`,
+    3
   );
 
-  await pool.query('UPDATE users SET nid_verified = $1 WHERE id = $2', [status === 'approved', rows[0].user_id]);
+  await withRetry(
+    () => pool.query('UPDATE users SET nid_verified = $1 WHERE id = $2', [status === 'approved', rows[0].user_id]),
+    `Update user nid_verified for user #${rows[0].user_id} (manual)`,
+    3
+  );
 
   createNotification(
     rows[0].user_id,
@@ -289,29 +306,42 @@ function getSecureImagePath(row, type) {
 }
 
 async function cleanupRejectedImages() {
-  const { rows } = await pool.query(
-    `SELECT id, nid_image_path, selfie_image_path, ai_result
-     FROM identity_verifications
-     WHERE verification_status = 'rejected'
-       AND purge_after IS NOT NULL
-       AND purge_after < NOW()
-     LIMIT 50`
-  );
-
-  for (const row of rows) {
-    for (const imagePath of [row.nid_image_path, row.selfie_image_path]) {
-      const securePath = getSecureImagePath({
-        nid_image_path: imagePath,
-        selfie_image_path: imagePath,
-      }, 'nid');
-      if (securePath) fs.unlinkSync(securePath);
-    }
-    await pool.query(
-      `UPDATE identity_verifications
-       SET ai_result = $1, purge_after = NULL
-       WHERE id = $2`,
-      [JSON.stringify({ ...(row.ai_result || {}), images_purged_at: new Date().toISOString() }), row.id]
+  try {
+    const { rows } = await withRetry(
+      () => pool.query(
+        `SELECT id, nid_image_path, selfie_image_path, ai_result
+         FROM identity_verifications
+         WHERE verification_status = 'rejected'
+           AND purge_after IS NOT NULL
+           AND purge_after < NOW()
+         LIMIT 50`
+      ),
+      'cleanupRejectedImages SELECT',
+      2
     );
+
+    for (const row of rows) {
+      for (const imagePath of [row.nid_image_path, row.selfie_image_path]) {
+        const securePath = getSecureImagePath({
+          nid_image_path: imagePath,
+          selfie_image_path: imagePath,
+        }, 'nid');
+        if (securePath) fs.unlinkSync(securePath);
+      }
+      await withRetry(
+        () => pool.query(
+          `UPDATE identity_verifications
+           SET ai_result = $1, purge_after = NULL
+           WHERE id = $2`,
+          [JSON.stringify({ ...(row.ai_result || {}), images_purged_at: new Date().toISOString() }), row.id]
+        ),
+        `cleanupRejectedImages UPDATE for id=${row.id}`,
+        2
+      );
+    }
+  } catch (err) {
+    console.error('[cleanupRejectedImages] Error:', err.message);
+    // Don't throw, allow cleanup to fail gracefully
   }
 }
 

@@ -29,6 +29,9 @@ Thumbs.db
 dist/
 build/
 
+# Design draft files
+docs/
+
 # Editor directories and files
 .vscode/
 .idea/
