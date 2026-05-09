@@ -167,6 +167,12 @@ async function login(req, res) {
     )
     if (rows.length === 0) return res.status(401).json({ success: false, message: 'Invalid email or password.' })
     const user = rows[0]
+    if (user.account_status === 'banned') {
+      return res.status(403).json({ success: false, message: 'Your account has been banned. Contact support.' })
+    }
+    if (user.account_status === 'suspended' && (!user.suspended_until || new Date(user.suspended_until) > new Date())) {
+      return res.status(403).json({ success: false, message: 'Your account is suspended. Please contact support.' })
+    }
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid email or password.' })
     if (!user.is_verified) return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', requiresVerification: true, email: user.email })

@@ -5,6 +5,35 @@ function normalizeRole(role) {
   return role === 'owner' ? 'seller' : role
 }
 
+let accountStatusReadyPromise = null
+async function ensureAccountStatusColumns() {
+  if (accountStatusReadyPromise) return accountStatusReadyPromise
+  accountStatusReadyPromise = (async () => {
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS account_status VARCHAR(12) NOT NULL DEFAULT 'active'
+      CHECK (account_status IN ('active','suspended','banned'))
+    `)
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP DEFAULT NULL')
+  })().catch(err => {
+    accountStatusReadyPromise = null
+    throw err
+  })
+  return accountStatusReadyPromise
+}
+
+function isBlockedAccount(user) {
+  if (user.account_status === 'banned') {
+    return { blocked: true, message: 'Your account has been banned. Contact support for help.' }
+  }
+  if (user.account_status === 'suspended') {
+    if (!user.suspended_until || new Date(user.suspended_until) > new Date()) {
+      return { blocked: true, message: 'Your account is currently suspended.' }
+    }
+  }
+  return { blocked: false }
+}
+
 /**
  * verifyToken — Express middleware.
  * Expects: Authorization: Bearer <jwt_token>
@@ -23,15 +52,20 @@ async function verifyToken(req, res, next) {
   const token = authHeader.split(' ')[1]
 
   try {
+    await ensureAccountStatusColumns()
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const { rows } = await pool.query(
-      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = $1 LIMIT 1',
+      'SELECT id, email, role, is_admin, nid_verified, account_status, suspended_until FROM users WHERE id = $1 LIMIT 1',
       [decoded.id]
     )
     if (rows.length === 0) {
       return res.status(401).json({ success: false, message: 'User account no longer exists.' })
     }
     const dbUser = rows[0]
+    const accountBlock = isBlockedAccount(dbUser)
+    if (accountBlock.blocked && !dbUser.is_admin) {
+      return res.status(403).json({ success: false, message: accountBlock.message })
+    }
     req.user = {
       ...decoded,
       id: dbUser.id,
@@ -39,6 +73,8 @@ async function verifyToken(req, res, next) {
       role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
       is_admin: !!dbUser.is_admin,
       nid_verified: !!dbUser.nid_verified,
+      account_status: dbUser.account_status || 'active',
+      suspended_until: dbUser.suspended_until || null,
     }
     next()
   } catch (err) {
@@ -58,13 +94,16 @@ async function optionalVerifyToken(req, _res, next) {
   const token = authHeader.split(' ')[1]
 
   try {
+    await ensureAccountStatusColumns()
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const { rows } = await pool.query(
-      'SELECT id, email, role, is_admin, nid_verified FROM users WHERE id = $1 LIMIT 1',
+      'SELECT id, email, role, is_admin, nid_verified, account_status, suspended_until FROM users WHERE id = $1 LIMIT 1',
       [decoded.id]
     )
     if (rows.length === 0) return next()
     const dbUser = rows[0]
+    const accountBlock = isBlockedAccount(dbUser)
+    if (accountBlock.blocked && !dbUser.is_admin) return next()
     req.user = {
       ...decoded,
       id: dbUser.id,
@@ -72,6 +111,8 @@ async function optionalVerifyToken(req, _res, next) {
       role: normalizeRole(dbUser.is_admin ? 'admin' : dbUser.role),
       is_admin: !!dbUser.is_admin,
       nid_verified: !!dbUser.nid_verified,
+      account_status: dbUser.account_status || 'active',
+      suspended_until: dbUser.suspended_until || null,
     }
   } catch {
     // Public routes should remain public when an optional token is absent,

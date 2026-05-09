@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS users (
   reset_token            VARCHAR(64)                DEFAULT NULL,
   reset_token_expires_at TIMESTAMP                  DEFAULT NULL,
   points                 INTEGER           NOT NULL DEFAULT 0,
+  account_status         VARCHAR(12)       NOT NULL DEFAULT 'active'
+                         CHECK (account_status IN ('active','suspended','banned')),
+  status_note            TEXT                       DEFAULT NULL,
+  suspended_until        TIMESTAMP                  DEFAULT NULL,
   created_at             TIMESTAMP         NOT NULL DEFAULT NOW(),
   updated_at             TIMESTAMP         NOT NULL DEFAULT NOW()
 );
@@ -274,3 +278,38 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notif_read ON notifications(user_id, is_read);
+
+-- ─── Admin Settings ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_settings (
+  id         SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  config     JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  updated_by INTEGER              DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMP   NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO admin_settings (id, config)
+VALUES (
+  1,
+  '{
+    "verification_thresholds":{"auto_approve_score":90,"manual_review_score":70,"min_face_match_score":75,"min_ocr_confidence":70},
+    "moderation_settings":{"auto_flag_duplicate_titles":true,"require_note_on_reject":true,"max_pending_days":7},
+    "upload_limits":{"max_product_images":8,"max_image_size_mb":8,"max_kyc_image_size_mb":10},
+    "notification_settings":{"email_on_kyc_review":true,"email_on_product_review":true,"in_app_admin_alerts":true},
+    "security_settings":{"force_strong_passwords":true,"max_login_attempts":5,"lockout_minutes":30}
+  }'::jsonb
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ─── Admin Activity Logs ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_activity_logs (
+  id             SERIAL PRIMARY KEY,
+  actor_id       INTEGER      DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+  target_user_id INTEGER      DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+  entity_type    VARCHAR(30)  NOT NULL,
+  entity_id      INTEGER      DEFAULT NULL,
+  action         VARCHAR(50)  NOT NULL,
+  details        JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  created_at     TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_activity_created ON admin_activity_logs(created_at DESC);
