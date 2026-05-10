@@ -305,7 +305,11 @@ export async function markAllNotificationsRead() {
 /* ─── Admin ──────────────────────────────────────────────── */
 
 export async function getAdminStats() {
- return request('/admin/stats')
+ return request('/admin/dashboard')
+}
+
+export async function getAdminDashboard() {
+ return request('/admin/dashboard')
 }
 
 export async function getAdminProducts(params = {}) {
@@ -319,15 +323,15 @@ export async function adminReviewProduct(payload) {
 
 export async function getAdminNid(params = {}) {
  const q = new URLSearchParams(params).toString()
- return request(`/admin/nid${q ? '?' + q : ''}`)
+ return request(`/admin/kyc${q ? '?' + q : ''}`)
 }
 
 export async function adminReviewNid(payload) {
- return request('/admin/nid/review', { method: 'POST', body: payload })
+ return request('/admin/kyc/review', { method: 'POST', body: payload })
 }
 
 export async function adminBlockNid(payload) {
- return request('/admin/nid/block', { method: 'POST', body: payload })
+ return request('/admin/kyc/block', { method: 'POST', body: payload })
 }
 
 export async function getAdminNidImageUrl(submissionId, type) {
@@ -339,4 +343,26 @@ export async function getAdminNidImageUrl(submissionId, type) {
  if (!res.ok) throw new Error('Failed to load secure verification image.')
  const blob = await res.blob()
  return URL.createObjectURL(blob)
+}
+
+export async function getAdminUsers(params = {}) {
+ const q = new URLSearchParams(params).toString()
+ return request(`/admin/users${q ? '?' + q : ''}`)
+}
+
+export async function adminUpdateUserStatus(userId, payload) {
+ return request(`/admin/users/${userId}/status`, { method: 'PATCH', body: payload })
+}
+
+export async function getAdminSettings() {
+ return request('/admin/settings')
+}
+
+export async function updateAdminSettings(payload) {
+ return request('/admin/settings', { method: 'PUT', body: { settings: payload } })
+}
+
+export async function getAdminActivities(params = {}) {
+ const q = new URLSearchParams(params).toString()
+ return request(`/admin/activities${q ? '?' + q : ''}`)
 }
