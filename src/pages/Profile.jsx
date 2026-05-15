@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
  ArrowLeft, Pencil, ShieldCheck, CalendarDays, ChevronRight,
  ShoppingBag, Heart, Star, Award,
  DollarSign, BarChart3, ClipboardList,
- Package, MessageSquare, Plus,
+ Package, Plus,
  Bookmark, MapPin, Bell,
  Settings, LogOut, X, User, Phone, Home as HomeIcon,
  FileText, Camera, RefreshCw,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getSellerInquiries, markInquiryRead, getMyOrders, getSellerOrders, addReview, updateOrderStatus } from '../services/api'
+ import { getProfile, updateProfile, uploadAvatar, getNidStatus, getProducts, editProduct, getFavourites, getMyOrders, getSellerOrders, addReview, updateOrderStatus } from '../services/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -45,6 +45,8 @@ const STATUS_BADGE = {
  cancelled:  'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-800',
 }
 
+const PRICE_FORMATTER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
+
 /* ── Mock stats (Removed - Generated Dynamically) ───────────────────────── */
 
 /* ── Buyer menu items ────────────────────────────────────── */
@@ -53,13 +55,6 @@ const BUYER_MENU = [
  { icon: Bookmark, label: 'Saved Listings' },
  { icon: Bell,    label: 'Notifications' },
  { icon: Settings, label: 'Settings' },
-]
-
-/* ── Seller tabs ─────────────────────────────────────────── */
-const SELLER_TABS = [
- { key: 'products', icon: Package,    label: 'My Products' },
- { key: 'orders',  icon: ShoppingBag,  label: 'Orders' },
- { key: 'messages', icon: MessageSquare, label: 'Messages' },
 ]
 
 const BUYER_CANCEL_REASONS = [
@@ -83,12 +78,30 @@ export default function Profile() {
  const [profile, setProfile]    = useState(null)
  const [nidSubmission, setNidSubmission] = useState(null)
  const [loading, setLoading]    = useState(true)
- const [activeTab, setActiveTab]  = useState('products')
+ const [activeSellerSection, setActiveSellerSection]  = useState(null)
  const [buyerView, setBuyerView]  = useState('menu')
 
  const [products,  setProducts]  = useState([])
  const [favourites, setFavourites] = useState([])
- const [inquiries,  setInquiries]  = useState([])
+
+ const roleBadge = useMemo(() => ROLE_BADGE[profile?.role] || ROLE_BADGE.buyer, [profile?.role])
+ const avatarGrad = useMemo(() => AVATAR_GRADIENT[profile?.role] || AVATAR_GRADIENT.buyer, [profile?.role])
+
+ const formatPrice = (p) => PRICE_FORMATTER.format(p)
+
+ const buyerStats = useMemo(() => ([
+  { icon: ShoppingBag, value: profile?.stats?.orders || 0,  label: 'Orders',  color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: 'orders' },
+  { icon: Heart,    value: profile?.stats?.favorites || 0, label: 'Favorites', color: 'text-pink-500 bg-pink-50 dark:bg-pink-950/40', action: 'saved' },
+  { icon: Star,    value: profile?.stats?.reviews || 0,  label: 'Reviews',  color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40', action: 'reviews' },
+  { icon: Award,    value: profile?.stats?.points || 0,  label: 'Points',  color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/40', action: null },
+ ]), [profile])
+ 
+ const sellerStats = useMemo(() => ([
+  { icon: ShoppingBag, value: profile?.stats?.seller_orders || 0, label: 'Orders', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: 'orders' },
+  { icon: DollarSign,  value: `৳${formatPrice(profile?.stats?.total_sales || 0)}`, label: 'Total Sales', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40', action: null },
+  { icon: BarChart3,   value: profile?.stats?.response_rate || '98%', label: 'Response Rate', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: null },
+  { icon: ClipboardList, value: profile?.stats?.active_listings || 0, label: 'My Listings', color: 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40', action: 'products' },
+ ]), [profile])
 
  /* ── Fetch profile on mount ── */
  useEffect(() => {
@@ -104,14 +117,12 @@ export default function Profile() {
    getNidStatus(),
    isSeller ? getProducts({ seller_id: user.id }).catch(() => ({ products: [] })) : Promise.resolve({ products: [] }),
    isBuyer ? getFavourites().catch(() => ({ favourites: [] })) : Promise.resolve({ favourites: [] }),
-   isSeller ? getSellerInquiries().catch(() => ({ inquiries: [] })) : Promise.resolve({ inquiries: [] }),
   ])
-   .then(([profData, nidData, prodData, favData, inqData]) => {
+    .then(([profData, nidData, prodData, favData]) => {
     setProfile({ ...profData.user, stats: profData.stats || {} })
     setNidSubmission(nidData.submission)
     setProducts(prodData.products || [])
     setFavourites(favData.favourites || [])
-    setInquiries(inqData.inquiries || [])
    })
    .catch((err) => {
     console.error(err)
@@ -126,9 +137,6 @@ export default function Profile() {
   const view = searchParams.get('view')
   if (profile.role === 'buyer' && view === 'orders') {
    setBuyerView('orders')
-  }
-  if (profile.role === 'seller' && view === 'seller-orders') {
-   setActiveTab('orders')
   }
  }, [profile, searchParams])
 
@@ -174,25 +182,6 @@ export default function Profile() {
    </>
   )
  }
-
- const roleBadge = ROLE_BADGE[profile.role] || ROLE_BADGE.buyer
- const avatarGrad = AVATAR_GRADIENT[profile.role] || AVATAR_GRADIENT.buyer
-
- const formatPrice = (p) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(p)
-
- const buyerStats = [
-  { icon: ShoppingBag, value: profile.stats?.orders || 0,  label: 'Orders',  color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: 'orders' },
-  { icon: Heart,    value: profile.stats?.favorites || 0, label: 'Favorites', color: 'text-pink-500 bg-pink-50 dark:bg-pink-950/40', action: 'saved' },
-  { icon: Star,    value: profile.stats?.reviews || 0,  label: 'Reviews',  color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40', action: 'reviews' },
-  { icon: Award,    value: profile.stats?.points || 0,  label: 'Points',  color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/40', action: null },
- ]
- 
-  const sellerStats = [
-  { icon: ShoppingBag, value: profile.stats?.seller_orders || 0, label: 'Orders', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: 'orders' },
-  { icon: DollarSign,  value: `৳${formatPrice(profile.stats?.total_sales || 0)}`, label: 'Total Sales', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40', action: null },
-  { icon: BarChart3,   value: profile.stats?.response_rate || '98%', label: 'Response Rate', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40', action: null },
-  { icon: ClipboardList, value: profile.stats?.active_listings || 0, label: 'Active Listings', color: 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40', action: null },
- ]
 
  return (
   <>
@@ -303,12 +292,12 @@ export default function Profile() {
 
      {/* ── Stats Row ─────────────────────────── */}
      <div className={`grid gap-3 mb-6 animate-slide-up ${
-      isSeller ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'
+      isSeller ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4'
      }`} style={{ animationDelay: '60ms' }}>
      {(isSeller ? sellerStats : buyerStats).map(({ icon: Icon, value, label, color, sub, action }) => (
       <button key={label} onClick={() => {
        if (!action) return
-       if (isSeller && action === 'orders') setActiveTab('orders')
+       if (isSeller) setActiveSellerSection(prev => prev === action ? null : action)
        if (!isSeller) setBuyerView(action)
       }}
        className={`stat-card group flex flex-col items-center justify-center ${action ? 'cursor-pointer hover:border-theme-primary transition-colors' : 'cursor-default'}`}>
@@ -326,7 +315,7 @@ export default function Profile() {
 
      {/* ── Role-specific Content ─────────────── */}
      {isSeller
-      ? <SellerContent activeTab={activeTab} setActiveTab={setActiveTab} products={products} refreshProducts={fetchSellerProducts} inquiries={inquiries} setInquiries={setInquiries} highlightedOrderId={Number(searchParams.get('orderId')) || null} />
+      ? <SellerContent activeSection={activeSellerSection} setActiveSection={setActiveSellerSection} products={products} refreshProducts={fetchSellerProducts} highlightedOrderId={Number(searchParams.get('orderId')) || null} />
       : <BuyerContent onLogout={handleLogout} favourites={favourites} view={buyerView} setView={setBuyerView} highlightedOrderId={Number(searchParams.get('orderId')) || null} />}
 
     </div>
@@ -383,38 +372,51 @@ function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId 
 }
 
 /* ══════════════════════════════════════════════════════════
-  SELLER CONTENT — Tabs + product grid
+  SELLER CONTENT — Card-driven expandable sections
 ═══════════════════════════════════════════════════════════ */
-function SellerContent({ activeTab, setActiveTab, products, refreshProducts, inquiries, setInquiries, highlightedOrderId }) {
+function SellerContent({ activeSection, setActiveSection, products, refreshProducts, highlightedOrderId }) {
+ const isOpen = (section) => activeSection === section
+
  return (
-  <div className="animate-slide-up" style={{ animationDelay: '120ms' }}>
-   {/* Tab bar */}
-   <div className="glass-panel mb-4">
-    <div className="flex items-center border-b border-theme-border px-2">
-     {SELLER_TABS.map(({ key, icon: Icon, label }) => (
-      <button key={key} onClick={() => setActiveTab(key)}
-       className={`flex items-center gap-2 px-4 py-3.5 text-sm font-medium
-        border-b-2 transition-all duration-200 -mb-px
-        ${activeTab === key
-         ? 'border-theme-primary text-theme-primary-hover dark:text-orange-400'
-         : 'border-transparent text-theme-muted hover:text-gray-600 dark:hover:text-gray-300'}`}>
-       <Icon size={15} />
-       <span className="hidden sm:inline">{label}</span>
-      </button>
-     ))}
-
-     <div className="flex-1" />
-     <Link to="/upload-product" className="btn-primary text-xs py-2 px-3.5 mr-2 my-2 inline-flex items-center gap-1.5 focus:outline-none">
-      <Plus size={14} /> Add New Product
-     </Link>
+  <div className="space-y-4 animate-slide-up" style={{ animationDelay: '120ms' }}>
+   <div className="flex items-center justify-between gap-3">
+    <div>
+     <h3 className="text-base font-bold text-theme-text">Quick Actions</h3>
+     <p className="text-xs text-theme-muted mt-1">Click a card above to expand its section.</p>
     </div>
+    <Link to="/upload-product" className="btn-primary text-xs py-2 px-3.5 inline-flex items-center gap-1.5 focus:outline-none">
+     <Plus size={14} /> Add New Product
+    </Link>
+   </div>
 
-    {/* Tab content */}
-    <div className="p-5">
-     {activeTab === 'products' && <ProductsTab products={products} refreshProducts={refreshProducts} />}
-     {activeTab === 'orders'  && <SellerOrdersTab highlightedOrderId={highlightedOrderId} refreshProducts={refreshProducts} />}
-     {activeTab === 'messages' && <InquiriesTab inquiries={inquiries} setInquiries={setInquiries} />}
-    </div>
+   <div className={`glass-panel transition-all duration-300 overflow-hidden ${isOpen('products') ? 'p-5' : 'p-0'}`}>
+    {isOpen('products') && (
+     <>
+      <div className="flex items-center justify-between gap-3 mb-4">
+       <div>
+        <h4 className="text-sm font-bold text-theme-text">My Listings</h4>
+        <p className="text-xs text-theme-muted mt-1">All of your approved and pending products.</p>
+       </div>
+       <button onClick={() => setActiveSection(null)} className="text-xs font-semibold text-theme-muted hover:text-theme-primary transition-colors">Collapse</button>
+      </div>
+      <ProductsTab products={products} refreshProducts={refreshProducts} />
+     </>
+    )}
+   </div>
+
+   <div className={`glass-panel transition-all duration-300 overflow-hidden ${isOpen('orders') ? 'p-5' : 'p-0'}`}>
+    {isOpen('orders') && (
+     <>
+      <div className="flex items-center justify-between gap-3 mb-4">
+       <div>
+        <h4 className="text-sm font-bold text-theme-text">Orders</h4>
+        <p className="text-xs text-theme-muted mt-1">Orders tied to your products.</p>
+       </div>
+       <button onClick={() => setActiveSection(null)} className="text-xs font-semibold text-theme-muted hover:text-theme-primary transition-colors">Collapse</button>
+      </div>
+      <SellerOrdersTab highlightedOrderId={highlightedOrderId} refreshProducts={refreshProducts} />
+     </>
+    )}
    </div>
   </div>
  )
@@ -489,67 +491,6 @@ function ProductsTab({ products, refreshProducts }) {
     />
    )}
   </>
- )
-}
-
-function InquiriesTab({ inquiries, setInquiries }) {
- const unread = inquiries.filter(i => !i.is_read).length
-
- const handleMarkRead = async (id) => {
-  try {
-   await markInquiryRead(id)
-   setInquiries(prev => prev.map(i => i.id === id ? { ...i, is_read: 1 } : i))
-  } catch (err) {
-   console.error(err)
-  }
- }
-
- if (inquiries.length === 0) {
-  return (
-   <div className="flex flex-col items-center justify-center py-16 text-theme-muted">
-    <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-     <MessageSquare size={24} />
-    </div>
-    <p className="text-sm font-medium">No messages yet</p>
-    <p className="text-xs mt-1">Inquiries from buyers will appear here</p>
-   </div>
-  )
- }
-
- return (
-  <div className="space-y-3">
-   {unread > 0 && (
-    <p className="text-xs font-semibold text-theme-primary mb-2">{unread} unread message{unread > 1 ? 's' : ''}</p>
-   )}
-   {inquiries.map(inq => (
-    <div key={inq.id}
-     className={`p-4 rounded-xl border transition-all ${inq.is_read ? 'bg-theme-bg dark:bg-gray-800/50 border-theme-border' : 'bg-theme-primary/10 dark:bg-orange-950/20 border-theme-primary/30 dark:border-orange-800'}`}
-     onClick={() => { if (!inq.is_read) handleMarkRead(inq.id) }}>
-     <div className="flex items-start justify-between gap-3">
-      <div className="flex-1 min-w-0">
-       <div className="flex items-center gap-2 mb-1">
-        <p className="text-sm font-semibold text-theme-text">{inq.sender_name}</p>
-        {!inq.is_read && <span className="w-2 h-2 rounded-full bg-theme-primary flex-shrink-0" />}
-       </div>
-       {inq.product_title && (
-        <Link to={`/product/${inq.product_id}`} className="text-xs text-theme-primary hover:underline block mb-1">
-         Re: {inq.product_title}
-        </Link>
-       )}
-       <p className="text-sm text-theme-muted leading-relaxed">{inq.message}</p>
-       {inq.sender_phone && (
-        <a href={`tel:${inq.sender_phone}`} className="inline-flex items-center gap-1 text-xs text-emerald-500 mt-2 hover:underline">
-         📞 {inq.sender_phone}
-        </a>
-       )}
-      </div>
-      <p className="text-[10px] text-theme-muted whitespace-nowrap flex-shrink-0">
-       {new Date(inq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-      </p>
-     </div>
-    </div>
-   ))}
-  </div>
  )
 }
 
@@ -788,13 +729,13 @@ function EditProductModal({ product, onClose, onSuccess }) {
  }, [])
 
  return (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-overlay">
-   <div className="absolute inset-0 transition-opacity" onClick={onClose} />
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden outline-none">
+   <div className="fixed inset-0 glass-overlay animate-fade-in z-[-1]" onClick={onClose} />
 
-   <div className="glass-modal w-full max-w-md flex flex-col max-h-[90vh] animate-slide-up relative z-10">
+   <div className="glass-modal w-full max-w-md max-h-full overflow-y-auto animate-slide-up relative z-10">
     
     {/* Header */}
-    <div className="flex items-center justify-between p-5 border-b border-theme-border">
+    <div className="flex items-center justify-between p-5 border-b border-theme-border sticky top-0 bg-theme-card z-20">
      <h2 className="text-xl font-bold text-theme-text">Edit Product</h2>
      <button onClick={onClose} className="p-2 text-theme-muted hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
       <X size={20} />
@@ -802,7 +743,7 @@ function EditProductModal({ product, onClose, onSuccess }) {
     </div>
 
     {/* Body */}
-    <div className="p-5 overflow-y-auto">
+    <div className="p-5">
      {error && (
       <div className="p-3 mb-4 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">
        {error}

@@ -5,7 +5,7 @@ const pool = require('./config/db')
 let io = null
 
 function normalizeRole(role) {
-  return role === 'owner' ? 'seller' : role
+  return role
 }
 
 function canUsersChat(sender, receiver) {

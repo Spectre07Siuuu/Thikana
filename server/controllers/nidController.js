@@ -28,6 +28,17 @@ async function submitNid(req, res) {
   }
 
   try {
+    const { rows: pending } = await pool.query(
+      `SELECT id FROM identity_verifications
+       WHERE user_id = $1 AND verification_status IN ('pending', 'processing', 'review')
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (pending.length > 0) {
+      return res.status(400).json({ success: false, message: 'You already have a verification request pending review.' });
+    }
+
     const { verification } = await createVerification({
       userId: req.user.id,
       nidFrontBase64: nid_front_base64,

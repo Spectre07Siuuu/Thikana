@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 const pool = require('../config/db')
 
 function normalizeRole(role) {
-  return role === 'owner' ? 'seller' : role
+  return role
 }
 
 let accountStatusReadyPromise = null
@@ -15,6 +15,8 @@ async function ensureAccountStatusColumns() {
       CHECK (account_status IN ('active','suspended','banned'))
     `)
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP DEFAULT NULL')
+    // One-time role normalization for legacy data.
+    await pool.query("UPDATE users SET role = 'seller' WHERE role = 'owner'")
   })().catch(err => {
     accountStatusReadyPromise = null
     throw err

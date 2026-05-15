@@ -12,7 +12,7 @@ function safeUser(row) {
     reset_token_expires_at,
     ...user
   } = row
-  const role = row?.is_admin ? 'admin' : (row?.role === 'owner' ? 'seller' : row?.role)
+  const role = row?.is_admin ? 'admin' : row?.role
   return { ...user, role }
 }
 

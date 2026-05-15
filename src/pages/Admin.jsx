@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ShieldCheck, LayoutDashboard, IdCard, Package, Users, Settings2,
-  RefreshCw, Search, CheckCircle2, XCircle, ShieldAlert, Ban, PauseCircle, PlayCircle,
+  RefreshCw, Search, CheckCircle2, XCircle, ShieldAlert, Ban, PauseCircle, PlayCircle, Save,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -10,6 +10,7 @@ import AdminCard from '../components/admin/AdminCard'
 import AdminStatusBadge from '../components/admin/AdminStatusBadge'
 import AdminDataTable from '../components/admin/AdminDataTable'
 import AdminConfirmModal from '../components/admin/AdminConfirmModal'
+import KycDetailModal from '../components/admin/KycDetailModal'
 import {
   getAdminDashboard,
   getAdminProducts,
@@ -164,10 +165,10 @@ export default function Admin() {
     await adminUpdateUserStatus(row.id, { status, note: userNoteById[row.id] || '' })
     await Promise.all([loadUsers(), loadDashboard()])
   }
-  const handleSettingsSave = async () => {
+  const handleSettingsSave = async (sectionKey) => {
     setSettings(prev => ({ ...prev, saving: true, error: '' }))
     try {
-      const response = await updateAdminSettings(settings.data)
+      const response = await updateAdminSettings({ [sectionKey]: settings.data?.[sectionKey] || {} })
       setSettings(prev => ({ ...prev, saving: false, data: response.settings }))
       await loadDashboard()
     } catch (err) {
@@ -199,18 +200,31 @@ export default function Admin() {
         >
           {activeSection === 'dashboard' && <DashboardSection state={dashboard} />}
           {activeSection === 'kyc' && (
-            <KycSection
-              state={kyc}
-              query={kycQuery}
-              setQuery={setKycQuery}
-              selectedKyc={selectedKyc}
-              setSelectedKyc={setSelectedKyc}
-              kycImages={kycImages}
-              noteById={kycNoteById}
-              setNoteById={setKycNoteById}
-              onApprove={row => runWithConfirm({ title: 'Approve KYC request?', message: `Approve verification for ${row.full_name}?`, action: () => reviewKyc(row, 'approved') })}
-              onReject={row => runWithConfirm({ title: 'Reject KYC request?', message: `Reject verification for ${row.full_name}?`, action: () => reviewKyc(row, 'rejected') })}
-            />
+            <>
+              <KycSection
+                state={kyc}
+                query={kycQuery}
+                setQuery={setKycQuery}
+                selectedKyc={selectedKyc}
+                setSelectedKyc={setSelectedKyc}
+                kycImages={kycImages}
+                noteById={kycNoteById}
+                setNoteById={setKycNoteById}
+                onApprove={row => runWithConfirm({ title: 'Approve KYC request?', message: `Approve verification for ${row.full_name}?`, action: () => reviewKyc(row, 'approved') })}
+                onReject={row => runWithConfirm({ title: 'Reject KYC request?', message: `Reject verification for ${row.full_name}?`, action: () => reviewKyc(row, 'rejected') })}
+              />
+              <KycDetailModal
+                kycData={selectedKyc}
+                kycImages={kycImages}
+                noteById={kycNoteById}
+                setNoteById={setKycNoteById}
+                onClose={() => setSelectedKyc(null)}
+                onApprove={row => runWithConfirm({ title: 'Approve KYC request?', message: `Approve verification for ${row.full_name}?`, action: () => { setSelectedKyc(null); return reviewKyc(row, 'approved') } })}
+                onReject={row => runWithConfirm({ title: 'Reject KYC request?', message: `Reject verification for ${row.full_name}?`, action: () => { setSelectedKyc(null); return reviewKyc(row, 'rejected') } })}
+                isLoading={kycImages.loading}
+                isSaving={settings.saving}
+              />
+            </>
           )}
           {activeSection === 'products' && (
             <ProductsSection
@@ -236,7 +250,7 @@ export default function Admin() {
             />
           )}
           {activeSection === 'settings' && (
-            <SettingsSection state={settings} setState={setSettings} onSave={handleSettingsSave} />
+            <SettingsSection state={settings} setState={setSettings} onSaveSection={handleSettingsSave} />
           )}
         </AdminShell>
       </main>
@@ -338,8 +352,22 @@ function KycSection({ state, query, setQuery, selectedKyc, setSelectedKyc, kycIm
           <textarea value={noteById[row.id] || ''} onChange={e => setNoteById(prev => ({ ...prev, [row.id]: e.target.value }))} placeholder="Moderation note" className="input-field py-2 px-3 text-xs" rows={2} />
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setSelectedKyc(row)} className="px-2.5 py-1 rounded-lg border border-theme-border text-xs text-theme-muted hover:text-theme-text">Automated window</button>
-            <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
-            <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+            {row.verification_status === 'approved' ? (
+              <>
+                <button disabled className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1 opacity-50 cursor-not-allowed"><CheckCircle2 size={12} />Approved</button>
+                <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+              </>
+            ) : row.verification_status === 'rejected' ? (
+              <>
+                <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
+                <button disabled className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1 opacity-50 cursor-not-allowed"><XCircle size={12} />Rejected</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
+                <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+              </>
+            )}
           </div>
         </div>
       ),
@@ -362,46 +390,7 @@ function KycSection({ state, query, setQuery, selectedKyc, setSelectedKyc, kycIm
         <AdminDataTable columns={columns} rows={state.rows} loading={state.loading} emptyLabel="No KYC requests found." rowKey={row => row.id} />
         <Pager pagination={state.pagination} currentPage={query.page} onPageChange={page => setQuery(prev => ({ ...prev, page }))} />
       </AdminCard>
-      <AdminCard>
-        <h3 className="text-sm font-bold text-theme-text mb-3">Automated KYC Window</h3>
-        {!selectedKyc ? (
-          <p className="text-sm text-theme-muted">Select a KYC record to inspect OCR output, confidence, and uploaded images.</p>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-xs text-theme-muted">{selectedKyc.full_name} · {selectedKyc.email}</p>
-              <div className="grid grid-cols-3 gap-2">
-                <Score label="OCR" value={selectedKyc.ocr_confidence} />
-                <Score label="Face" value={selectedKyc.face_match_score} />
-                <Score label="Total" value={selectedKyc.confidence_score} />
-              </div>
-              {selectedKyc.extracted_full_name && <p className="text-sm">OCR Name: <span className="font-semibold">{selectedKyc.extracted_full_name}</span></p>}
-              {selectedKyc.dob && <p className="text-sm">DOB: <span className="font-semibold">{String(selectedKyc.dob).slice(0, 10)}</span></p>}
-              {!!selectedKyc.fraud_flags?.length && (
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedKyc.fraud_flags.map(flag => (
-                    <span key={flag} className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300">
-                      <ShieldAlert size={10} /> {String(flag).replaceAll('_', ' ')}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {kycImages.loading ? (
-                <div className="col-span-2 py-10 flex justify-center"><div className="w-6 h-6 rounded-full border-2 border-theme-primary border-t-transparent animate-spin" /></div>
-              ) : kycImages.error ? (
-                <p className="col-span-2 text-sm text-rose-500">{kycImages.error}</p>
-              ) : (
-                <>
-                  <ImagePreview src={kycImages.nid} label="NID Document" />
-                  <ImagePreview src={kycImages.selfie} label="Selfie" />
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </AdminCard>
+
     </>
   )
 }
@@ -508,51 +497,217 @@ function UsersSection({ state, query, setQuery, noteById, setNoteById, onSuspend
   )
 }
 
-function SettingsSection({ state, setState, onSave }) {
+function SettingsSection({ state, setState, onSaveSection }) {
   const setField = (group, key, value) => {
     setState(prev => ({ ...prev, data: { ...prev.data, [group]: { ...prev.data[group], [key]: value } } }))
   }
   if (state.loading) return <LoadingCard />
   if (state.error && !state.data) return <ErrorCard message={state.error} />
   if (!state.data) return <EmptyCard label="No settings available." />
-  const groups = [
-    ['verification_thresholds', 'Verification Thresholds'],
-    ['moderation_settings', 'Moderation Settings'],
-    ['upload_limits', 'Upload Limits'],
-    ['notification_settings', 'Notification Settings'],
-    ['security_settings', 'Security Settings'],
-  ]
-  return (
-    <AdminCard>
-      {state.error && <ErrorInline message={state.error} />}
-      <div className="space-y-6">
-        {groups.map(([groupKey, title]) => (
-          <div key={groupKey}>
-            <h3 className="text-sm font-bold text-theme-text mb-2">{title}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(state.data[groupKey] || {}).map(([key, value]) => (
-                <label key={key} className="rounded-xl border border-theme-border p-3 bg-theme-bg/50">
-                  <span className="block text-xs font-semibold text-theme-muted mb-1">{key.replaceAll('_', ' ')}</span>
-                  {typeof value === 'boolean' ? (
-                    <select value={String(value)} onChange={e => setField(groupKey, key, e.target.value === 'true')} className="input-field py-2">
-                      <option value="true">Enabled</option>
-                      <option value="false">Disabled</option>
-                    </select>
-                  ) : (
-                    <input type="number" value={value} onChange={e => setField(groupKey, key, Number(e.target.value))} className="input-field py-2" />
-                  )}
-                </label>
-              ))}
+  
+  const groupConfigs = {
+    verification_thresholds: { icon: '✓', color: 'from-emerald-500 to-teal-500', description: 'KYC verification confidence levels and approval rules' },
+    moderation_settings: { icon: '⚠', color: 'from-amber-500 to-orange-500', description: 'Content moderation and quality control settings' },
+    upload_limits: { icon: '📤', color: 'from-blue-500 to-cyan-500', description: 'File size and upload frequency restrictions' },
+    notification_settings: { icon: '🔔', color: 'from-purple-500 to-pink-500', description: 'Alert and notification preferences' },
+    security_settings: { icon: '🔒', color: 'from-rose-500 to-red-500', description: 'Platform security and protection features' },
+  }
+
+  // Field configuration for ranges and units
+  const fieldConfig = {
+    auto_approve_score: { min: 0, max: 100, unit: '%' },
+    min_manual_review_score: { min: 0, max: 100, unit: '%' },
+    min_ocr_confidence: { min: 0, max: 100, unit: '%' },
+    min_face_match_score: { min: 0, max: 100, unit: '%' },
+    max_pending_days: { min: 1, max: 7, unit: 'days' },
+    max_upload_size: { min: 1, max: 1000, unit: 'MB' },
+    rate_limit: { min: 1, max: 1000, unit: 'req/min' },
+    max_product_images: { min: 1, max: 10, unit: 'images' },
+    max_image_size: { min: 1, max: 10, unit: 'MB' },
+    max_kyc_image_size: { min: 1, max: 10, unit: 'MB' },
+    max_image_size_mb: { min: 1, max: 10, unit: 'MB' },
+    max_kyc_image_size_mb: { min: 1, max: 10, unit: 'MB' },
+    max_login_attempts: { min: 1, max: 10, unit: 'attempts' },
+    lockout_minutes: { min: 1, max: 1440, unit: 'min' },
+    login_attempt_limit: { min: 1, max: 10, unit: 'attempts' },
+    lockout_duration_minutes: { min: 1, max: 1440, unit: 'min' },
+  }
+
+  const getFieldConfig = (key) => {
+    if (fieldConfig[key]) return fieldConfig[key]
+    // Default for scores/thresholds
+    if (key.includes('score') || key.includes('threshold') || key.includes('confidence')) {
+      return { min: 0, max: 100, unit: '%' }
+    }
+    // Default for other numeric values
+    return { min: 0, max: 100, unit: '' }
+  }
+
+  const renderToggle = (value, onChange) => (
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" checked={value} onChange={e => onChange(e.target.checked)} className="sr-only peer" />
+      <div className="w-10 h-6 bg-theme-border rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+    </label>
+  )
+
+  const lockoutJumpPoints = [1, 5, 10, 30, 60, 120, 180, 240, 360, 480, 720, 1440]
+  const lockoutKeys = new Set(['lockout_minutes', 'lockout_duration_minutes'])
+  const getClosestPointIndex = (value, points) => {
+    let bestIndex = 0
+    let bestDiff = Math.abs((Number(value) || 0) - points[0])
+    for (let i = 1; i < points.length; i += 1) {
+      const diff = Math.abs((Number(value) || 0) - points[i])
+      if (diff < bestDiff) {
+        bestDiff = diff
+        bestIndex = i
+      }
+    }
+    return bestIndex
+  }
+
+  const renderThresholdZones = (data) => {
+    const autoApprove = data.auto_approve_score || 85
+    const minManualReview = data.min_manual_review_score || 50
+    
+    return (
+      <div className="space-y-4">
+        <div className="mt-2">
+          <div className="h-3 w-full bg-theme-border rounded-full flex overflow-hidden">
+            <div className="h-full bg-rose-500" style={{ width: `${minManualReview}%` }}></div>
+            <div className="h-full bg-amber-500" style={{ width: `${autoApprove - minManualReview}%` }}></div>
+            <div className="h-full bg-emerald-500" style={{ width: `${100 - autoApprove}%` }}></div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex items-start gap-2 p-3 bg-theme-bg/50 rounded-lg border border-theme-border/30">
+            <div className="w-3 h-3 rounded-full bg-rose-500 mt-1 flex-shrink-0"></div>
+            <div>
+              <p className="text-[11px] font-bold text-theme-text">Auto-Reject</p>
+              <p className="text-[10px] text-theme-muted">&lt; {minManualReview}% score</p>
             </div>
+          </div>
+          <div className="flex items-start gap-2 p-3 bg-theme-bg/50 rounded-lg border border-theme-border/30">
+            <div className="w-3 h-3 rounded-full bg-amber-500 mt-1 flex-shrink-0"></div>
+            <div>
+              <p className="text-[11px] font-bold text-theme-text">Manual Review</p>
+              <p className="text-[10px] text-theme-muted">{minManualReview}%–{autoApprove}%</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 p-3 bg-theme-bg/50 rounded-lg border border-theme-border/30">
+            <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1 flex-shrink-0"></div>
+            <div>
+              <p className="text-[11px] font-bold text-theme-text">Auto-Approve</p>
+              <p className="text-[10px] text-theme-muted">&gt; {autoApprove}% confidence</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-3 border-t border-theme-border/30">
+          <div>
+            <label className="text-sm font-semibold text-theme-text mb-2 block">Auto-Approve Threshold ({data.auto_approve_score || 85}%)</label>
+            <input 
+              type="range" 
+              min="0"
+              max="100"
+              value={data.auto_approve_score || 85}
+              onChange={e => setField('verification_thresholds', 'auto_approve_score', Number(e.target.value))}
+              className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-theme-text mb-2 block">Manual Review Min ({data.min_manual_review_score || 50}%)</label>
+            <input 
+              type="range" 
+              min="0"
+              max="100"
+              value={data.min_manual_review_score || 50}
+              onChange={e => setField('verification_thresholds', 'min_manual_review_score', Number(e.target.value))}
+              className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-amber-500"
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-lg">
+      {state.error && <ErrorInline message={state.error} />}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Object.entries(groupConfigs).map(([groupKey, config]) => (
+          <div key={groupKey} className="h-fit">
+            <AdminCard>
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center text-lg flex-shrink-0`}>
+                  {config.icon}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-theme-text">{groupKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h3>
+                  <p className="text-[11px] text-theme-muted mt-0.5">{config.description}</p>
+                </div>
+              </div>
+              
+              {groupKey === 'verification_thresholds' ? (
+                renderThresholdZones(state.data[groupKey] || {})
+              ) : (
+                <div className="space-y-5">
+                  {Object.entries(state.data[groupKey] || {}).map(([key, value]) => {
+                    const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                    const config = getFieldConfig(key)
+                    const isDiscreteLockout = lockoutKeys.has(key)
+                    const discreteIndex = isDiscreteLockout ? getClosestPointIndex(value, lockoutJumpPoints) : 0
+                    const displayValue = isDiscreteLockout ? lockoutJumpPoints[discreteIndex] : value
+                    const progressPercent = isDiscreteLockout
+                      ? (discreteIndex / (lockoutJumpPoints.length - 1)) * 100
+                      : ((value - config.min) / (config.max - config.min)) * 100
+                    
+                    return (
+                      <div key={key} className="pb-4 border-b border-theme-border/30 last:border-b-0">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="font-semibold text-theme-text text-sm">{label}</p>
+                          <span className="text-sm font-semibold text-theme-text">{displayValue} <span className="text-xs text-theme-muted">{config.unit}</span></span>
+                        </div>
+                        {typeof value === 'number' ? (
+                          <input 
+                            type="range" 
+                            min={isDiscreteLockout ? 0 : config.min}
+                            max={isDiscreteLockout ? lockoutJumpPoints.length - 1 : config.max}
+                            step={isDiscreteLockout ? 1 : 1}
+                            value={isDiscreteLockout ? discreteIndex : value}
+                            onChange={e => {
+                              const nextValue = Number(e.target.value)
+                              setField(groupKey, key, isDiscreteLockout ? lockoutJumpPoints[nextValue] : nextValue)
+                            }}
+                            className="w-full h-2 bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                            style={{
+                              background: `linear-gradient(to right, rgb(239, 68, 68) 0%, rgb(217, 119, 6) ${progressPercent}%, rgb(167, 243, 208) ${progressPercent}%, rgb(16, 185, 129) 100%)`
+                            }}
+                          />
+                        ) : typeof value === 'boolean' ? (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-theme-muted">
+                              {value ? '✓ Enabled' : '✗ Disabled'}
+                            </span>
+                            {renderToggle(value, v => setField(groupKey, key, v))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="mt-5 flex justify-end">
+                <button onClick={() => onSaveSection(groupKey)} disabled={state.saving} className="btn-primary">
+                  <Save size={16} /> {state.saving ? 'Saving...' : 'Save Section'}
+                </button>
+              </div>
+            </AdminCard>
           </div>
         ))}
       </div>
-      <div className="mt-6 flex justify-end">
-        <button onClick={onSave} className="btn-primary" disabled={state.saving}>
-          <Settings2 size={16} /> {state.saving ? 'Saving...' : 'Save Settings'}
-        </button>
-      </div>
-    </AdminCard>
+    </div>
   )
 }
 

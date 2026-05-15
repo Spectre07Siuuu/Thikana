@@ -274,7 +274,6 @@ export default function Navbar() {
                   </div>
 
                   <div className="py-1">
-                    <DropItem icon={<User size={15} />} label="My Profile" onClick={() => { navigate('/profile'); setProfileOpen(false) }} />
                     <DropItem icon={<Settings size={15} />} label="Settings" onClick={() => { navigate('/settings'); setProfileOpen(false) }} />
                     {canUseSellerMode && (
                       <DropItem icon={<RefreshCcw size={15} />} label={appMode === 'buying' ? 'Switch to Selling' : 'View as Buyer'} onClick={() => { toggleAppMode(); setProfileOpen(false) }} />

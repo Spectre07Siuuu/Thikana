@@ -1,6 +1,13 @@
 const pool = require('../config/db')
 const { createNotification } = require('./notificationController')
 
+function notifyBestEffort(userId, type, title, content, targetUrl) {
+  createNotification(userId, type, title, content, targetUrl)
+    .catch((err) => {
+      console.error('[notification error]', { userId, type, err: err?.message || err })
+    })
+}
+
 const BUYER_CANCELLATION_REASONS = {
   changed_mind: 'Changed mind',
   ordered_by_mistake: 'Ordered by mistake',
@@ -34,11 +41,37 @@ async function placeOrder(req, res) {
       WHERE ci.user_id = $1 FOR UPDATE
     `, [req.user.id])
     if (cartItems.length === 0) { await client.query('ROLLBACK'); client.release(); return res.status(400).json({ success: false, message: 'Your cart is empty.' }) }
-    const unavailable = cartItems.filter(i => i.status !== 'approved')
-    if (unavailable.length > 0) { await client.query('ROLLBACK'); client.release(); return res.status(400).json({ success: false, message: `Some items are no longer available: ${unavailable.map(i => i.title).join(', ')}` }) }
-    const itemTotal = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0)
-    const totalAmount = itemTotal + deliveryFee
-    const earnedPoints = Math.floor(itemTotal / 100) * 10
+
+    const productIds = cartItems.map(item => item.product_id)
+    const { rows: productRows } = await client.query(
+      'SELECT id, price, status FROM products WHERE id = ANY($1::int[]) FOR UPDATE',
+      [productIds]
+    )
+    const productById = new Map(productRows.map(row => [row.id, row]))
+
+    let itemTotalCents = 0
+    const unavailable = []
+    const priceDriftItems = []
+
+    for (const item of cartItems) {
+      const currentProd = productById.get(item.product_id)
+
+      if (!currentProd || currentProd.status !== 'approved') {
+        unavailable.push(item.title)
+      } else if (Math.round(currentProd.price * 100) !== Math.round(item.price * 100)) {
+        priceDriftItems.push(item.title)
+      } else {
+        itemTotalCents += Math.round(currentProd.price * 100) * item.quantity
+      }
+    }
+
+    if (unavailable.length > 0) { await client.query('ROLLBACK'); client.release(); return res.status(400).json({ success: false, message: `Some items are no longer available: ${unavailable.join(', ')}` }) }
+    if (priceDriftItems.length > 0) { await client.query('ROLLBACK'); client.release(); return res.status(400).json({ success: false, message: `Price has changed for items: ${priceDriftItems.join(', ')}. Please update your cart.` }) }
+
+    const totalAmountCents = itemTotalCents + (deliveryFee * 100)
+    const totalAmount = totalAmountCents / 100
+    const earnedPoints = Math.floor(itemTotalCents / 10000) * 10
+
     const { rows: orderRows } = await client.query(
       `INSERT INTO orders (buyer_id, status, total_amount, shipping_address, phone, note, delivery_fee) VALUES ($1, 'confirmed', $2, $3, $4, $5, $6) RETURNING id`,
       [req.user.id, totalAmount, shipping_address.trim(), phone.trim(), note?.trim() || null, deliveryFee]
@@ -58,10 +91,10 @@ async function placeOrder(req, res) {
     for (const sellerId of sellerIds) {
       const sellerItems = cartItems.filter(i => i.seller_id === sellerId)
       const titles = sellerItems.map(i => i.title).join(', ')
-      createNotification(sellerId, 'order', 'New Order Received! 🛍️', `${buyerName} purchased: ${titles}`, `/orders/${orderId}`)
+      notifyBestEffort(sellerId, 'order', 'New Order Received! 🛍️', `${buyerName} purchased: ${titles}`, `/orders/${orderId}`)
     }
-    createNotification(req.user.id, 'order', 'Order Confirmed! ✅', `Your order #${orderId} for ৳${totalAmount.toLocaleString()} has been placed successfully.`, `/orders/${orderId}`)
-    if (earnedPoints > 0) { createNotification(req.user.id, 'system', 'Reward Points Earned! 🎁', `You earned ${earnedPoints} points from your recent purchase.`, `/orders/${orderId}`) }
+    notifyBestEffort(req.user.id, 'order', 'Order Confirmed! ✅', `Your order #${orderId} for ৳${totalAmount.toLocaleString()} has been placed successfully.`, `/orders/${orderId}`)
+    if (earnedPoints > 0) { notifyBestEffort(req.user.id, 'system', 'Reward Points Earned! 🎁', `You earned ${earnedPoints} points from your recent purchase.`, `/orders/${orderId}`) }
     return res.status(201).json({ success: true, message: 'Order placed successfully!', orderId, total: totalAmount, earnedPoints })
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
@@ -212,6 +245,9 @@ async function updateOrderStatus(req, res) {
 }
 
 async function placeBooking(req, res) {
+  if (!req.user.nid_verified) {
+    return res.status(403).json({ success: false, message: 'NID verification is required to book properties.' })
+  }
   const { product_id, booking_amount, phone, note } = req.body
   if (!product_id || !booking_amount || !phone) return res.status(400).json({ success: false, message: 'Product ID, booking amount, and phone are required.' })
   const amount = parseFloat(booking_amount)
@@ -239,9 +275,9 @@ async function placeBooking(req, res) {
     client.release()
     const { rows: buyers } = await pool.query('SELECT full_name FROM users WHERE id = $1', [req.user.id])
     const buyerName = buyers[0]?.full_name || 'A buyer'
-    createNotification(prod.seller_id, 'order', 'New Booking Received! 🏠', `${buyerName} placed an advance booking of ৳${amount.toLocaleString()} for "${prod.title}".`, `/orders/${orderId}`)
-    createNotification(req.user.id, 'order', 'Booking Confirmed! ✅', `Your advance booking of ৳${amount.toLocaleString()} for "${prod.title}" has been confirmed. Order #${orderId}.`, `/orders/${orderId}`)
-    if (earnedPoints > 0) { createNotification(req.user.id, 'system', 'Reward Points Earned! 🎁', `You earned ${earnedPoints} points from your booking.`, `/orders/${orderId}`) }
+    notifyBestEffort(prod.seller_id, 'order', 'New Booking Received! 🏠', `${buyerName} placed an advance booking of ৳${amount.toLocaleString()} for "${prod.title}".`, `/orders/${orderId}`)
+    notifyBestEffort(req.user.id, 'order', 'Booking Confirmed! ✅', `Your advance booking of ৳${amount.toLocaleString()} for "${prod.title}" has been confirmed. Order #${orderId}.`, `/orders/${orderId}`)
+    if (earnedPoints > 0) { notifyBestEffort(req.user.id, 'system', 'Reward Points Earned! 🎁', `You earned ${earnedPoints} points from your booking.`, `/orders/${orderId}`) }
     return res.status(201).json({ success: true, message: 'Booking placed successfully!', orderId, total: totalAmount, earnedPoints })
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})

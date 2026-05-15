@@ -110,9 +110,28 @@ function saveSecureBase64Image(base64Str, dir, filenamePrefix) {
   return { path: filepath, filename, type, bytes: buffer.length, metadata };
 }
 
+/**
+ * Deletes a file from the filesystem given its public URL path.
+ * @param {string} publicUrl - The public URL path of the image (e.g., /uploads/products/file.jpg).
+ */
+function deleteImage(publicUrl) {
+  if (!publicUrl) return;
+  const filename = publicUrl.split('/').pop();
+  const dir = publicUrl.split('/')[2];
+  const filepath = path.join(__dirname, '..', 'uploads', dir, filename);
+  try {
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+  } catch (err) {
+    console.error(`[deleteImage error] Could not delete ${filepath}:`, err);
+  }
+}
+
 module.exports = {
   saveBase64Image,
   saveSecureBase64Image,
   parseBase64Image,
   getImageMetadata,
+  deleteImage,
 };

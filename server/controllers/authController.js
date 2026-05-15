@@ -68,7 +68,6 @@ async function issueAuthResponse(res, user, message) {
 
 function effectiveRole(row) {
   if (row?.is_admin) return 'admin'
-  if (row?.role === 'owner') return 'seller'
   return row?.role
 }
 

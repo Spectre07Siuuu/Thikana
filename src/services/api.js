@@ -4,7 +4,7 @@
 
 const BASE_URL = '/api'
 // Persist access token in localStorage so it survives reloads.
-let accessToken = localStorage.getItem('thikana_token') || null
+let accessToken = null
 let refreshPromise = null
 
 export function getAccessToken() {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
  ArrowLeft, Bell, BellOff, ShoppingBag, MessageSquare, ShieldCheck,
@@ -39,12 +39,7 @@ export default function Notifications() {
  const [loading, setLoading] = useState(true)
  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 })
 
- useEffect(() => {
-  if (!user) { navigate('/login'); return }
-  loadNotifications()
- }, [user, navigate])
-
- const loadNotifications = async (page = 1) => {
+ const loadNotifications = useCallback(async (page = 1) => {
   setLoading(true)
   try {
    const data = await fetchNotifications({ page, limit: 20 })
@@ -52,7 +47,12 @@ export default function Notifications() {
    setPagination(data.pagination || { total: 0, page: 1, pages: 1 })
   } catch (err) { console.error(err) }
   finally { setLoading(false) }
- }
+ }, [])
+
+ useEffect(() => {
+  if (!user) { navigate('/login'); return }
+  loadNotifications()
+ }, [user, navigate, loadNotifications])
 
  const handleMarkRead = async (notif) => {
   if (!notif.is_read) {
@@ -74,7 +74,7 @@ export default function Notifications() {
   } catch { /* fail silently */ }
  }
 
- const unreadCount = notifications.filter(n => !n.is_read).length
+ const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications])
 
  return (
   <>

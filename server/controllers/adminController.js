@@ -136,21 +136,16 @@ function parseSort({ sortBy, sortDir, allowed, fallbackBy }) {
 async function getDashboard(req, res) {
   try {
     await ensureAdminInfrastructure()
-    const [
-      usersResult,
-      sellersResult,
-      pendingKycResult,
-      pendingProductsResult,
-      listingsResult,
-      fraudUsersResult,
-      activitiesResult,
-    ] = await Promise.all([
-      pool.query('SELECT COUNT(*) AS count FROM users WHERE is_admin = false'),
-      pool.query("SELECT COUNT(*) AS count FROM users WHERE is_admin = false AND role = 'seller'"),
-      pool.query("SELECT COUNT(*) AS count FROM identity_verifications WHERE verification_status IN ('pending','processing','review')"),
-      pool.query("SELECT COUNT(*) AS count FROM products WHERE status = 'pending'"),
-      pool.query('SELECT COUNT(*) AS count FROM products'),
-      pool.query("SELECT COUNT(DISTINCT user_id) AS count FROM identity_verifications WHERE jsonb_array_length(fraud_flags) > 0"),
+    const [statsResult, activitiesResult] = await Promise.all([
+      pool.query(`
+        SELECT
+          (SELECT COUNT(*) FROM users WHERE is_admin = false) AS total_users,
+          (SELECT COUNT(*) FROM users WHERE is_admin = false AND role = 'seller') AS total_sellers,
+          (SELECT COUNT(*) FROM identity_verifications WHERE verification_status IN ('pending','processing','review')) AS pending_kyc_requests,
+          (SELECT COUNT(*) FROM products WHERE status = 'pending') AS pending_product_approvals,
+          (SELECT COUNT(*) FROM products) AS total_listings,
+          (SELECT COUNT(DISTINCT user_id) FROM identity_verifications WHERE jsonb_array_length(fraud_flags) > 0) AS fraud_flagged_users
+      `),
       pool.query(`
         SELECT al.id, al.entity_type, al.entity_id, al.action, al.details, al.created_at,
                actor.full_name AS actor_name
@@ -160,16 +155,17 @@ async function getDashboard(req, res) {
         LIMIT 10
       `),
     ])
+    const stats = statsResult.rows[0] || {}
 
     return res.json({
       success: true,
       dashboard: {
-        total_users: parseInt(usersResult.rows[0].count, 10),
-        total_sellers: parseInt(sellersResult.rows[0].count, 10),
-        pending_kyc_requests: parseInt(pendingKycResult.rows[0].count, 10),
-        pending_product_approvals: parseInt(pendingProductsResult.rows[0].count, 10),
-        total_listings: parseInt(listingsResult.rows[0].count, 10),
-        fraud_flagged_users: parseInt(fraudUsersResult.rows[0].count, 10),
+        total_users: parseInt(stats.total_users || 0, 10),
+        total_sellers: parseInt(stats.total_sellers || 0, 10),
+        pending_kyc_requests: parseInt(stats.pending_kyc_requests || 0, 10),
+        pending_product_approvals: parseInt(stats.pending_product_approvals || 0, 10),
+        total_listings: parseInt(stats.total_listings || 0, 10),
+        fraud_flagged_users: parseInt(stats.fraud_flagged_users || 0, 10),
         recent_activities: activitiesResult.rows,
       },
     })
@@ -203,7 +199,8 @@ async function getAdminProducts(req, res) {
     const baseParams = [statuses, searchTerm]
     const rowsSql = `
       SELECT p.*, u.full_name as seller_name, u.email as seller_email,
-             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image
+             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image,
+             COUNT(*) OVER() as total_count
       FROM products p
       JOIN users u ON p.seller_id = u.id
       WHERE p.status = ANY($1)
@@ -211,21 +208,11 @@ async function getAdminProducts(req, res) {
       ORDER BY ${by === 'price' ? 'p.price' : by === 'title' ? 'p.title' : 'p.created_at'} ${dir}
       LIMIT $3 OFFSET $4
     `
-    const countSql = `
-      SELECT COUNT(*) AS total
-      FROM products p
-      JOIN users u ON p.seller_id = u.id
-      WHERE p.status = ANY($1)
-        AND ($2 = '%%' OR p.title ILIKE $2 OR p.category ILIKE $2 OR u.full_name ILIKE $2 OR u.email ILIKE $2)
-    `
-    const [rowsResult, countResult] = await Promise.all([
-      pool.query(rowsSql, [...baseParams, parsedLimit, offset]),
-      pool.query(countSql, baseParams),
-    ])
-    const total = parseInt(countResult.rows[0].total, 10)
+    const { rows: productRows } = await pool.query(rowsSql, [...baseParams, parsedLimit, offset])
+    const total = productRows.length > 0 ? parseInt(productRows[0].total_count, 10) : 0
     return res.json({
       success: true,
-      products: rowsResult.rows,
+      products: productRows,
       pagination: {
         total,
         page: parsedPage,
@@ -330,27 +317,19 @@ async function getAdminKyc(req, res) {
              n.ocr_confidence, n.face_match_score, n.confidence_score, n.fraud_flags,
              n.verification_status, n.review_source, n.review_note, n.ai_result,
              n.created_at, n.updated_at, n.processed_at, n.reviewed_at,
-             u.full_name, u.email, u.phone
+             u.full_name, u.email, u.phone,
+             COUNT(*) OVER() as total_count
       FROM identity_verifications n
       JOIN users u ON n.user_id = u.id
       ${whereSql}
       ORDER BY ${sortColumn} ${dir}
       LIMIT $3 OFFSET $4
     `
-    const countSql = `
-      SELECT COUNT(*) AS total
-      FROM identity_verifications n
-      JOIN users u ON n.user_id = u.id
-      ${whereSql}
-    `
-    const [rowsResult, countResult] = await Promise.all([
-      pool.query(rowsSql, [...params, parsedLimit, offset]),
-      pool.query(countSql, params),
-    ])
-    const total = parseInt(countResult.rows[0].total, 10)
+    const { rows: submissionRows } = await pool.query(rowsSql, [...params, parsedLimit, offset])
+    const total = submissionRows.length > 0 ? parseInt(submissionRows[0].total_count, 10) : 0
     return res.json({
       success: true,
-      submissions: rowsResult.rows.map(sanitizeVerification),
+      submissions: submissionRows.map(sanitizeVerification),
       pagination: {
         total,
         page: parsedPage,
@@ -510,25 +489,18 @@ async function getAdminUsers(req, res) {
       SELECT
         u.id, u.full_name, u.email, u.role, u.is_admin, u.nid_verified, u.account_status, u.status_note, u.suspended_until, u.created_at,
         latest_ver.verification_status AS latest_verification_status,
-        latest_ver.fraud_flags
+        latest_ver.fraud_flags,
+        COUNT(*) OVER() as total_count
       ${baseFrom}
       ${whereSql}
       ORDER BY ${sortColumn} ${dir}
       LIMIT $${limitPlaceholder} OFFSET $${offsetPlaceholder}
     `
-    const countSql = `
-      SELECT COUNT(*) AS total
-      ${baseFrom}
-      ${whereSql}
-    `
-    const [rowsResult, countResult] = await Promise.all([
-      pool.query(rowsSql, [...params, parsedLimit, offset]),
-      pool.query(countSql, params),
-    ])
-    const total = parseInt(countResult.rows[0].total, 10)
+    const { rows: userRows } = await pool.query(rowsSql, [...params, parsedLimit, offset])
+    const total = userRows.length > 0 ? parseInt(userRows[0].total_count, 10) : 0
     return res.json({
       success: true,
-      users: rowsResult.rows.map(row => ({
+      users: userRows.map(row => ({
         ...row,
         effective_role: row.is_admin ? 'admin' : row.role,
       })),
@@ -657,30 +629,23 @@ async function getAdminActivities(req, res) {
     const { parsedPage, parsedLimit, offset } = toSafePagination(page, limit)
     const entityFilter = entity_type === 'all' ? '' : 'WHERE al.entity_type = $1'
     const params = entity_type === 'all' ? [] : [entity_type]
-    const [rowsResult, countResult] = await Promise.all([
-      pool.query(
-        `SELECT al.id, al.entity_type, al.entity_id, al.action, al.details, al.created_at,
-                actor.full_name AS actor_name,
-                target.full_name AS target_user_name
-         FROM admin_activity_logs al
-         LEFT JOIN users actor ON actor.id = al.actor_id
-         LEFT JOIN users target ON target.id = al.target_user_id
-         ${entityFilter}
-         ORDER BY al.created_at DESC
-         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-        [...params, parsedLimit, offset]
-      ),
-      pool.query(
-        `SELECT COUNT(*) AS total
-         FROM admin_activity_logs al
-         ${entityFilter}`,
-        params
-      ),
-    ])
-    const total = parseInt(countResult.rows[0].total, 10)
+    const { rows: activityRows } = await pool.query(
+      `SELECT al.id, al.entity_type, al.entity_id, al.action, al.details, al.created_at,
+              actor.full_name AS actor_name,
+              target.full_name AS target_user_name,
+              COUNT(*) OVER() as total_count
+       FROM admin_activity_logs al
+       LEFT JOIN users actor ON actor.id = al.actor_id
+       LEFT JOIN users target ON target.id = al.target_user_id
+       ${entityFilter}
+       ORDER BY al.created_at DESC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, parsedLimit, offset]
+    )
+    const total = activityRows.length > 0 ? parseInt(activityRows[0].total_count, 10) : 0
     return res.json({
       success: true,
-      activities: rowsResult.rows,
+      activities: activityRows,
       pagination: {
         total,
         page: parsedPage,

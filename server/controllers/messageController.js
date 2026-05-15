@@ -1,7 +1,7 @@
 const pool = require('../config/db')
 
 function normalizeRole(role) {
-  return role === 'owner' ? 'seller' : role
+  return role
 }
 
 function canUsersChat(sender, receiver) {
@@ -45,6 +45,12 @@ async function ensureChatPermission(reqUser, partnerId) {
 async function getConversations(req, res) {
   try {
     const userId = req.user.id
+    if (req.user.is_admin || !req.user.nid_verified) {
+      return res.json({ success: true, conversations: [] })
+    }
+    if (!['buyer', 'seller'].includes(req.user.role)) {
+      return res.json({ success: true, conversations: [] })
+    }
     const { rows } = await pool.query(`
       SELECT
         partner_id,
@@ -73,18 +79,18 @@ async function getConversations(req, res) {
         ORDER BY m2.created_at DESC LIMIT 1
       ) last_msg ON true
       LEFT JOIN products p ON p.id = last_msg.product_id
+      WHERE (u.is_admin = false)
+        AND ($1 != u.id)
+        AND (
+          CASE
+            WHEN $2 = 'buyer' THEN (u.role = 'seller' AND u.nid_verified = true)
+            WHEN $2 = 'seller' THEN (u.role IN ('buyer', 'seller') AND u.nid_verified = true)
+            ELSE false
+          END
+        )
       ORDER BY convos.last_message_at DESC
-    `, [userId])
-    const allowedConversations = rows.filter((row) => {
-      const partner = { role: normalizeRole(row.partner_is_admin ? 'admin' : row.partner_role), is_admin: !!row.partner_is_admin, nid_verified: !!row.partner_verified }
-      const canChat = canUsersChat(req.user, partner)
-      console.log('--- DEBUG getConversations ---')
-      console.log('req.user:', req.user)
-      console.log('partner:', partner)
-      console.log('canUsersChat:', canChat)
-      return canChat.allowed
-    })
-    return res.json({ success: true, conversations: allowedConversations })
+    `, [userId, req.user.role])
+    return res.json({ success: true, conversations: rows })
   } catch (err) {
     console.error('[getConversations error]', err)
     return res.status(500).json({ success: false, message: 'Server error.' })

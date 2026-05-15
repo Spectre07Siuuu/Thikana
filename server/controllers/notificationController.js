@@ -19,11 +19,10 @@ async function getNotifications(req, res) {
     const { page = 1, limit = 20 } = req.query
     const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit)
     const { rows } = await pool.query(
-      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+      'SELECT *, COUNT(*) OVER() as total_count FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
       [req.user.id, parseInt(limit), offset]
     )
-    const { rows: countRows } = await pool.query('SELECT COUNT(*) as total FROM notifications WHERE user_id = $1', [req.user.id])
-    const total = parseInt(countRows[0].total)
+    const total = rows.length > 0 ? parseInt(rows[0].total_count) : 0
     return res.json({ success: true, notifications: rows, pagination: { total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) } })
   } catch (err) {
     console.error('[getNotifications error]', err)

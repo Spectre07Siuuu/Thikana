@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
  ArrowLeft, Send, MessageSquare, Search, ShieldCheck,
@@ -51,7 +51,6 @@ export default function Messages() {
 
  // State
  const [conversations, setConversations] = useState([])
- const [filteredConvos, setFilteredConvos] = useState([])
  const [searchQuery, setSearchQuery] = useState('')
  const [activePartnerId, setActivePartnerId] = useState(null)
  const [messages, setMessages] = useState([])
@@ -97,13 +96,12 @@ export default function Messages() {
 
  useEffect(() => { loadConversations() }, [loadConversations])
 
- // Filter conversations by search
- useEffect(() => {
-  if (!searchQuery.trim()) { setFilteredConvos(conversations); return }
+ const filteredConvos = useMemo(() => {
+  if (!searchQuery.trim()) return conversations
   const q = searchQuery.toLowerCase()
-  setFilteredConvos(conversations.filter(c =>
+  return conversations.filter(c =>
    c.partner_name?.toLowerCase().includes(q) || c.last_message?.toLowerCase().includes(q)
-  ))
+  )
  }, [searchQuery, conversations])
 
  // URL param: auto-open chat

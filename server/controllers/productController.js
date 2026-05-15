@@ -17,10 +17,14 @@ async function getPublicStats(req, res) {
 async function uploadProduct(req, res) {
   const { category, title, description, price, location, lat, lng, attributes, images_base64 } = req.body
   const seller_id = req.user.id
+  if (!req.user.nid_verified) {
+    return res.status(403).json({ success: false, message: 'NID verification is required to upload products.' })
+  }
   if (!category || !title || !price || !location) {
     return res.status(400).json({ success: false, message: 'Missing required fields.' })
   }
   const client = await pool.connect()
+  const savedImages = []
   try {
     await client.query('BEGIN')
     const attrsJson = attributes ? JSON.stringify(attributes) : null
@@ -33,6 +37,7 @@ async function uploadProduct(req, res) {
     if (Array.isArray(images_base64) && images_base64.length > 0) {
       for (let i = 0; i < images_base64.length; i++) {
         const imageUrl = saveBase64Image(images_base64[i], 'products', `prod-${productId}-${i}`)
+        savedImages.push(imageUrl)
         await client.query(
           'INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, $3)',
           [productId, imageUrl, i === 0]
@@ -43,6 +48,10 @@ async function uploadProduct(req, res) {
     return res.status(201).json({ success: true, message: 'Product uploaded and is pending admin review.', productId })
   } catch (err) {
     await client.query('ROLLBACK')
+    savedImages.forEach(url => {
+      const { deleteImage } = require('../utils/fileUpload')
+      deleteImage(url)
+    })
     console.error('[uploadProduct error]', err)
     return res.status(500).json({ success: false, message: 'Failed to upload product.' })
   } finally {
@@ -78,59 +87,36 @@ async function getProducts(req, res) {
     if (beds) { where += ` AND (p.attributes->>'beds')::int = $${paramIndex++}`; params.push(parseInt(beds)) }
     if (condition) { where += ` AND p.attributes->>'condition' = $${paramIndex++}`; params.push(condition) }
 
-    const orderMap = { newest: 'p.created_at DESC', oldest: 'p.created_at ASC', price_asc: 'p.price ASC', price_desc: 'p.price DESC' }
-    const orderBy = orderMap[sort] || 'p.created_at DESC'
+    const orderMap = { newest: 'fbase.created_at DESC', oldest: 'fbase.created_at ASC', price_asc: 'fbase.price ASC', price_desc: 'fbase.price DESC' }
+    const orderBy = orderMap[sort] || 'fbase.created_at DESC'
     const includeFavourite = req.user?.role === 'buyer'
 
     let favouriteSelect, favouriteParams
     if (includeFavourite) {
-      favouriteSelect = `, EXISTS(SELECT 1 FROM favourites f WHERE f.product_id = p.id AND f.user_id = $${paramIndex++}) as is_favourited`
+      favouriteSelect = `EXISTS(SELECT 1 FROM favourites f WHERE f.product_id = fbase.id AND f.user_id = $${paramIndex++}) as is_favourited`
       favouriteParams = [req.user.id]
     } else {
-      favouriteSelect = ', false as is_favourited'
+      favouriteSelect = 'false as is_favourited'
       favouriteParams = []
     }
 
     const baseQuery = `
-      SELECT p.*,
-             u.full_name as seller_name, u.avatar_url as seller_avatar, u.nid_verified as seller_verified,
-             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image
-             ${favouriteSelect}
-      FROM products p
-      JOIN users u ON p.seller_id = u.id
-      ${where}
+      WITH filtered AS (
+        SELECT p.*,
+               u.full_name as seller_name, u.avatar_url as seller_avatar, u.nid_verified as seller_verified,
+               (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image
+        FROM products p
+        JOIN users u ON p.seller_id = u.id
+        ${where}
+      )
+      SELECT fbase.*, ${favouriteSelect}, COUNT(*) OVER() as total_count
+      FROM filtered fbase
       ORDER BY ${orderBy}
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
 
-const allParams = [...params, ...favouriteParams, pageSize, offset]
+    const allParams = [...params, ...favouriteParams, pageSize, offset]
     const { rows } = await pool.query(baseQuery, allParams)
-
-    // Count query uses only filter params (no favourite, no limit/offset)
-    const countParams = [...params]
-    // Rebuild where clause param indices for count query
-    let countWhere = ' WHERE 1=1'
-    let ci = 1
-    if (status) { countWhere += ` AND p.status = $${ci++}` }
-    if (category) { countWhere += ` AND p.category = $${ci++}` }
-    if (seller_id) { countWhere += ` AND p.seller_id = $${ci++}` }
-    if (minPrice) { countWhere += ` AND p.price >= $${ci++}` }
-    if (maxPrice) { countWhere += ` AND p.price <= $${ci++}` }
-    if (q) {
-      const words = q.trim().split(/\s+/)
-      countWhere += ' AND ('
-      words.forEach((w, index) => {
-        if (index > 0) countWhere += ' AND '
-        countWhere += `(p.title ILIKE $${ci} OR p.location ILIKE $${ci + 1} OR p.description ILIKE $${ci + 2})`
-        ci += 3
-      })
-      countWhere += ')'
-    }
-    if (beds) { countWhere += ` AND (p.attributes->>'beds')::int = $${ci++}` }
-    if (condition) { countWhere += ` AND p.attributes->>'condition' = $${ci++}` }
-
-    const countQuery = `SELECT COUNT(*) as total FROM products p JOIN users u ON p.seller_id = u.id ${countWhere}`
-    const { rows: countRows } = await pool.query(countQuery, countParams)
-    const total = parseInt(countRows[0].total)
+    const total = rows.length > 0 ? parseInt(rows[0].total_count) : 0
 
     const formatted = rows.map(r => ({
       ...r,
@@ -157,22 +143,23 @@ async function getProductById(req, res) {
     const product = rows[0]
     product.attributes = product.attributes && typeof product.attributes === 'string'
       ? JSON.parse(product.attributes) : (product.attributes || {})
-    const { rows: images } = await pool.query(
-      'SELECT image_url, is_primary FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC', [id]
-    )
-    product.images = images.map(img => img.image_url)
-    product.main_image = images.length > 0 ? images[0].image_url : null
     if (!req.user?.nid_verified) { delete product.seller_phone; delete product.seller_email }
     pool.query('UPDATE products SET views = views + 1 WHERE id = $1', [id]).catch(() => {})
-    const { rows: related } = await pool.query(`
-      SELECT p.id, p.title, p.price, p.location, p.category, p.status,
-             (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image,
-             u.nid_verified as seller_verified
-      FROM products p JOIN users u ON p.seller_id = u.id
-      WHERE p.category = $1 AND p.id != $2 AND p.status IN ('approved','sold')
-      ORDER BY p.created_at DESC LIMIT 6
-    `, [product.category, id])
-    product.related = related
+    const [imagesResult, relatedResult] = await Promise.all([
+      pool.query('SELECT image_url, is_primary FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC', [id]),
+      pool.query(`
+        SELECT p.id, p.title, p.price, p.location, p.category, p.status,
+               (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as main_image,
+               u.nid_verified as seller_verified
+        FROM products p JOIN users u ON p.seller_id = u.id
+        WHERE p.category = $1 AND p.id != $2 AND p.status IN ('approved','sold')
+        ORDER BY p.created_at DESC LIMIT 6
+      `, [product.category, id])
+    ])
+    const images = imagesResult.rows
+    product.images = images.map(img => img.image_url)
+    product.main_image = images.length > 0 ? images[0].image_url : null
+    product.related = relatedResult.rows
     return res.json({ success: true, product })
   } catch (err) {
     console.error('[getProductById error]', err)

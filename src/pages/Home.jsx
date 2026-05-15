@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search, MapPin, ShoppingBag,
@@ -7,34 +7,14 @@ import {
   SlidersHorizontal, ChevronDown, X, ChevronLeft, ChevronRight, Heart, ArrowUpRight, ArrowRight,
   Building2, KeyRound, Sofa, Tv,
 } from 'lucide-react'
-import { useRef } from 'react'
-import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { getProducts, toggleFavourite, getFavouriteStatus, getPublicStats } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
-function BlurText({ text, className }) {
-  const words = text.split(' ')
-  return (
-    <p className={`flex flex-wrap ${className}`} style={{ rowGap: '0.1em' }}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          initial={{ filter: 'blur(10px)', opacity: 0, y: 50 }}
-          whileInView={{ filter: ['blur(10px)', 'blur(5px)', 'blur(0px)'], opacity: [0, 0.5, 1], y: [50, -5, 0] }}
-          viewport={{ once: true, margin: '-10%' }}
-          transition={{ duration: 0.7, times: [0, 0.5, 1], ease: 'easeOut', delay: (i * 100) / 1000 }}
-          style={{ display: 'inline-block', marginRight: '0.28em' }}
-        >
-          {word}
-        </motion.span>
-      ))}
-    </p>
-  )
-}
-
-const formatPrice = (price) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)
+const PRICE_FORMATTER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
+const formatPrice = (price) => PRICE_FORMATTER.format(price)
+const CATEGORY_PAGE_SIZE = 12
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -50,7 +30,14 @@ const CAT_SUBTITLES = {
   appliance: 'Upgrade your daily life with trusted brands.',
 }
 
-function SmallProductCard({ product }) {
+const CATEGORIES = [
+  { id: 'house_sell', label: 'Properties for Sale', shortLabel: 'For Sale', icon: Building2 },
+  { id: 'house_rent', label: 'Properties to Rent', shortLabel: 'For Rent', icon: KeyRound },
+  { id: 'furniture', label: 'Premium Furniture', shortLabel: 'Furniture', icon: Sofa },
+  { id: 'appliance', label: 'Home Appliances', shortLabel: 'Appliances', icon: Tv },
+]
+
+const SmallProductCard = memo(function SmallProductCard({ product }) {
   const { id, title, location, price, category, main_image, attributes, seller_verified, status } = product
   const isRent = category === 'house_rent'
   const [isLiked, setIsLiked] = useState(Boolean(product.is_favourited))
@@ -164,7 +151,7 @@ function SmallProductCard({ product }) {
       </div>
     </Link>
   )
-}
+})
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -182,12 +169,32 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState(null)
   const categoryRefs = useRef({})
 
-  const categories = [
-    { id: 'house_sell', label: 'Properties for Sale', shortLabel: 'For Sale', icon: Building2 },
-    { id: 'house_rent', label: 'Properties to Rent', shortLabel: 'For Rent', icon: KeyRound },
-    { id: 'furniture', label: 'Premium Furniture', shortLabel: 'Furniture', icon: Sofa },
-    { id: 'appliance', label: 'Home Appliances', shortLabel: 'Appliances', icon: Tv },
-  ]
+  const categories = CATEGORIES
+
+  const productsByCategory = useMemo(() => {
+    const map = new Map()
+    categories.forEach(cat => { map.set(cat.id, []) })
+    for (const product of products) {
+      if (!map.has(product.category)) map.set(product.category, [])
+      map.get(product.category).push(product)
+    }
+    return map
+  }, [products, categories])
+
+  const categoryPaging = useMemo(() => {
+    const map = new Map()
+    for (const cat of categories) {
+      const catProducts = productsByCategory.get(cat.id) || []
+      const currentPage = categoryPages[cat.id]
+      const isExpanded = currentPage !== undefined
+      const visibleProducts = isExpanded
+        ? catProducts.slice((currentPage - 1) * CATEGORY_PAGE_SIZE, currentPage * CATEGORY_PAGE_SIZE)
+        : catProducts.slice(0, 6)
+      const totalPages = Math.ceil(catProducts.length / CATEGORY_PAGE_SIZE)
+      map.set(cat.id, { catProducts, currentPage, isExpanded, visibleProducts, totalPages })
+    }
+    return map
+  }, [categories, categoryPages, productsByCategory])
 
   const fetchProducts = useCallback(async (page = 1) => {
     setLoading(true)
@@ -237,7 +244,7 @@ export default function Home() {
       observers.push(observer)
     })
     return () => observers.forEach(o => o.disconnect())
-  }, [products])
+  }, [products.length])
 
   const scrollToCategory = (catId) => {
     const el = document.getElementById(catId)
@@ -249,7 +256,7 @@ export default function Home() {
 
   const handleSearch = (e) => { e.preventDefault(); fetchProducts(1) }
 
-  const hasFilters = minPrice || maxPrice || beds || condition || sort !== 'newest'
+  const hasFilters = useMemo(() => minPrice || maxPrice || beds || condition || sort !== 'newest', [minPrice, maxPrice, beds, condition, sort])
   const clearFilters = () => { setMinPrice(''); setMaxPrice(''); setBeds(''); setCondition(''); setSort('newest') }
 
   return (
@@ -322,21 +329,17 @@ export default function Home() {
               </h1>
 
               {/* Subheading */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.65, ease: 'easeOut' }}
-                className="text-white/75 text-base md:text-lg font-body font-light leading-relaxed max-w-xl mx-auto mb-8"
+              <p
+                className="text-white/75 text-base md:text-lg font-body font-light leading-relaxed max-w-xl mx-auto mb-8 animate-fade-in"
+                style={{ animationDelay: '0.65s', animationFillMode: 'both' }}
               >
                 Bangladesh’s most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
-              </motion.p>
+              </p>
 
               {/* Search Bar */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.82, ease: 'easeOut' }}
-                className="w-full max-w-2xl mb-6"
+              <div
+                className="w-full max-w-2xl mb-6 animate-fade-in"
+                style={{ animationDelay: '0.82s', animationFillMode: 'both' }}
               >
                 <div className="liquid-glass rounded-full p-1.5 w-full flex items-center">
                   <form onSubmit={handleSearch} className="flex gap-2 w-full items-center">
@@ -365,14 +368,12 @@ export default function Home() {
                     </button>
                   </form>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Trending chips */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.0, duration: 0.8 }}
-                className="flex flex-wrap justify-center items-center gap-2 mb-5"
+              <div
+                className="flex flex-wrap justify-center items-center gap-2 mb-5 animate-fade-in"
+                style={{ animationDelay: '1s', animationDuration: '0.8s', animationFillMode: 'both' }}
               >
                 <span className="text-white/50 text-xs font-medium font-body mr-1">Trending:</span>
                 {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
@@ -384,14 +385,12 @@ export default function Home() {
                     {chip}
                   </button>
                 ))}
-              </motion.div>
+              </div>
 
               {/* Stats row — INLINE, no overlap */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.15, ease: 'easeOut' }}
-                className="flex flex-wrap justify-center items-stretch gap-3 w-full max-w-2xl"
+              <div
+                className="flex flex-wrap justify-center items-stretch gap-3 w-full max-w-2xl animate-slide-up"
+                style={{ animationDelay: '1.15s', animationFillMode: 'both' }}
               >
                 {/* Verified Sellers */}
                 <div
@@ -428,7 +427,7 @@ export default function Home() {
                     <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Brokerage Fee</div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
             </div>
           </div>
@@ -443,7 +442,7 @@ export default function Home() {
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
               {categories.map(cat => {
                 const Icon = cat.icon
-                const catProducts = products.filter(p => p.category === cat.id)
+                const catProducts = categoryPaging.get(cat.id)?.catProducts || []
                 const isActive = activeCategory === cat.id
                 return (
                   <button
@@ -575,18 +574,14 @@ export default function Home() {
             ) : products.length > 0 ? (
               <div className="animate-fade-in space-y-16">
                 {categories.map(cat => {
-                  const catProducts = products.filter(p => p.category === cat.id);
+                  const { catProducts, currentPage, isExpanded, visibleProducts, totalPages } = categoryPaging.get(cat.id) || {
+                    catProducts: [],
+                    currentPage: undefined,
+                    isExpanded: false,
+                    visibleProducts: [],
+                    totalPages: 0,
+                  }
                   if (catProducts.length === 0) return null;
-
-                  const currentPage = categoryPages[cat.id]; // undefined if collapsed
-                  const isExpanded = currentPage !== undefined;
-                  const itemsPerPage = 12;
-
-                  const visibleProducts = isExpanded
-                    ? catProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    : catProducts.slice(0, 6);
-
-                  const totalPages = Math.ceil(catProducts.length / itemsPerPage);
 
                   return (
                     <section key={cat.id} id={cat.id} className="scroll-mt-24">
