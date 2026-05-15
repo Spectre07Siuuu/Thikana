@@ -3,19 +3,34 @@ const path = require('path');
 const pool = require('../config/db');
 const config = require('../config/identityVerification');
 const { createNotification } = require('../controllers/notificationController');
-const { runOcr } = require('./ocrService');
+const { runOcr, extractNidNumber, extractName, extractDob, effectiveOcrConfidence } = require('./ocrService');
 const { compareFaces } = require('./faceMatchService');
 const { collectFraudFlags, isHardReject } = require('./identityFraudService');
 const { calculateConfidence, decide, isValidNidFormat } = require('./confidenceService');
 const { encryptText, decryptText, hashNid, normalizeNid, maskNid } = require('../utils/kycCrypto');
 const { saveSecureBase64Image } = require('../utils/fileUpload');
 const { withRetry } = require('../utils/queryRetry');
+const { getAdminRuntimeSettings } = require('./adminSettingsService');
 
 function publicStatus(status) {
   return ['pending', 'processing', 'review'].includes(status) ? 'pending' : status;
 }
 
-function sanitizeVerification(row) {
+function hasLatinText(value) {
+  return /[A-Za-z]/.test(String(value || ''));
+}
+
+function pickExtractedFullName(row, ocrText) {
+  const ocrName = extractName(ocrText);
+  const storedName = row.extracted_full_name || (row.full_name && !row.email ? row.full_name : null);
+
+  if (hasLatinText(ocrName)) return ocrName;
+  if (hasLatinText(storedName)) return storedName;
+  return ocrName || storedName || null;
+}
+
+function sanitizeVerification(row, options = {}) {
+  const { maskSensitive = true } = options;
   if (!row) return null;
   let nidNumber = '';
   try {
@@ -23,17 +38,38 @@ function sanitizeVerification(row) {
   } catch (_err) {
     nidNumber = '';
   }
+  const ocrText = row.ai_result?.ocr?.text || row.ai_result?.text || '';
+  const extractedFullName = pickExtractedFullName(row, ocrText);
+  const extractedDob = row.dob || extractDob(ocrText);
+  const extractedNid = nidNumber || extractNidNumber(ocrText, '');
+  const derivedOcrConfidence = ocrText
+    ? effectiveOcrConfidence({
+        rawConfidence: Number(row.ocr_confidence) || 0,
+        layoutDetected: !!row.ai_result?.ocr?.layoutDetected,
+        extracted: {
+          nidNumber: extractedNid,
+          fullName: extractedFullName,
+          dob: extractedDob,
+        },
+      })
+    : row.ocr_confidence;
   return {
     ...row,
+    extracted_full_name: extractedFullName,
+    dob: extractedDob,
+    ocr_confidence: derivedOcrConfidence,
     status: publicStatus(row.verification_status),
-    nid_number: maskNid(nidNumber),
-    nid_number_preview: maskNid(nidNumber),
+    nid_number: maskSensitive ? maskNid(extractedNid) : extractedNid,
+    nid_number_preview: maskSensitive ? maskNid(extractedNid) : extractedNid,
     nid_front_url: row.id ? `/api/admin/nid/${row.id}/image/nid` : null,
     nid_selfie_url: row.id ? `/api/admin/nid/${row.id}/image/selfie` : null,
   };
 }
 
 async function createVerification({ userId, nidFrontBase64, selfieBase64 }) {
+  const runtimeSettings = await getAdminRuntimeSettings();
+  const uploadLimits = runtimeSettings.upload_limits || {};
+  const maxKycSizeMb = Number(uploadLimits.max_kyc_image_size_mb || 10);
 
   const existing = await pool.query(
     `SELECT id, verification_status FROM identity_verifications
@@ -49,8 +85,8 @@ async function createVerification({ userId, nidFrontBase64, selfieBase64 }) {
     );
   }
 
-  const nidImage = saveSecureBase64Image(nidFrontBase64, 'identity', `nid-front-${userId}`);
-  const selfieImage = saveSecureBase64Image(selfieBase64, 'identity', `selfie-${userId}`);
+  const nidImage = saveSecureBase64Image(nidFrontBase64, 'identity', `nid-front-${userId}`, { maxBytes: maxKycSizeMb * 1024 * 1024 });
+  const selfieImage = saveSecureBase64Image(selfieBase64, 'identity', `selfie-${userId}`, { maxBytes: maxKycSizeMb * 1024 * 1024 });
 
   const ocrPreview = await runOcr({
     imagePath: nidImage.path,
@@ -160,9 +196,9 @@ async function processVerification(verificationId) {
   console.log(`[processVerification] Fraud flags for #${verificationId}:`, fraudFlags);
   
   const duplicateDetected = fraudFlags.includes('DUPLICATE_NID');
-  const confidence = calculateConfidence({ ocrResult, faceResult, duplicateDetected });
+  const confidence = await calculateConfidence({ ocrResult, faceResult, duplicateDetected });
   const hardReject = isHardReject(fraudFlags);
-  const status = decide({ score: confidence.score, fraudFlags, hardReject });
+  const status = await decide({ score: confidence.score, fraudFlags, hardReject });
   console.log(`[processVerification] Final decision for #${verificationId}: ${status} (score: ${confidence.score})`);
 
   const purgeAfter = status === 'rejected'

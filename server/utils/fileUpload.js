@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['jpg', 'png', 'webp'];
 
-function parseBase64Image(base64Str) {
+function parseBase64Image(base64Str, options = {}) {
+  const maxBytes = Number(options.maxBytes) > 0 ? Number(options.maxBytes) : MAX_IMAGE_BYTES;
   const matches = String(base64Str || '').match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
     throw new Error('Invalid image format. Must be a base64 data URL.');
@@ -18,8 +19,8 @@ function parseBase64Image(base64Str) {
   }
 
   const buffer = Buffer.from(matches[2], 'base64');
-  if (buffer.length > MAX_IMAGE_BYTES) {
-    throw new Error('Image exceeds maximum size of 5MB.');
+  if (buffer.length > maxBytes) {
+    throw new Error(`Image exceeds maximum size of ${Math.round(maxBytes / (1024 * 1024))}MB.`);
   }
   if (buffer.length < 1024) {
     throw new Error('Image is too small or blank.');
@@ -76,8 +77,8 @@ function ensureImageDimensions(metadata, { minWidth = 240, minHeight = 180, maxR
  * @param {string} filenamePrefix - Prefix for the generated filename.
  * @returns {string} The public URL path of the saved image.
  */
-function saveBase64Image(base64Str, dir, filenamePrefix) {
-  const { type, buffer, metadata } = parseBase64Image(base64Str);
+function saveBase64Image(base64Str, dir, filenamePrefix, options = {}) {
+  const { type, buffer, metadata } = parseBase64Image(base64Str, options);
   ensureImageDimensions(metadata);
 
   const filename = `${filenamePrefix}-${Date.now()}.${type}`;
@@ -93,8 +94,8 @@ function saveBase64Image(base64Str, dir, filenamePrefix) {
   return `/uploads/${dir}/${filename}`;
 }
 
-function saveSecureBase64Image(base64Str, dir, filenamePrefix) {
-  const { type, buffer, metadata } = parseBase64Image(base64Str);
+function saveSecureBase64Image(base64Str, dir, filenamePrefix, options = {}) {
+  const { type, buffer, metadata } = parseBase64Image(base64Str, options);
   ensureImageDimensions(metadata);
 
   const safePrefix = String(filenamePrefix || 'upload').replace(/[^a-z0-9-]/gi, '-').toLowerCase();

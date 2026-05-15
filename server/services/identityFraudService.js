@@ -1,17 +1,30 @@
 const config = require('../config/identityVerification');
+const { getAdminRuntimeSettings } = require('./adminSettingsService');
 
 async function collectFraudFlags(pool, { userId, nidHash, ocrResult, faceResult, imageMeta }) {
+  const runtime = await getAdminRuntimeSettings();
+  const thresholds = runtime.verification_thresholds || {};
+  const minOcrConfidence = Number(thresholds.min_ocr_confidence ?? config.minOcrConfidence);
+  const minFaceMatchScore = Number(thresholds.min_face_match_score ?? config.minFaceMatchScore);
   const flags = new Set();
 
   for (const warning of [...(ocrResult.warnings || []), ...(faceResult.warnings || [])]) {
+    if (warning === 'LOW_FACE_MATCH' || warning === 'LOW_OCR_CONFIDENCE') continue;
     flags.add(warning);
   }
 
   if (!ocrResult.layoutDetected && ocrResult.provider !== 'heuristic') flags.add('INVALID_DOCUMENT_STRUCTURE');
-  if (ocrResult.confidence < config.minOcrConfidence) flags.add('LOW_OCR_CONFIDENCE');
+  if (ocrResult.confidence < minOcrConfidence) flags.add('LOW_OCR_CONFIDENCE');
   if (!ocrResult.extracted?.nidNumber) flags.add('MISSING_NID_NUMBER');
   if (!ocrResult.extracted?.fullName && ocrResult.provider !== 'heuristic') flags.add('MISSING_FULL_NAME');
-  if (faceResult.score < config.minFaceMatchScore) flags.add('LOW_FACE_MATCH');
+  if (
+    faceResult.faceDetectedOnNid &&
+    faceResult.faceDetectedOnSelfie &&
+    faceResult.score < minFaceMatchScore &&
+    !(faceResult.provider === 'heuristic-image-similarity' && faceResult.score >= (minFaceMatchScore - 15))
+  ) {
+    flags.add('LOW_FACE_MATCH');
+  }
 
   const { rows: blocked } = await pool.query('SELECT id FROM blocked_nids WHERE nid_number_hash = $1 LIMIT 1', [nidHash]);
   if (blocked.length > 0) flags.add('BLOCKED_NID');

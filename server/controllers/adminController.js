@@ -6,35 +6,11 @@ const {
   sanitizeVerification,
   getSecureImagePath,
 } = require('../services/identityVerificationService')
-
-const DEFAULT_ADMIN_SETTINGS = {
-  verification_thresholds: {
-    auto_approve_score: 90,
-    manual_review_score: 70,
-    min_face_match_score: 75,
-    min_ocr_confidence: 70,
-  },
-  moderation_settings: {
-    auto_flag_duplicate_titles: true,
-    require_note_on_reject: true,
-    max_pending_days: 7,
-  },
-  upload_limits: {
-    max_product_images: 8,
-    max_image_size_mb: 8,
-    max_kyc_image_size_mb: 10,
-  },
-  notification_settings: {
-    email_on_kyc_review: true,
-    email_on_product_review: true,
-    in_app_admin_alerts: true,
-  },
-  security_settings: {
-    force_strong_passwords: true,
-    max_login_attempts: 5,
-    lockout_minutes: 30,
-  },
-}
+const {
+  DEFAULT_ADMIN_SETTINGS,
+  hydrateSettings,
+  invalidateAdminSettingsCache,
+} = require('../services/adminSettingsService')
 
 let infraReadyPromise = null
 
@@ -49,14 +25,6 @@ function toSafePagination(page, limit, maxLimit = 100) {
   const parsedLimit = Math.min(Math.max(1, toInt(limit, 20)), maxLimit)
   const offset = (parsedPage - 1) * parsedLimit
   return { parsedPage, parsedLimit, offset }
-}
-
-function toBoolean(raw) {
-  if (typeof raw === 'boolean') return raw
-  if (typeof raw !== 'string') return null
-  if (raw.toLowerCase() === 'true') return true
-  if (raw.toLowerCase() === 'false') return false
-  return null
 }
 
 async function ensureAdminInfrastructure() {
@@ -115,16 +83,6 @@ async function logAdminActivity({
      VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
     [actorId || null, targetUserId, entityType, entityId, action, JSON.stringify(details)]
   )
-}
-
-function hydrateSettings(config = {}) {
-  return {
-    verification_thresholds: { ...DEFAULT_ADMIN_SETTINGS.verification_thresholds, ...(config.verification_thresholds || {}) },
-    moderation_settings: { ...DEFAULT_ADMIN_SETTINGS.moderation_settings, ...(config.moderation_settings || {}) },
-    upload_limits: { ...DEFAULT_ADMIN_SETTINGS.upload_limits, ...(config.upload_limits || {}) },
-    notification_settings: { ...DEFAULT_ADMIN_SETTINGS.notification_settings, ...(config.notification_settings || {}) },
-    security_settings: { ...DEFAULT_ADMIN_SETTINGS.security_settings, ...(config.security_settings || {}) },
-  }
 }
 
 function parseSort({ sortBy, sortDir, allowed, fallbackBy }) {
@@ -329,7 +287,7 @@ async function getAdminKyc(req, res) {
     const total = submissionRows.length > 0 ? parseInt(submissionRows[0].total_count, 10) : 0
     return res.json({
       success: true,
-      submissions: submissionRows.map(sanitizeVerification),
+      submissions: submissionRows.map(row => sanitizeVerification(row, { maskSensitive: false })),
       pagination: {
         total,
         page: parsedPage,
@@ -373,6 +331,71 @@ async function reviewNid(req, res) {
   } catch (err) {
     console.error('[admin.reviewNid]', err)
     return res.status(err.status || 500).json({ success: false, message: err.status ? err.message : 'Server error.' })
+  }
+}
+
+async function updateKycFlag(req, res) {
+  try {
+    await ensureAdminInfrastructure()
+    const submissionId = toInt(req.params.submissionId, 0)
+    const { action, flag } = req.body || {}
+    if (!submissionId) return res.status(400).json({ success: false, message: 'Invalid submission id.' })
+    if (!['add', 'remove'].includes(action)) {
+      return res.status(400).json({ success: false, message: "action must be 'add' or 'remove'." })
+    }
+    const normalizedFlag = String(flag || '').trim().toUpperCase().replace(/\s+/g, '_')
+    if (!normalizedFlag) return res.status(400).json({ success: false, message: 'flag is required.' })
+
+    const { rows } = await pool.query(
+      'SELECT id, user_id, fraud_flags FROM identity_verifications WHERE id = $1 LIMIT 1',
+      [submissionId]
+    )
+    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Submission not found.' })
+
+    const currentFlags = Array.isArray(rows[0].fraud_flags) ? rows[0].fraud_flags : []
+    const nextSet = new Set(currentFlags.map(v => String(v).toUpperCase()))
+    if (action === 'add') nextSet.add(normalizedFlag)
+    if (action === 'remove') nextSet.delete(normalizedFlag)
+    const nextFlags = Array.from(nextSet)
+
+    await pool.query(
+      `UPDATE identity_verifications
+       SET fraud_flags = $1::jsonb,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [JSON.stringify(nextFlags), submissionId]
+    )
+
+    const { rows: updatedRows } = await pool.query(
+      `SELECT n.id, n.user_id, n.nid_number, n.full_name AS extracted_full_name, n.dob,
+              n.ocr_confidence, n.face_match_score, n.confidence_score, n.fraud_flags,
+              n.verification_status, n.review_source, n.review_note, n.ai_result,
+              n.created_at, n.updated_at, n.processed_at, n.reviewed_at,
+              u.full_name, u.email, u.phone
+       FROM identity_verifications n
+       JOIN users u ON n.user_id = u.id
+       WHERE n.id = $1
+       LIMIT 1`,
+      [submissionId]
+    )
+
+    await logAdminActivity({
+      actorId: req.user?.id,
+      targetUserId: rows[0].user_id,
+      entityType: 'kyc',
+      entityId: submissionId,
+      action: `kyc_flag_${action}`,
+      details: { flag: normalizedFlag, flags: nextFlags },
+    })
+
+    return res.json({
+      success: true,
+      message: `Flag ${action}ed.`,
+      submission: sanitizeVerification(updatedRows[0], { maskSensitive: false }),
+    })
+  } catch (err) {
+    console.error('[admin.updateKycFlag]', err)
+    return res.status(500).json({ success: false, message: 'Server error.' })
   }
 }
 
@@ -608,6 +631,7 @@ async function updateAdminSettings(req, res) {
        DO UPDATE SET config = EXCLUDED.config, updated_by = EXCLUDED.updated_by, updated_at = NOW()`,
       [JSON.stringify(merged), req.user.id]
     )
+    invalidateAdminSettingsCache()
     await logAdminActivity({
       actorId: req.user.id,
       entityType: 'settings',
@@ -681,6 +705,7 @@ module.exports = {
   getAdminKyc,
   getPendingNid,
   reviewNid,
+  updateKycFlag,
   blockNid,
   getNidImage,
   getAdminUsers,

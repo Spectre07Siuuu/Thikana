@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const { validationResult } = require('express-validator')
 const pool = require('../config/db')
 const { sendMail } = require('../config/mail')
+const { getAdminRuntimeSettings } = require('../services/adminSettingsService')
 
 const SALT_ROUNDS = 12
 const OTP_TTL_MINUTES = 15
@@ -80,6 +81,19 @@ function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000))
 }
 
+function isStrongPassword(value) {
+  const password = String(value || '')
+  return /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password)
+}
+
+async function validatePasswordPolicy(password) {
+  const runtime = await getAdminRuntimeSettings()
+  const requireStrong = !!runtime?.security_settings?.force_strong_passwords
+  if (requireStrong && !isStrongPassword(password)) {
+    throw Object.assign(new Error('Password must include uppercase, lowercase, number, and special character.'), { status: 400 })
+  }
+}
+
 function otpEmailHtml(otp) {
   return `<div style="font-family:sans-serif;max-width:460px;margin:0 auto;padding:32px;background:#fff;border-radius:12px;border:1px solid #e5e7eb"><h2 style="color:#f97316;margin-bottom:8px">Verify your Thikana account</h2><p style="color:#6b7280;margin-bottom:24px">Enter this code to confirm your email. Expires in ${OTP_TTL_MINUTES} minutes.</p><div style="background:#fff7ed;border:2px dashed #f97316;border-radius:10px;padding:20px;text-align:center"><span style="font-size:36px;font-weight:900;letter-spacing:8px;color:#ea580c">${otp}</span></div><p style="color:#9ca3af;font-size:12px;margin-top:24px">If you didn't sign up for Thikana, ignore this email.</p></div>`
 }
@@ -93,6 +107,7 @@ async function signup(req, res) {
   if (!errors.isEmpty()) return res.status(422).json({ success: false, message: 'Validation failed', errors: errors.array() })
   const { fullName, email, password, role } = req.body
   try {
+    await validatePasswordPolicy(password)
     const { rows: existing } = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()])
     if (existing.length > 0) return res.status(409).json({ success: false, message: 'An account with this email already exists.' })
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
@@ -107,7 +122,7 @@ async function signup(req, res) {
     return res.status(201).json({ success: true, message: 'Account created! Please verify your email.', requiresVerification: true, email: email.toLowerCase() })
   } catch (err) {
     console.error('[signup error]', err)
-    return res.status(500).json({ success: false, message: 'Server error. Please try again later.' })
+    return res.status(err.status || 500).json({ success: false, message: err.status ? err.message : 'Server error. Please try again later.' })
   }
 }
 
@@ -260,6 +275,7 @@ async function resetPassword(req, res) {
   if (!email || !token || !newPassword) return res.status(400).json({ success: false, message: 'Email, token, and new password are required.' })
   if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' })
   try {
+    await validatePasswordPolicy(newPassword)
     const tokenHash = hashRefreshToken(String(token))
     const { rows } = await pool.query('SELECT id, reset_token, reset_token_expires_at FROM users WHERE email = $1', [email.toLowerCase()])
     if (rows.length === 0 || rows[0].reset_token !== tokenHash) return res.status(400).json({ success: false, message: 'Invalid or expired reset link.' })
@@ -269,7 +285,7 @@ async function resetPassword(req, res) {
     return res.json({ success: true, message: 'Password reset successfully. You can now log in.' })
   } catch (err) {
     console.error('[resetPassword error]', err)
-    return res.status(500).json({ success: false, message: 'Server error.' })
+    return res.status(err.status || 500).json({ success: false, message: err.status ? err.message : 'Server error.' })
   }
 }
 
@@ -278,6 +294,7 @@ async function changePassword(req, res) {
   if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Both current and new passwords are required.' })
   if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'New password must be at least 8 characters.' })
   try {
+    await validatePasswordPolicy(newPassword)
     const { rows } = await pool.query('SELECT id, password FROM users WHERE id = $1', [req.user.id])
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' })
     const isMatch = await bcrypt.compare(currentPassword, rows[0].password)
@@ -287,7 +304,7 @@ async function changePassword(req, res) {
     return res.json({ success: true, message: 'Password changed successfully.' })
   } catch (err) {
     console.error('[changePassword error]', err)
-    return res.status(500).json({ success: false, message: 'Server error.' })
+    return res.status(err.status || 500).json({ success: false, message: err.status ? err.message : 'Server error.' })
   }
 }
 

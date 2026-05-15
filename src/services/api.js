@@ -330,6 +330,10 @@ export async function adminReviewNid(payload) {
  return request('/admin/kyc/review', { method: 'POST', body: payload })
 }
 
+export async function adminUpdateKycFlag(submissionId, payload) {
+ return request(`/admin/kyc/${submissionId}/flags`, { method: 'PATCH', body: payload })
+}
+
 export async function adminBlockNid(payload) {
  return request('/admin/kyc/block', { method: 'POST', body: payload })
 }

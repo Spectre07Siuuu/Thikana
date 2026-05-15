@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
  ArrowLeft, Pencil, ShieldCheck, CalendarDays, ChevronRight,
@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
-/* ── Helpers ──────────────────────────────────────────────── */
+/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function getInitials(name = '') {
  return name.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase()).join('')
 }
@@ -24,7 +24,7 @@ function formatDate(dateStr) {
  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-/* ── Role config ─────────────────────────────────────────── */
+/* â”€â”€ Role config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const ROLE_BADGE = {
  buyer: { label: 'Verified Buyer', cls: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 border-blue-200 dark:border-blue-800' },
  seller: { label: 'Verified Seller', cls: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 border-purple-200 dark:border-purple-800' },
@@ -47,9 +47,9 @@ const STATUS_BADGE = {
 
 const PRICE_FORMATTER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
 
-/* ── Mock stats (Removed - Generated Dynamically) ───────────────────────── */
+/* â”€â”€ Mock stats (Removed - Generated Dynamically) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/* ── Buyer menu items ────────────────────────────────────── */
+/* â”€â”€ Buyer menu items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const BUYER_MENU = [
  { icon: ShoppingBag, label: 'My Orders' },
  { icon: Bookmark, label: 'Saved Listings' },
@@ -67,9 +67,9 @@ const BUYER_CANCEL_REASONS = [
 ]
 
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   PROFILE PAGE
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export default function Profile() {
  const navigate = useNavigate()
  const [searchParams] = useSearchParams()
@@ -103,7 +103,7 @@ export default function Profile() {
   { icon: ClipboardList, value: profile?.stats?.active_listings || 0, label: 'My Listings', color: 'text-theme-primary bg-theme-primary/10 dark:bg-orange-950/40', action: 'products' },
  ]), [profile])
 
- /* ── Fetch profile on mount ── */
+ /* â”€â”€ Fetch profile on mount â”€â”€ */
  useEffect(() => {
   if (authLoading) return
   if (!user) { navigate('/login'); return }
@@ -168,15 +168,50 @@ export default function Profile() {
  const isNidProcessing = ['pending', 'processing', 'review'].includes(nidStatus)
  const isNidRejected = nidStatus === 'rejected'
 
- /* ── Loading state ── */
+ /* Profile skeleton loading state */
  if (authLoading || loading || !profile) {
   return (
    <>
     <Navbar />
-    <div className="min-h-screen flex items-center justify-center bg-theme-bg pt-16">
-     <div className="flex flex-col items-center gap-3 animate-fade-in">
-      <div className="w-10 h-10 border-3 border-theme-primary border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-theme-muted">Loading profile…</p>
+    <div className="min-h-screen bg-theme-bg pt-16 pb-12 animate-fade-in">
+     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between py-5">
+       <div className="flex items-center gap-3">
+        <div className="skeleton-block h-9 w-9 rounded-lg" />
+        <div className="skeleton-block h-6 w-28" />
+       </div>
+       <div className="skeleton-block h-9 w-24 rounded-lg" />
+      </div>
+
+      <div className="glass-card p-6 sm:p-8 mb-6">
+       <div className="flex flex-col items-center text-center">
+        <div className="skeleton-block h-24 w-24 rounded-full mb-4" />
+        <div className="skeleton-block h-6 w-44 mb-2" />
+        <div className="skeleton-block h-4 w-56 mb-3" />
+        <div className="flex flex-wrap justify-center gap-2 mb-4">
+         <div className="skeleton-block h-6 w-28 rounded-full" />
+         <div className="skeleton-block h-6 w-36 rounded-full" />
+         <div className="skeleton-block h-6 w-24 rounded-full" />
+        </div>
+        <div className="skeleton-block h-4 w-72 max-w-full" />
+       </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+       {Array.from({ length: 4 }).map((_, idx) => (
+        <div key={idx} className="stat-card">
+         <div className="skeleton-block h-10 w-10 rounded-xl mx-auto mb-2.5" />
+         <div className="skeleton-block h-6 w-12 mx-auto mb-1.5" />
+         <div className="skeleton-block h-3 w-20 mx-auto" />
+        </div>
+       ))}
+      </div>
+
+      <div className="space-y-3">
+       {Array.from({ length: 4 }).map((_, idx) => (
+        <div key={idx} className="skeleton-block h-16 w-full rounded-xl" />
+       ))}
+      </div>
      </div>
     </div>
    </>
@@ -189,7 +224,7 @@ export default function Profile() {
    <main className="min-h-screen bg-theme-bg pt-16 pb-12 transition-colors duration-200">
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-     {/* ── Page Header Bar ────────────────────── */}
+     {/* â”€â”€ Page Header Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
      <div className="flex items-center justify-between py-5">
       <div className="flex items-center gap-3">
        <Link to="/"
@@ -210,7 +245,7 @@ export default function Profile() {
       </Link>
      </div>
 
-     {/* ── Profile Card ──────────────────────── */}
+     {/* â”€â”€ Profile Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
      <div className="glass-card p-6 sm:p-8 mb-6 animate-slide-up">
 
       {/* Avatar + Info */}
@@ -270,13 +305,13 @@ export default function Profile() {
           </span>
           <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
            px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">
-           Submit Again →
+           Submit Again â†’
           </Link>
          </>
         ) : (
          <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
           px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">
-          Verify Identity →
+          Verify Identity â†’
          </Link>
         )}
        </div>
@@ -290,7 +325,7 @@ export default function Profile() {
       </div>
      </div>
 
-     {/* ── Stats Row ─────────────────────────── */}
+     {/* â”€â”€ Stats Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
      <div className={`grid gap-3 mb-6 animate-slide-up ${
       isSeller ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4'
      }`} style={{ animationDelay: '60ms' }}>
@@ -313,7 +348,7 @@ export default function Profile() {
       ))}
      </div>
 
-     {/* ── Role-specific Content ─────────────── */}
+     {/* â”€â”€ Role-specific Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
      {isSeller
       ? <SellerContent activeSection={activeSellerSection} setActiveSection={setActiveSellerSection} products={products} refreshProducts={fetchSellerProducts} highlightedOrderId={Number(searchParams.get('orderId')) || null} />
       : <BuyerContent onLogout={handleLogout} favourites={favourites} view={buyerView} setView={setBuyerView} highlightedOrderId={Number(searchParams.get('orderId')) || null} />}
@@ -325,9 +360,9 @@ export default function Profile() {
  )
 }
 
-/* ══════════════════════════════════════════════════════════
-  BUYER CONTENT — Menu list style
-═══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  BUYER CONTENT â€” Menu list style
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId }) {
  const navigate = useNavigate()
 
@@ -371,9 +406,9 @@ function BuyerContent({ onLogout, favourites, view, setView, highlightedOrderId 
  return null
 }
 
-/* ══════════════════════════════════════════════════════════
-  SELLER CONTENT — Card-driven expandable sections
-═══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  SELLER CONTENT â€” Card-driven expandable sections
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function SellerContent({ activeSection, setActiveSection, products, refreshProducts, highlightedOrderId }) {
  const isOpen = (section) => activeSection === section
 
@@ -507,9 +542,9 @@ function PlaceholderTab({ label }) {
  )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   EDIT PROFILE MODAL
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function EditProfileModal({ profile, onClose, onSaved }) {
  const [form, setForm] = useState({
   fullName: profile.full_name || '',
@@ -601,7 +636,7 @@ function EditProfileModal({ profile, onClose, onSaved }) {
      {success && (
       <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800
        rounded-xl text-emerald-600 text-sm text-center">
-       ✓ Profile updated successfully!
+       âœ“ Profile updated successfully!
       </div>
      )}
 
@@ -644,7 +679,7 @@ function EditProfileModal({ profile, onClose, onSaved }) {
      <div>
       <label htmlFor="profile-input-1" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Bio</label>
       <textarea id="profile-input-1" name="bio" value={form.bio} onChange={handleChange} rows={3}
-       placeholder="Tell us about yourself…"
+       placeholder="Tell us about yourselfâ€¦"
        className="input-field resize-none" />
      </div>
 
@@ -659,7 +694,7 @@ function EditProfileModal({ profile, onClose, onSaved }) {
       <button type="submit" disabled={saving}
        className="btn-primary py-2.5 disabled:opacity-70 disabled:cursor-not-allowed">
        {saving
-        ? <span className="flex items-center gap-2"><ModalSpinner /> Saving…</span>
+        ? <span className="flex items-center gap-2"><ModalSpinner /> Savingâ€¦</span>
         : 'Save Changes'}
       </button>
      </div>
@@ -692,9 +727,9 @@ function ModalSpinner() {
  )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   EDIT PRODUCT MODAL
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function EditProductModal({ product, onClose, onSuccess }) {
  const [formData, setFormData] = useState({
   title: product.title || '',
@@ -797,9 +832,9 @@ function EditProductModal({ product, onClose, onSuccess }) {
  )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   SELLER ORDERS TAB
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
  const [items, setItems] = useState([])
  const [loading, setLoading] = useState(true)
@@ -886,11 +921,11 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
       </div>
      </div>
      <p className="text-[11px] text-theme-muted mb-3">
-      Buyer: <span className="text-theme-text font-semibold">{order.buyerName}</span> · {order.buyerEmail} · {order.buyerPhone}
+      Buyer: <span className="text-theme-text font-semibold">{order.buyerName}</span> Â· {order.buyerEmail} Â· {order.buyerPhone}
      </p>
      <p className="text-[11px] text-theme-muted mb-3">Shipping: {order.shippingAddress}</p>
      <div className="mb-3">
-      <Link to={`/orders/${order.id}`} className="text-xs text-theme-primary font-semibold hover:underline">Open full order details →</Link>
+      <Link to={`/orders/${order.id}`} className="text-xs text-theme-primary font-semibold hover:underline">Open full order details â†’</Link>
      </div>
      <div className="space-y-3">
       {order.items.map(item => (
@@ -925,9 +960,9 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
  )
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   BUYER ORDERS TAB
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function BuyerOrdersTab({ onBack, highlightedOrderId }) {
  const [orders, setOrders] = useState([])
  const [loading, setLoading] = useState(true)
@@ -1073,7 +1108,7 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
            </span>
           ) : (
            <button onClick={() => setReviewItem(item)} className="px-3 py-1.5 text-[10px] font-bold rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 transition-colors">
-            ⭐ Review
+            â­ Review
            </button>
           )}
           </div>
@@ -1083,13 +1118,13 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
          <button onClick={() => toggleExpand(order.id)} className="text-xs text-theme-primary font-semibold hover:underline">
           {expandedOrderIds.includes(order.id) ? 'Hide details' : 'View details'}
          </button>
-         <Link to={`/orders/${order.id}`} className="text-xs text-theme-muted hover:text-theme-primary">Open full order →</Link>
+         <Link to={`/orders/${order.id}`} className="text-xs text-theme-muted hover:text-theme-primary">Open full order â†’</Link>
         </div>
          {expandedOrderIds.includes(order.id) && (
           <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
            {sellerContacts.map((seller, idx) => (
             <p key={`${seller.name}-${idx}`} className="text-[11px] text-theme-muted">
-             Seller {sellerContacts.length > 1 ? `${idx + 1}` : ''}: {seller.name} · {seller.phone}
+             Seller {sellerContacts.length > 1 ? `${idx + 1}` : ''}: {seller.name} Â· {seller.phone}
             </p>
            ))}
            {order.note && <p className="text-[11px] text-theme-muted">Note: {order.note}</p>}
@@ -1161,10 +1196,10 @@ function BuyerOrdersTab({ onBack, highlightedOrderId }) {
 
         <div className="rounded-xl border border-theme-border bg-theme-bg/50 p-3 text-[11px] text-theme-muted space-y-1">
          <p className="font-semibold text-theme-text text-xs">Cancellation consequences</p>
-         <p>• Order stats may be reverted for both buyer and seller.</p>
-         <p>• Earned points from this order will be deducted from your account.</p>
-         <p>• Existing reviews for this order will be removed automatically.</p>
-         <p>• Seller will receive a full cancellation report notification.</p>
+         <p>â€¢ Order stats may be reverted for both buyer and seller.</p>
+         <p>â€¢ Earned points from this order will be deducted from your account.</p>
+         <p>â€¢ Existing reviews for this order will be removed automatically.</p>
+         <p>â€¢ Seller will receive a full cancellation report notification.</p>
         </div>
 
         <label className="flex items-start gap-2 text-xs text-theme-muted">
@@ -1247,7 +1282,7 @@ function ReviewModal({ item, onClose, onSubmitted }) {
         <div className="flex gap-1 justify-center py-2">
          {[1, 2, 3, 4, 5].map(star => (
           <button type="button" key={star} onClick={() => setRating(star)} className={`text-3xl transition-transform ${star <= rating ? 'text-amber-400 scale-110' : 'text-gray-200 dark:text-gray-700'} hover:scale-125`}>
-           ★
+           â˜…
           </button>
          ))}
         </div>
@@ -1263,7 +1298,7 @@ function ReviewModal({ item, onClose, onSubmitted }) {
      </>
     ) : (
      <div className="text-center py-4">
-      <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-3xl">✓</div>
+      <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-3xl">âœ“</div>
       <h4 className="text-base font-bold text-theme-text">Review Submitted</h4>
       <p className="text-xs text-theme-muted mt-1">Thanks! Your {rating}-star review for this order item is now saved.</p>
       <button onClick={onClose} className="btn-primary w-full py-2.5 text-sm mt-4">Done</button>
@@ -1273,3 +1308,5 @@ function ReviewModal({ item, onClose, onSubmitted }) {
   </div>
  )
 }
+
+

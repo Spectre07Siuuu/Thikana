@@ -17,6 +17,7 @@ import {
   adminReviewProduct,
   getAdminNid,
   adminReviewNid,
+  adminUpdateKycFlag,
   getAdminNidImageUrl,
   getAdminUsers,
   adminUpdateUserStatus,
@@ -157,6 +158,18 @@ export default function Admin() {
     await adminReviewNid({ submission_id: row.id, status, admin_note: kycNoteById[row.id] || '' })
     await Promise.all([loadKyc(), loadDashboard()])
   }
+  const updateKycFlagAction = async (row, action, flag) => {
+    const response = await adminUpdateKycFlag(row.id, { action, flag })
+    const updated = response?.submission
+    if (updated) {
+      setSelectedKyc(prev => (prev?.id === updated.id ? { ...prev, ...updated } : prev))
+      setKyc(prev => ({
+        ...prev,
+        rows: prev.rows.map(item => (item.id === updated.id ? { ...item, ...updated } : item)),
+      }))
+    }
+    await loadDashboard()
+  }
   const reviewProductAction = async (row, status) => {
     await adminReviewProduct({ product_id: row.id, status, admin_note: productNoteById[row.id] || '' })
     await Promise.all([loadProducts(), loadDashboard()])
@@ -221,8 +234,10 @@ export default function Admin() {
                 onClose={() => setSelectedKyc(null)}
                 onApprove={row => runWithConfirm({ title: 'Approve KYC request?', message: `Approve verification for ${row.full_name}?`, action: () => { setSelectedKyc(null); return reviewKyc(row, 'approved') } })}
                 onReject={row => runWithConfirm({ title: 'Reject KYC request?', message: `Reject verification for ${row.full_name}?`, action: () => { setSelectedKyc(null); return reviewKyc(row, 'rejected') } })}
+                onFlagAdd={(row, flag) => runWithConfirm({ title: 'Add fraud flag?', message: `Add "${flag}" for ${row.full_name}?`, action: () => updateKycFlagAction(row, 'add', flag) })}
+                onFlagRemove={(row, flag) => runWithConfirm({ title: 'Remove fraud flag?', message: `Remove "${flag}" for ${row.full_name}?`, action: () => updateKycFlagAction(row, 'remove', flag) })}
                 isLoading={kycImages.loading}
-                isSaving={settings.saving}
+                isSaving={confirmState.busy}
               />
             </>
           )}
@@ -233,8 +248,8 @@ export default function Admin() {
               setQuery={setProductQuery}
               noteById={productNoteById}
               setNoteById={setProductNoteById}
-              onApprove={row => runWithConfirm({ title: 'Approve listing?', message: `Approve “${row.title}”?`, action: () => reviewProductAction(row, 'approved') })}
-              onReject={row => runWithConfirm({ title: 'Reject listing?', message: `Reject “${row.title}”?`, action: () => reviewProductAction(row, 'rejected') })}
+              onApprove={row => runWithConfirm({ title: 'Approve listing?', message: `Approve "${row.title}"?`, action: () => reviewProductAction(row, 'approved') })}
+              onReject={row => runWithConfirm({ title: 'Reject listing?', message: `Reject "${row.title}"?`, action: () => reviewProductAction(row, 'rejected') })}
             />
           )}
           {activeSection === 'users' && (
@@ -301,7 +316,7 @@ function DashboardSection({ state }) {
             {state.data.recent_activities.map(item => (
               <li key={item.id} className="rounded-xl border border-theme-border bg-theme-bg/60 px-3 py-2">
                 <p className="text-sm font-semibold text-theme-text">{humanizeAction(item.action)}</p>
-                <p className="text-xs text-theme-muted mt-0.5">{item.actor_name || 'System'} · {new Date(item.created_at).toLocaleString()}</p>
+                <p className="text-xs text-theme-muted mt-0.5">{item.actor_name || 'System'} - {new Date(item.created_at).toLocaleString()}</p>
               </li>
             ))}
           </ul>
@@ -330,7 +345,7 @@ function KycSection({ state, query, setQuery, selectedKyc, setSelectedKyc, kycIm
       render: row => (
         <div className="text-xs">
           <p>Score: <span className="font-bold">{Math.round(Number(row.confidence_score) || 0)}</span></p>
-          <p className="text-theme-muted">OCR {Math.round(Number(row.ocr_confidence) || 0)} · Face {Math.round(Number(row.face_match_score) || 0)}</p>
+          <p className="text-theme-muted">OCR {Math.round(Number(row.ocr_confidence) || 0)} - Face {Math.round(Number(row.face_match_score) || 0)}</p>
         </div>
       ),
     },
@@ -403,7 +418,7 @@ function ProductsSection({ state, query, setQuery, noteById, setNoteById, onAppr
       render: row => (
         <div className="max-w-[260px]">
           <p className="font-semibold truncate">{row.title}</p>
-          <p className="text-xs text-theme-muted capitalize">{row.category?.replaceAll('_', ' ')} · Tk {Number(row.price || 0).toLocaleString()}</p>
+          <p className="text-xs text-theme-muted capitalize">{row.category?.replaceAll('_', ' ')} - Tk {Number(row.price || 0).toLocaleString()}</p>
         </div>
       ),
     },
@@ -506,17 +521,17 @@ function SettingsSection({ state, setState, onSaveSection }) {
   if (!state.data) return <EmptyCard label="No settings available." />
   
   const groupConfigs = {
-    verification_thresholds: { icon: '✓', color: 'from-emerald-500 to-teal-500', description: 'KYC verification confidence levels and approval rules' },
-    moderation_settings: { icon: '⚠', color: 'from-amber-500 to-orange-500', description: 'Content moderation and quality control settings' },
-    upload_limits: { icon: '📤', color: 'from-blue-500 to-cyan-500', description: 'File size and upload frequency restrictions' },
-    notification_settings: { icon: '🔔', color: 'from-purple-500 to-pink-500', description: 'Alert and notification preferences' },
-    security_settings: { icon: '🔒', color: 'from-rose-500 to-red-500', description: 'Platform security and protection features' },
+    verification_thresholds: { icon: 'V', color: 'from-emerald-500 to-teal-500', description: 'KYC verification confidence levels and approval rules' },
+    moderation_settings: { icon: 'M', color: 'from-amber-500 to-orange-500', description: 'Content moderation and quality control settings' },
+    upload_limits: { icon: 'U', color: 'from-blue-500 to-cyan-500', description: 'File size and upload frequency restrictions' },
+    notification_settings: { icon: 'N', color: 'from-purple-500 to-pink-500', description: 'Alert and notification preferences' },
+    security_settings: { icon: 'S', color: 'from-rose-500 to-red-500', description: 'Platform security and protection features' },
   }
 
   // Field configuration for ranges and units
   const fieldConfig = {
     auto_approve_score: { min: 0, max: 100, unit: '%' },
-    min_manual_review_score: { min: 0, max: 100, unit: '%' },
+    manual_review_score: { min: 0, max: 100, unit: '%' },
     min_ocr_confidence: { min: 0, max: 100, unit: '%' },
     min_face_match_score: { min: 0, max: 100, unit: '%' },
     max_pending_days: { min: 1, max: 7, unit: 'days' },
@@ -567,7 +582,7 @@ function SettingsSection({ state, setState, onSaveSection }) {
 
   const renderThresholdZones = (data) => {
     const autoApprove = data.auto_approve_score || 85
-    const minManualReview = data.min_manual_review_score || 50
+    const minManualReview = data.manual_review_score ?? data.min_manual_review_score ?? 50
     
     return (
       <div className="space-y-4">
@@ -591,7 +606,7 @@ function SettingsSection({ state, setState, onSaveSection }) {
             <div className="w-3 h-3 rounded-full bg-amber-500 mt-1 flex-shrink-0"></div>
             <div>
               <p className="text-[11px] font-bold text-theme-text">Manual Review</p>
-              <p className="text-[10px] text-theme-muted">{minManualReview}%–{autoApprove}%</p>
+              <p className="text-[10px] text-theme-muted">{minManualReview}% - {autoApprove}%</p>
             </div>
           </div>
           <div className="flex items-start gap-2 p-3 bg-theme-bg/50 rounded-lg border border-theme-border/30">
@@ -616,13 +631,13 @@ function SettingsSection({ state, setState, onSaveSection }) {
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-theme-text mb-2 block">Manual Review Min ({data.min_manual_review_score || 50}%)</label>
+            <label className="text-sm font-semibold text-theme-text mb-2 block">Manual Review Min ({data.manual_review_score ?? data.min_manual_review_score ?? 50}%)</label>
             <input 
               type="range" 
               min="0"
               max="100"
-              value={data.min_manual_review_score || 50}
-              onChange={e => setField('verification_thresholds', 'min_manual_review_score', Number(e.target.value))}
+              value={data.manual_review_score ?? data.min_manual_review_score ?? 50}
+              onChange={e => setField('verification_thresholds', 'manual_review_score', Number(e.target.value))}
               className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
           </div>
@@ -688,7 +703,7 @@ function SettingsSection({ state, setState, onSaveSection }) {
                         ) : typeof value === 'boolean' ? (
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-theme-muted">
-                              {value ? '✓ Enabled' : '✗ Disabled'}
+                              {value ? 'Enabled' : 'Disabled'}
                             </span>
                             {renderToggle(value, v => setField(groupKey, key, v))}
                           </div>

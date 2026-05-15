@@ -1,11 +1,14 @@
 const config = require('../config/identityVerification');
 const { normalizeNid } = require('../utils/kycCrypto');
+const { getAdminRuntimeSettings } = require('./adminSettingsService');
 
 function isValidNidFormat(value) {
   return /^\d{10}$|^\d{13}$|^\d{17}$/.test(normalizeNid(value));
 }
 
-function calculateConfidence({ ocrResult, faceResult, duplicateDetected }) {
+async function calculateConfidence({ ocrResult, faceResult, duplicateDetected }) {
+  const runtime = await getAdminRuntimeSettings();
+  const thresholds = runtime.verification_thresholds || {};
   const parts = [];
   const scoring = config.scoring;
 
@@ -13,7 +16,8 @@ function calculateConfidence({ ocrResult, faceResult, duplicateDetected }) {
     parts.push({ key: 'validLayout', points: scoring.validLayout });
   }
 
-  if (ocrResult.confidence >= config.minOcrConfidence && ocrResult.extracted?.nidNumber) {
+  const minOcrConfidence = Number(thresholds.min_ocr_confidence ?? config.minOcrConfidence);
+  if (ocrResult.confidence >= minOcrConfidence && ocrResult.extracted?.nidNumber) {
     parts.push({ key: 'ocrExtracted', points: scoring.ocrExtracted });
   }
 
@@ -21,7 +25,8 @@ function calculateConfidence({ ocrResult, faceResult, duplicateDetected }) {
     parts.push({ key: 'validNidFormat', points: scoring.validNidFormat });
   }
 
-  if (faceResult.score >= config.minFaceMatchScore && faceResult.faceDetectedOnNid && faceResult.faceDetectedOnSelfie) {
+  const minFaceMatchScore = Number(thresholds.min_face_match_score ?? config.minFaceMatchScore);
+  if (faceResult.score >= minFaceMatchScore && faceResult.faceDetectedOnNid && faceResult.faceDetectedOnSelfie) {
     parts.push({ key: 'faceMatch', points: scoring.faceMatch });
   }
 
@@ -35,9 +40,22 @@ function calculateConfidence({ ocrResult, faceResult, duplicateDetected }) {
   };
 }
 
-function decide({ score, fraudFlags, hardReject }) {
-  if (hardReject || score < config.reviewThreshold) return 'rejected';
-  if (score >= config.autoApproveThreshold && fraudFlags.length === 0) return 'approved';
+async function decide({ score, fraudFlags, hardReject }) {
+  const runtime = await getAdminRuntimeSettings();
+  const thresholds = runtime.verification_thresholds || {};
+  const reviewThreshold = Number(thresholds.manual_review_score ?? thresholds.min_manual_review_score ?? config.reviewThreshold);
+  const autoApproveThreshold = Number(thresholds.auto_approve_score ?? config.autoApproveThreshold);
+  const blockingFlags = new Set([
+    'BLOCKED_NID',
+    'DUPLICATE_NID',
+    'NO_FACE_ON_SELFIE',
+    'NO_FACE_ON_NID',
+    'MISSING_NID_NUMBER',
+    'INVALID_DOCUMENT_STRUCTURE',
+  ]);
+  const hasBlockingFlags = (fraudFlags || []).some(flag => blockingFlags.has(String(flag).toUpperCase()));
+  if (hardReject || score < reviewThreshold) return 'rejected';
+  if (score >= autoApproveThreshold && !hasBlockingFlags) return 'approved';
   return 'review';
 }
 

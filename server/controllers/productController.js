@@ -1,5 +1,6 @@
 const pool = require('../config/db')
 const { saveBase64Image } = require('../utils/fileUpload')
+const { getAdminRuntimeSettings } = require('../services/adminSettingsService')
 
 async function getPublicStats(req, res) {
   try {
@@ -26,6 +27,11 @@ async function uploadProduct(req, res) {
   const client = await pool.connect()
   const savedImages = []
   try {
+    const runtimeSettings = await getAdminRuntimeSettings()
+    const uploadLimits = runtimeSettings.upload_limits || {}
+    const maxProductImages = Number(uploadLimits.max_product_images || 8)
+    const maxImageSizeMb = Number(uploadLimits.max_image_size_mb || 8)
+
     await client.query('BEGIN')
     const attrsJson = attributes ? JSON.stringify(attributes) : null
     const { rows: insertRows } = await client.query(
@@ -35,8 +41,12 @@ async function uploadProduct(req, res) {
     )
     const productId = insertRows[0].id
     if (Array.isArray(images_base64) && images_base64.length > 0) {
+      if (images_base64.length > maxProductImages) {
+        await client.query('ROLLBACK')
+        return res.status(400).json({ success: false, message: `Maximum ${maxProductImages} images allowed.` })
+      }
       for (let i = 0; i < images_base64.length; i++) {
-        const imageUrl = saveBase64Image(images_base64[i], 'products', `prod-${productId}-${i}`)
+        const imageUrl = saveBase64Image(images_base64[i], 'products', `prod-${productId}-${i}`, { maxBytes: maxImageSizeMb * 1024 * 1024 })
         savedImages.push(imageUrl)
         await client.query(
           'INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, $3)',

@@ -2,7 +2,7 @@ export default function AdminConfirmModal({ open, title, message, onCancel, onCo
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[80] glass-overlay flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[130] glass-overlay flex items-center justify-center p-4">
       <div className="glass-modal w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-theme-text">{title}</h3>
         <p className="text-sm text-theme-muted mt-2">{message}</p>

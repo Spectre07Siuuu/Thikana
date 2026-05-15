@@ -14,6 +14,7 @@ const {
   updateUserStatus,
   getAdminSettings,
   updateAdminSettings,
+  updateKycFlag,
 } = require('../controllers/adminController')
 const { verifyToken, requireAdmin } = require('../middleware/authMiddleware')
 
@@ -39,6 +40,7 @@ router.get('/kyc', getAdminKyc)
 router.get('/nid', getAdminKyc)
 router.get('/nid/:id/image/:type', getNidImage)
 router.post('/kyc/review', reviewNid)
+router.patch('/kyc/:submissionId/flags', updateKycFlag)
 router.post('/nid/review', reviewNid)
 router.post('/kyc/block', blockNid)
 router.post('/nid/block', blockNid)
