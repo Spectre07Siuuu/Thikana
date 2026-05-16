@@ -301,10 +301,10 @@ export default function Home() {
             }} />
           </div>
 
-          {/* Content — left aligned, like the reference */}
-          <div className="relative z-10 w-full flex-1 flex flex-col justify-center"
+          {/* Content — centered */}
+          <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center"
             style={{ paddingTop: 'calc(64px + 1rem)', paddingBottom: '3rem' }}>
-            <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+            <div className="w-full max-w-3xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col items-center text-center">
 
               {/* Headline — 2 lines, with shimmer on 'loves' */}
               <h1
@@ -321,7 +321,7 @@ export default function Home() {
               {/* Subtext */}
               <p
                 className="text-white/50 text-base md:text-lg font-light leading-relaxed mb-10 animate-fade-in"
-                style={{ maxWidth: '420px', animationDelay: '0.4s', animationFillMode: 'both' }}
+                style={{ maxWidth: '480px', animationDelay: '0.4s', animationFillMode: 'both' }}
               >
                 Bangladesh's most trusted marketplace. Rent, buy, or furnish your home — verified sellers, zero brokerage.
               </p>
@@ -329,7 +329,7 @@ export default function Home() {
               {/* Search row */}
               <form
                 onSubmit={handleSearch}
-                className="flex items-center gap-2 mb-6 animate-fade-in"
+                className="flex items-center gap-2 mb-6 animate-fade-in w-full"
                 style={{ maxWidth: '520px', animationDelay: '0.55s', animationFillMode: 'both' }}
               >
                 <div
@@ -362,7 +362,7 @@ export default function Home() {
 
               {/* Trending chips */}
               <div
-                className="flex flex-wrap items-center gap-2 mb-14 animate-fade-in"
+                className="flex flex-wrap justify-center items-center gap-2 mb-14 animate-fade-in"
                 style={{ animationDelay: '0.7s', animationFillMode: 'both' }}
               >
                 <span className="text-white/30 text-xs font-medium mr-1">Trending:</span>
@@ -380,7 +380,7 @@ export default function Home() {
 
               {/* Stats strip */}
               <div
-                className="flex flex-wrap items-center gap-8 animate-fade-in"
+                className="flex flex-wrap justify-center items-center gap-8 animate-fade-in"
                 style={{ animationDelay: '0.85s', animationFillMode: 'both' }}
               >
                 <div className="flex items-center gap-3">
