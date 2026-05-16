@@ -5,50 +5,62 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── LIGHT MODE: Black & Gold Elegance ──────────────────
-     #FFFFFF  White      → bg / card
-     #E5E5E5  Light Grey → subtle borders / muted bg
-     #FCA311  Amber      → primary accent
-     #14213D  Navy       → main text / headings
-     #000000  Black      → (avoided as pure black; use navy)
+  /* ── LIGHT MODE: Crimson & Chalk ────────────────────────
+     #DC143C  Crimson    → primary accent
+     #F2EFE7  Chalk      → background
+     #1A0008  Deep Wine  → main text / headings
+     #8C1A2E  Dark Rose  → muted text
+     #E8E4DC  Warm Stone → borders / card bg
   ─────────────────────────────────────────────────────── */
   :root {
-    --theme-bg:              248 248 246;     /* near-white warm */
-    --theme-card:            255 255 255;     /* pure white card */
-    --theme-text:            20  33  61;      /* #14213D navy */
-    --theme-text-muted:      90  97 116;      /* muted navy-grey */
-    --theme-border:          229 229 229;     /* #E5E5E5 */
-    --theme-primary:         252 163  17;     /* #FCA311 amber */
-    --theme-primary-hover:   230 143   0;     /* amber darker */
-    --theme-primary-text:    20  33  61;      /* navy on amber */
-    --hero-grad-from:        20  33  61;      /* navy */
-    --hero-grad-mid:         14  20  40;      /* deeper navy */
-    --hero-grad-to:          8   10  24;      /* almost black-navy */
-    --glass-blob-1:          252 163  17;     /* amber blob */
-    --glass-blob-2:          20  33  61;      /* navy blob */
+    --theme-bg:              242 239 231;     /* #F2EFE7 chalk */
+    --theme-card:            255 255 255;     /* white card */
+    --theme-text:            26   0   8;      /* deep wine */
+    --theme-text-muted:      140  26  46;     /* dark rose muted */
+    --theme-border:          232 228 220;     /* warm stone border */
+    --theme-primary:         220  20  60;     /* #DC143C crimson */
+    --theme-primary-hover:   185  10  40;     /* crimson darker */
+    --theme-primary-text:    255 255 255;     /* white on crimson */
+    --hero-grad-from:        60   5  15;      /* deep crimson-black */
+    --hero-grad-mid:         110  20  35;     /* warm crimson mid */
+    --hero-grad-to:          180  60  30;     /* ember orange edge */
+    --glass-blob-1:          220  20  60;     /* crimson blob */
+    --glass-blob-2:          255 107  53;     /* ember blob */
+    --hero-bg:               10   3   6;      /* very dark base */
+    --hero-bloom-1:          220  20  60;     /* crimson bloom (light mode) */
+    --hero-bloom-2:          255 107  53;     /* ember secondary bloom */
+    --shimmer-a:             #DC143C;         /* shimmer start */
+    --shimmer-b:             #ff6b7a;         /* shimmer mid highlight */
+    --shimmer-c:             #DC143C;         /* shimmer end */
   }
 
-  /* ── DARK MODE: Deep Burgundy Elegance ─────────────────
-     #710912  Deep Burgundy  → primary accent
-     #0D0D0D  Midnight Black → bg
-     #C28D39  Antique Gold   → secondary accent / headings
-     #362822  Dark Espresso  → card surface
-     #EFE5D2  Warm Champagne → main text
+  /* ── DARK MODE: Midnight & Ember ────────────────────────
+     #0D1117  Midnight   → background
+     #FF6B35  Ember      → primary accent
+     #F0F0F0  Near White → main text
+     #8B949E  Cool Grey  → muted text
+     #161B22  Dark Layer → card surface
   ─────────────────────────────────────────────────────── */
   .dark {
-    --theme-bg:              13  13  13;      /* #0D0D0D midnight */
-    --theme-card:            54  40  34;      /* #362822 espresso */
-    --theme-text:            239 229 210;     /* #EFE5D2 champagne */
-    --theme-text-muted:      180 165 140;     /* warm muted champagne */
-    --theme-border:          70  52  42;      /* espresso-tinted border */
-    --theme-primary:         194 141  57;     /* #C28D39 antique gold */
-    --theme-primary-hover:   218 165  75;     /* gold lighter */
-    --theme-primary-text:    13  13  13;      /* midnight on gold */
-    --hero-grad-from:        113   9  18;     /* #710912 burgundy */
-    --hero-grad-mid:         54  40  34;      /* espresso */
-    --hero-grad-to:          13  13  13;      /* midnight */
-    --glass-blob-1:          113   9  18;     /* burgundy blob */
-    --glass-blob-2:          194 141  57;     /* gold blob */
+    --theme-bg:              13  17  23;      /* #0D1117 midnight */
+    --theme-card:            22  27  34;      /* #161B22 dark layer */
+    --theme-text:            240 240 240;     /* near white */
+    --theme-text-muted:      139 148 158;     /* cool grey */
+    --theme-border:          48  54  61;      /* dark border */
+    --theme-primary:         255 107  53;     /* #FF6B35 ember */
+    --theme-primary-hover:   255 130  75;     /* ember lighter */
+    --theme-primary-text:    13  17  23;      /* midnight on ember */
+    --hero-grad-from:        13  17  23;      /* midnight */
+    --hero-grad-mid:         22  15  10;      /* dark warm */
+    --hero-grad-to:          40  20   5;      /* ember edge */
+    --glass-blob-1:          255 107  53;     /* ember blob */
+    --glass-blob-2:          220  20  60;     /* crimson blob */
+    --hero-bg:               13  17  23;      /* midnight base */
+    --hero-bloom-1:          255 107  53;     /* ember bloom (dark mode) */
+    --hero-bloom-2:          220  20  60;     /* crimson secondary bloom */
+    --shimmer-a:             #FF6B35;         /* ember shimmer start */
+    --shimmer-b:             #ffb380;         /* shimmer mid highlight */
+    --shimmer-c:             #FF6B35;         /* ember shimmer end */
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -253,13 +265,15 @@
   .animate-title-2 { animation: titleFadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; opacity: 0; }
   .animate-title-3 { animation: titleFadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards; opacity: 0; }
 
-  .text-gold-shimmer {
-    background: linear-gradient(to right, #D4AF37 20%, #FFF5D1 40%, #FFF5D1 60%, #D4AF37 80%);
+  /* Theme-aware shimmer — crimson in light, ember in dark */
+  .text-gold-shimmer,
+  .text-primary-shimmer {
+    background: linear-gradient(to right, var(--shimmer-a) 20%, var(--shimmer-b) 45%, var(--shimmer-b) 55%, var(--shimmer-c) 80%);
     background-size: 200% auto;
     color: transparent;
     -webkit-background-clip: text;
     background-clip: text;
-    animation: goldShimmer 4s linear infinite;
+    animation: goldShimmer 3.5s linear infinite;
   }
 
 
