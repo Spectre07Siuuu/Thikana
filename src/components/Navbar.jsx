@@ -157,7 +157,7 @@ export default function Navbar() {
           {/* Theme Toggle */}
           <button
             id="theme-toggle"
-            onClick={toggleTheme}
+            onClick={(e) => toggleTheme(e)}
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             className={`p-1.5 rounded-full transition-all duration-200 ${isSolid ? 'hover:bg-black/5 dark:hover:bg-white/5' : 'hover:bg-white/10'}`}
           >

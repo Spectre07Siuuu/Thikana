@@ -4,6 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── View Transitions: Circular Reveal ─────────────────────────────────────
+   Override the browser's default crossfade so only our JS clip-path animation
+   runs. The ::view-transition-new(root) is animated from JS via the Web
+   Animations API (see ThemeContext.jsx).
+──────────────────────────────────────────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Keep the new theme layer on top during the reveal */
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Respect users who prefer reduced motion — instant swap */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
 @layer base {
   /* ── LIGHT MODE: Crimson & Chalk ────────────────────────
      #DC143C  Crimson    → primary accent

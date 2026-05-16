@@ -225,7 +225,7 @@ export default function Home() {
   useEffect(() => {
     getPublicStats().then(res => {
       if (res.success) setPublicStats(res)
-    }).catch(() => {})
+    }).catch(() => { })
   }, [])
 
   // IntersectionObserver to auto-highlight the active category as user scrolls
@@ -304,15 +304,15 @@ export default function Home() {
           {/* Content — centered */}
           <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center"
             style={{ paddingTop: 'calc(64px + 1rem)', paddingBottom: '3rem' }}>
-            <div className="w-full max-w-3xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col items-center text-center">
+            <div className="w-full max-w-5xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col items-center text-center">
 
               {/* Headline — 2 lines, with shimmer on 'loves' */}
               <h1
                 className="font-sans font-black text-white leading-[1.05] tracking-[-0.03em] mb-6"
-                style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)' }}
+                style={{ fontSize: 'clamp(3rem, 5.9vw, 7rem)' }}
               >
-                <span className="block animate-title-1">Find the home that</span>
-                <span className="block animate-title-2">
+                <span className="block whitespace-nowrap animate-title-1">Find the home that</span>
+                <span className="block whitespace-nowrap animate-title-2">
                   <span className="text-gold-shimmer">loves</span>
                   <span> you back.</span>
                 </span>
