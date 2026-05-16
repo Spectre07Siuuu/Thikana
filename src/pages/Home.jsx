@@ -266,165 +266,144 @@ export default function Home() {
 
         {/* ── HERO ── */}
         <section className="relative w-full min-h-screen flex flex-col overflow-hidden">
-          {/* Gradient base */}
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              background: 'linear-gradient(135deg, rgb(var(--hero-grad-from)) 0%, rgb(var(--hero-grad-mid)) 50%, rgb(var(--hero-grad-to)) 100%)'
-            }}
-          />
 
-          {/* Decorative liquid-glass blobs */}
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            {/* Large soft blob top-right */}
-            <div
-              style={{
-                position: 'absolute', width: '55vw', height: '55vw',
-                top: '-18%', right: '-15%',
-                borderRadius: '40% 60% 55% 45% / 50% 45% 55% 50%',
-                background: 'rgb(var(--glass-blob-1) / 0.22)',
-                filter: 'blur(60px)',
-              }}
-            />
-            {/* Medium blob bottom-left */}
-            <div
-              style={{
-                position: 'absolute', width: '38vw', height: '38vw',
-                bottom: '-12%', left: '-8%',
-                borderRadius: '60% 40% 45% 55% / 45% 60% 40% 55%',
-                background: 'rgb(var(--glass-blob-2) / 0.28)',
-                filter: 'blur(50px)',
-              }}
-            />
-            {/* Small accent blob center */}
-            <div
-              style={{
-                position: 'absolute', width: '22vw', height: '22vw',
-                top: '30%', left: '40%',
-                borderRadius: '50% 50% 40% 60% / 60% 40% 60% 40%',
-                background: 'rgb(var(--glass-blob-1) / 0.12)',
-                filter: 'blur(40px)',
-              }}
-            />
-            {/* Glass grid overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)',
-                backgroundSize: '40px 40px',
-              }}
-            />
+          {/* Base background — uses palette variable */}
+          <div className="absolute inset-0 z-0" style={{ background: 'rgb(var(--hero-bg))' }} />
+
+          {/* Warm light bloom — upper right, palette-aware */}
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            {/* Main bloom */}
+            <div style={{
+              position: 'absolute',
+              width: '70vw', height: '70vw',
+              top: '-20%', right: '-10%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgb(var(--hero-bloom-1) / 0.5) 0%, rgb(var(--hero-bloom-1) / 0.28) 35%, rgb(var(--hero-bloom-1) / 0.08) 60%, transparent 80%)',
+              filter: 'blur(30px)',
+            }} />
+            {/* Secondary bloom */}
+            <div style={{
+              position: 'absolute',
+              width: '40vw', height: '40vw',
+              top: '5%', right: '5%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgb(var(--hero-bloom-2) / 0.22) 0%, transparent 70%)',
+              filter: 'blur(20px)',
+            }} />
+            {/* Bottom left subtle */}
+            <div style={{
+              position: 'absolute',
+              width: '30vw', height: '30vw',
+              bottom: '10%', left: '-5%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgb(var(--hero-bloom-1) / 0.1) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+            }} />
           </div>
 
-          <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center justify-center flex-1" style={{ paddingTop: 'calc(64px + 2.5rem)', paddingBottom: '2.5rem' }}>
-            <div className="flex flex-col items-center text-center w-full">
+          {/* Content — centered */}
+          <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center"
+            style={{ paddingTop: 'calc(64px + 1rem)', paddingBottom: '3rem' }}>
+            <div className="w-full max-w-3xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col items-center text-center">
 
-              {/* Headline */}
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-serif leading-[0.9] text-white max-w-4xl tracking-[-2px] sm:tracking-[-3px] mb-6">
+              {/* Headline — 2 lines, with shimmer on 'loves' */}
+              <h1
+                className="font-sans font-black text-white leading-[1.05] tracking-[-0.03em] mb-6"
+                style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)' }}
+              >
                 <span className="block animate-title-1">Find the home that</span>
-                <span className="block animate-title-2 italic">
+                <span className="block animate-title-2">
                   <span className="text-gold-shimmer">loves</span>
-                  <span className="text-white"> you back.</span>
+                  <span> you back.</span>
                 </span>
               </h1>
 
-              {/* Subheading */}
+              {/* Subtext */}
               <p
-                className="text-white/75 text-base md:text-lg font-body font-light leading-relaxed max-w-xl mx-auto mb-8 animate-fade-in"
-                style={{ animationDelay: '0.65s', animationFillMode: 'both' }}
+                className="text-white/50 text-base md:text-lg font-light leading-relaxed mb-10 animate-fade-in"
+                style={{ maxWidth: '480px', animationDelay: '0.4s', animationFillMode: 'both' }}
               >
-                Bangladesh’s most trusted housing marketplace. Rent flats, buy properties, and furnish your home — all from verified sellers, zero brokerage.
+                Bangladesh's most trusted marketplace. Rent, buy, or furnish your home — verified sellers, zero brokerage.
               </p>
 
-              {/* Search Bar */}
-              <div
-                className="w-full max-w-2xl mb-6 animate-fade-in"
-                style={{ animationDelay: '0.82s', animationFillMode: 'both' }}
+              {/* Search row */}
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center gap-2 mb-6 animate-fade-in w-full"
+                style={{ maxWidth: '520px', animationDelay: '0.55s', animationFillMode: 'both' }}
               >
-                <div className="liquid-glass rounded-full p-1.5 w-full flex items-center">
-                  <form onSubmit={handleSearch} className="flex gap-2 w-full items-center">
-                    <div className="flex-1 flex items-center gap-3 px-4">
-                      <Search size={18} className="text-white/60 flex-shrink-0" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        placeholder="Search by location, keyword…"
-                        className="w-full border-none focus:ring-0 bg-transparent text-base text-white placeholder-white/40 py-2.5 focus:outline-none font-body"
-                      />
-                      {searchQuery && (
-                        <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1) }}
-                          className="text-white/60 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                          aria-label="Clear search">
-                          <X size={15} />
-                        </button>
-                      )}
-                    </div>
-                    <button type="submit"
-                      className="font-bold px-7 py-3 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 flex items-center gap-2"
-                      style={{ background: 'rgb(var(--theme-primary))', color: 'rgb(var(--theme-primary-text))' }}
-                    >
-                      Search <ArrowRight size={15} />
+                <div
+                  className="flex-1 flex items-center gap-3 px-4 py-0 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', height: '52px' }}
+                >
+                  <Search size={16} className="text-white/35 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Enter location, keyword..."
+                    className="w-full bg-transparent text-sm text-white placeholder-white/30 focus:outline-none border-none focus:ring-0"
+                  />
+                  {searchQuery && (
+                    <button type="button" onClick={() => { setSearchQuery(''); fetchProducts(1) }}
+                      className="text-white/40 hover:text-white transition-colors" aria-label="Clear">
+                      <X size={14} />
                     </button>
-                  </form>
+                  )}
                 </div>
-              </div>
+                <button
+                  type="submit"
+                  className="px-6 h-[52px] rounded-xl font-bold text-sm whitespace-nowrap flex items-center gap-2 transition-all active:scale-95 hover:opacity-90 flex-shrink-0"
+                  style={{ background: 'rgb(var(--theme-primary))', color: 'rgb(var(--theme-primary-text))' }}
+                >
+                  Search <ArrowRight size={15} />
+                </button>
+              </form>
 
               {/* Trending chips */}
               <div
-                className="flex flex-wrap justify-center items-center gap-2 mb-5 animate-fade-in"
-                style={{ animationDelay: '1s', animationDuration: '0.8s', animationFillMode: 'both' }}
+                className="flex flex-wrap justify-center items-center gap-2 mb-14 animate-fade-in"
+                style={{ animationDelay: '0.7s', animationFillMode: 'both' }}
               >
-                <span className="text-white/50 text-xs font-medium font-body mr-1">Trending:</span>
-                {['Gulshan', 'Uttara', 'Sofa', 'Samsung', 'Bashundhara', 'Hatil'].map(chip => (
+                <span className="text-white/30 text-xs font-medium mr-1">Trending:</span>
+                {['Gulshan', 'Uttara', 'Bashundhara', 'Sofa', 'Hatil'].map(chip => (
                   <button
                     key={chip}
                     onClick={() => { setSearchQuery(chip); fetchProducts(1) }}
-                    className="liquid-glass px-3 py-1.5 hover:bg-white/15 text-white/80 hover:text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 active:scale-95 font-body"
+                    className="px-3 py-1.5 text-white/55 hover:text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
                   >
                     {chip}
                   </button>
                 ))}
               </div>
 
-              {/* Stats row — INLINE, no overlap */}
+              {/* Stats strip */}
               <div
-                className="flex flex-wrap justify-center items-stretch gap-3 w-full max-w-2xl animate-slide-up"
-                style={{ animationDelay: '1.15s', animationFillMode: 'both' }}
+                className="flex flex-wrap justify-center items-center gap-8 animate-fade-in"
+                style={{ animationDelay: '0.85s', animationFillMode: 'both' }}
               >
-                {/* Verified Sellers */}
-                <div
-                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
-                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
-                >
-                  <ShieldCheck className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
-                  <div className="text-left">
-                    <div className="font-heading font-bold text-white text-2xl leading-none">{publicStats.verified_sellers}</div>
-                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Verified Sellers</div>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck size={22} style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div>
+                    <div className="text-white font-black text-xl leading-none">{publicStats.verified_sellers}</div>
+                    <div className="text-white/35 text-[11px] mt-0.5">Verified Sellers</div>
                   </div>
                 </div>
-
-                {/* Live Listings */}
-                <div
-                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
-                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
-                >
-                  <PackageCheck className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
-                  <div className="text-left">
-                    <div className="font-heading font-bold text-white text-2xl leading-none">{publicStats.total_products}</div>
-                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Live Listings</div>
+                <div className="w-px h-8 bg-white/10" />
+                <div className="flex items-center gap-3">
+                  <PackageCheck size={22} style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div>
+                    <div className="text-white font-black text-xl leading-none">{publicStats.total_products}</div>
+                    <div className="text-white/35 text-[11px] mt-0.5">Live Listings</div>
                   </div>
                 </div>
-
-                {/* Brokerage Fee */}
-                <div
-                  className="flex items-center gap-3 flex-1 min-w-[150px] px-5 py-4 rounded-2xl"
-                  style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}
-                >
-                  <Handshake className="h-6 w-6 flex-shrink-0" style={{ color: 'rgb(var(--theme-primary))' }} />
-                  <div className="text-left">
-                    <div className="font-heading font-bold text-white text-2xl leading-none">0 BDT</div>
-                    <div className="text-[11px] font-body font-light mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Brokerage Fee</div>
+                <div className="w-px h-8 bg-white/10" />
+                <div className="flex items-center gap-3">
+                  <Handshake size={22} style={{ color: 'rgb(var(--theme-primary))' }} />
+                  <div>
+                    <div className="text-white font-black text-xl leading-none">0 BDT</div>
+                    <div className="text-white/35 text-[11px] mt-0.5">Brokerage Fee</div>
                   </div>
                 </div>
               </div>
