@@ -641,6 +641,28 @@ function SettingsSection({ state, setState, onSaveSection }) {
               className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
           </div>
+          <div>
+            <label className="text-sm font-semibold text-theme-text mb-2 block">OCR Confidence Min ({data.min_ocr_confidence || 75}%)</label>
+            <input 
+              type="range" 
+              min="0"
+              max="100"
+              value={data.min_ocr_confidence || 75}
+              onChange={e => setField('verification_thresholds', 'min_ocr_confidence', Number(e.target.value))}
+              className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-theme-text mb-2 block">Face Match Min ({data.min_face_match_score || 70}%)</label>
+            <input 
+              type="range" 
+              min="0"
+              max="100"
+              value={data.min_face_match_score || 70}
+              onChange={e => setField('verification_thresholds', 'min_face_match_score', Number(e.target.value))}
+              className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-purple-500"
+            />
+          </div>
         </div>
       </div>
     )
