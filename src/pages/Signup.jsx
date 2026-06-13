@@ -13,8 +13,10 @@ function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) }
 
 const PASSWORD_RULES = [
   { key: 'length',    label: 'At least 8 characters',       test: p => p.length >= 8 },
-  { key: 'uppercase', label: 'One uppercase letter (A–Z)',   test: p => /[A-Z]/.test(p) },
-  { key: 'number',    label: 'One number (0–9)',             test: p => /[0-9]/.test(p) },
+  { key: 'uppercase', label: 'One uppercase letter (A–Z)',  test: p => /[A-Z]/.test(p) },
+  { key: 'lowercase', label: 'One lowercase letter (a–z)',  test: p => /[a-z]/.test(p) },
+  { key: 'number',    label: 'One number (0–9)',            test: p => /[0-9]/.test(p) },
+  { key: 'symbol',    label: 'One special symbol (!@#$...)',test: p => /[^A-Za-z0-9]/.test(p) },
 ]
 
 function getStrength(p) {
@@ -37,7 +39,9 @@ function validate(f) {
   if (!f.password)              e.password = 'Password is required'
   else if (f.password.length < 8) e.password = 'Password must be at least 8 characters'
   else if (!/[A-Z]/.test(f.password)) e.password = 'Password needs at least one uppercase letter'
+  else if (!/[a-z]/.test(f.password)) e.password = 'Password needs at least one lowercase letter'
   else if (!/[0-9]/.test(f.password)) e.password = 'Password needs at least one number'
+  else if (!/[^A-Za-z0-9]/.test(f.password)) e.password = 'Password needs at least one special symbol'
   if (!f.confirmPassword)       e.confirmPassword = 'Please confirm your password'
   else if (f.password !== f.confirmPassword) e.confirmPassword = 'Passwords do not match — please try again'
   if (!f.agreedToTerms)         e.agreedToTerms = 'You must agree to the Terms & Privacy Policy to continue'
@@ -77,9 +81,7 @@ export default function Signup() {
   const [success,     setSuccess]      = useState(false)
 
   const strength = getStrength(fields.password)
-  const pwdRulesMet = fields.password
-    ? PASSWORD_RULES.map(r => ({ ...r, met: r.test(fields.password) }))
-    : null
+  const pwdRulesMet = PASSWORD_RULES.map(r => ({ ...r, met: r.test(fields.password || '') }))
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target
@@ -250,29 +252,27 @@ export default function Signup() {
               </div>
 
               {/* Strength bar */}
-              {fields.password && (
-                <div className="mt-2">
-                  <div className="flex gap-1 mb-1.5">
-                    {[1,2,3].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300
-                        ${i <= strength.level ? strength.color : 'bg-white/15'}`} />
-                    ))}
-                  </div>
-                  {/* Per-requirement checklist */}
-                  <div className="space-y-1">
-                    {pwdRulesMet?.map(rule => (
-                      <div key={rule.key} className="flex items-center gap-1.5">
-                        {rule.met
-                          ? <Check size={11} className="text-emerald-400 flex-shrink-0" />
-                          : <XIcon size={11} className="text-red-400/70 flex-shrink-0" />}
-                        <span className={`text-[11px] ${rule.met ? 'text-emerald-400' : 'text-white/40'}`}>
-                          {rule.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              <div className="mt-2">
+                <div className="flex gap-1 mb-1.5">
+                  {[1,2,3].map(i => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300
+                      ${(fields.password && i <= strength.level) ? strength.color : 'bg-white/15'}`} />
+                  ))}
                 </div>
-              )}
+                {/* Per-requirement checklist */}
+                <div className="space-y-1">
+                  {pwdRulesMet.map(rule => (
+                    <div key={rule.key} className="flex items-center gap-1.5">
+                      {rule.met
+                        ? <Check size={11} className="text-emerald-400 flex-shrink-0" />
+                        : <XIcon size={11} className={`flex-shrink-0 ${fields.password ? 'text-red-400/70' : 'text-white/40'}`} />}
+                      <span className={`text-[11px] ${rule.met ? 'text-emerald-400' : 'text-white/40'}`}>
+                        {rule.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </GlassField>
 
             {/* Confirm Password */}

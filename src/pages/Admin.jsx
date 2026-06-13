@@ -179,7 +179,7 @@ export default function Admin() {
     await Promise.all([loadUsers(), loadDashboard()])
   }
   const handleSettingsSave = async (sectionKey) => {
-    setSettings(prev => ({ ...prev, saving: true, error: '' }))
+    setSettings(prev => ({ ...prev, saving: sectionKey, error: '' }))
     try {
       const response = await updateAdminSettings({ [sectionKey]: settings.data?.[sectionKey] || {} })
       setSettings(prev => ({ ...prev, saving: false, data: response.settings }))
@@ -440,9 +440,23 @@ function ProductsSection({ state, query, setQuery, noteById, setNoteById, onAppr
       render: row => (
         <div className="space-y-2 min-w-[220px]">
           <textarea value={noteById[row.id] || ''} onChange={e => setNoteById(prev => ({ ...prev, [row.id]: e.target.value }))} placeholder="Moderation note" className="input-field py-2 px-3 text-xs" rows={2} />
-          <div className="flex gap-1.5">
-            <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
-            <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+          <div className="flex flex-wrap gap-1.5">
+            {row.status === 'approved' || row.status === 'active' ? (
+              <>
+                <button disabled className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1 opacity-50 cursor-not-allowed"><CheckCircle2 size={12} />Approved</button>
+                <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+              </>
+            ) : row.status === 'rejected' ? (
+              <>
+                <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
+                <button disabled className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1 opacity-50 cursor-not-allowed"><XCircle size={12} />Rejected</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => onApprove(row)} className="px-2.5 py-1 rounded-lg border text-xs border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1"><CheckCircle2 size={12} />Approve</button>
+                <button onClick={() => onReject(row)} className="px-2.5 py-1 rounded-lg border text-xs border-rose-300 text-rose-700 dark:border-rose-800 dark:text-rose-300 inline-flex items-center gap-1"><XCircle size={12} />Reject</button>
+              </>
+            )}
           </div>
         </div>
       ),
@@ -736,8 +750,8 @@ function SettingsSection({ state, setState, onSaveSection }) {
                 </div>
               )}
               <div className="mt-5 flex justify-end">
-                <button onClick={() => onSaveSection(groupKey)} disabled={state.saving} className="btn-primary">
-                  <Save size={16} /> {state.saving ? 'Saving...' : 'Save Section'}
+                <button onClick={() => onSaveSection(groupKey)} disabled={!!state.saving} className="btn-primary">
+                  <Save size={16} /> {state.saving === groupKey ? 'Saving...' : 'Save Section'}
                 </button>
               </div>
             </AdminCard>

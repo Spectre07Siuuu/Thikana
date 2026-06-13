@@ -2,10 +2,10 @@ const pool = require('../config/db')
 
 const DEFAULT_ADMIN_SETTINGS = {
   verification_thresholds: {
-    auto_approve_score: 90,
-    manual_review_score: 70,
-    min_face_match_score: 75,
-    min_ocr_confidence: 70,
+    auto_approve_score: 70,
+    manual_review_score: 45,
+    min_face_match_score: 50,
+    min_ocr_confidence: 45,
   },
   moderation_settings: {
     auto_flag_duplicate_titles: true,

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
  ArrowLeft, Pencil, ShieldCheck, CalendarDays, ChevronRight,
@@ -305,13 +305,13 @@ export default function Profile() {
           </span>
           <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
            px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">
-           Submit Again â†’
+           Submit Again &rarr;
           </Link>
          </>
         ) : (
          <Link to="/verify-nid" className="inline-flex items-center gap-1 text-xs font-semibold
           px-3 py-1 rounded-full border bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors">
-          Verify Identity â†’
+          Verify Identity &rarr;
          </Link>
         )}
        </div>
@@ -925,7 +925,7 @@ function SellerOrdersTab({ highlightedOrderId, refreshProducts }) {
      </p>
      <p className="text-[11px] text-theme-muted mb-3">Shipping: {order.shippingAddress}</p>
      <div className="mb-3">
-      <Link to={`/orders/${order.id}`} className="text-xs text-theme-primary font-semibold hover:underline">Open full order details â†’</Link>
+      <Link to={`/orders/${order.id}`} className="text-xs text-theme-primary font-semibold hover:underline">Open full order details &rarr;</Link>
      </div>
      <div className="space-y-3">
       {order.items.map(item => (

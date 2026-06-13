@@ -108,9 +108,9 @@ After seeding with `npm run seed:fresh`, you can use these accounts:
 
 | Role | Email | Password |
 | :--- | :--- | :--- |
-| **Admin** | `admin@thikana.com` | `223236` |
-| **Seller** | `iqram@gmail.com` | `123456` |
-| **Buyer** | `sazzad@gmail.com` | `123456` |
+| **Admin** | `admin@thikana.com` | `22323678` |
+| **Seller** | `iqram@gmail.com` | `12345678` |
+| **Buyer** | `sazzad@gmail.com` | `12345678` |
 
 ---
 

@@ -50,7 +50,7 @@ async function collectFraudFlags(pool, { userId, nidHash, ocrResult, faceResult,
 
   if (imageMeta?.nid?.width && imageMeta?.nid?.height) {
     const ratio = imageMeta.nid.width / imageMeta.nid.height;
-    if (ratio < 1.15 || ratio > 2.2) flags.add('INVALID_IMAGE_DIMENSIONS');
+    if (ratio < 0.2 || ratio > 5.0) flags.add('INVALID_IMAGE_DIMENSIONS');
   }
 
   return Array.from(flags);

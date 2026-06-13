@@ -291,7 +291,7 @@ INSERT INTO admin_settings (id, config)
 VALUES (
   1,
   '{
-    "verification_thresholds":{"auto_approve_score":90,"manual_review_score":70,"min_face_match_score":75,"min_ocr_confidence":70},
+    "verification_thresholds":{"auto_approve_score":70,"manual_review_score":45,"min_face_match_score":50,"min_ocr_confidence":45},
     "moderation_settings":{"auto_flag_duplicate_titles":true,"require_note_on_reject":true,"max_pending_days":7},
     "upload_limits":{"max_product_images":8,"max_image_size_mb":8,"max_kyc_image_size_mb":10},
     "notification_settings":{"email_on_kyc_review":true,"email_on_product_review":true,"in_app_admin_alerts":true},

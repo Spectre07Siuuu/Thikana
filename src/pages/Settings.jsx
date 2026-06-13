@@ -9,8 +9,10 @@ import Footer from '../components/Footer'
 
 const PASSWORD_RULES = [
   { key: 'length',    label: 'At least 8 characters',       test: p => p.length >= 8 },
-  { key: 'uppercase', label: 'One uppercase letter (A–Z)',   test: p => /[A-Z]/.test(p) },
-  { key: 'number',    label: 'One number (0–9)',             test: p => /[0-9]/.test(p) },
+  { key: 'uppercase', label: 'One uppercase letter (A–Z)',  test: p => /[A-Z]/.test(p) },
+  { key: 'lowercase', label: 'One lowercase letter (a–z)',  test: p => /[a-z]/.test(p) },
+  { key: 'number',    label: 'One number (0–9)',            test: p => /[0-9]/.test(p) },
+  { key: 'symbol',    label: 'One special symbol (!@#$...)',test: p => /[^A-Za-z0-9]/.test(p) },
 ]
 
 function getStrength(p) {
@@ -124,7 +126,9 @@ const AVATAR_GRADIENT = {
   if (!pwForm.currentPassword) { setPwError('Current password is required.'); return }
   if (!pwForm.newPassword || pwForm.newPassword.length < 8) { setPwError('New password must be at least 8 characters.'); return }
   if (!/[A-Z]/.test(pwForm.newPassword)) { setPwError('New password needs at least one uppercase letter.'); return }
+  if (!/[a-z]/.test(pwForm.newPassword)) { setPwError('New password needs at least one lowercase letter.'); return }
   if (!/[0-9]/.test(pwForm.newPassword)) { setPwError('New password needs at least one number.'); return }
+  if (!/[^A-Za-z0-9]/.test(pwForm.newPassword)) { setPwError('New password needs at least one special symbol.'); return }
   if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('Passwords do not match.'); return }
 
   setPwLoading(true)

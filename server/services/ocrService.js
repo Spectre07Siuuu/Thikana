@@ -10,11 +10,16 @@ try {
 }
 
 const KEYWORDS = [
-  '\u099c\u09be\u09a4\u09c0\u09af\u09bc \u09aa\u09b0\u09bf\u099a\u09af\u09bc\u09aa\u09a4\u09cd\u09b0',
+  'জাতীয় পরিচয়পত্র',
+  'জাতীয় পরিচয় পত্র',
   'national id card',
   'nid',
   'date of birth',
   'dob',
+  'id no',
+  'government of the people',
+  'বাংলাদেশ সরকার',
+  'গণপ্রজাতন্ত্রী',
 ];
 
 const BANGLA_TO_ENGLISH_DIGITS = {
